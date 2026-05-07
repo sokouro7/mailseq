@@ -638,19 +638,22 @@ tr:hover td{background:var(--g50)}
         <!-- BOUTONS ACTIONS -->
         <div style="height:1px;background:var(--g100);margin:14px 0"></div>
         <div style="display:flex;flex-direction:column;gap:8px">
-          <!-- Bouton principal : Enregistrer ET lancer -->
-          <button class="btn btn-primary" style="width:100%;height:42px;font-size:13px;justify-content:center" onclick="sauvegarderEtLancer()">
-            🚀 Enregistrer et lancer la campagne
+          <!-- Bouton principal : Publier = lancer immédiatement -->
+          <button class="btn btn-primary" style="width:100%;height:42px;font-size:13px;justify-content:center" onclick="sauvegarderEtLancer('active')">
+            🚀 Publier — lancer la campagne
           </button>
-          <!-- Bouton secondaire : juste enregistrer -->
-          <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="sauvegarderSeq()">
-            💾 Enregistrer sans lancer
+          <!-- Bouton secondaire : Brouillon -->
+          <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="sauvegarderEtLancer('brouillon')">
+            💾 Enregistrer en brouillon
           </button>
           <button class="btn btn-ghost" style="width:100%;justify-content:center;color:var(--g400)" onclick="fermerModal('modalSeq')">
             annuler
           </button>
         </div>
-
+        <div style="margin-top:10px;font-size:11px;color:var(--g400);text-align:center;line-height:1.6">
+          Brouillon → aucun email envoyé<br>
+          Publier → les envois démarrent immédiatement
+        </div>
         <!-- Statut -->
         <div id="seqLancementStatus" style="margin-top:10px"></div>
       </div>
@@ -829,15 +832,6 @@ function ouvrirConnexion() {
 
 function fermerModal(id) { document.getElementById(id).style.display='none' }
 
-// PKCE helpers
-async function genPKCE() {
-  const verifier = Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b=>b.toString(16).padStart(2,'0')).join('')
-  const data = new TextEncoder().encode(verifier)
-  const hash = await crypto.subtle.digest('SHA-256', data)
-  const challenge = btoa(String.fromCharCode(...new Uint8Array(hash))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')
-  return { verifier, challenge }
-}
-
 async function connecter() {
   const cid=document.getElementById('clientIdInput').value.trim()
   const tid=document.getElementById('tenantIdInput').value.trim()||'common'
@@ -849,83 +843,27 @@ async function connecter() {
   const barre=document.getElementById('barreAuth')
   let prog=0; const pi=setInterval(()=>{ prog=Math.min(prog+4,88); barre.style.width=prog+'%' },200)
 
-  const { verifier, challenge } = await genPKCE()
-  sessionStorage.setItem('pkce_verifier', verifier)
-  sessionStorage.setItem('msp_cid', cid)
-  sessionStorage.setItem('msp_tid', tid)
-
   const redir=encodeURIComponent(window.location.href.split('?')[0].split('#')[0])
   const scopes=encodeURIComponent('openid profile email Mail.Send Mail.Read User.Read offline_access')
-  const state=uid()
-  sessionStorage.setItem('pkce_state', state)
+  const url=`https://login.microsoftonline.com/${tid}/oauth2/v2.0/authorize?client_id=${cid}&response_type=token&redirect_uri=${redir}&scope=${scopes}&response_mode=fragment&nonce=${uid()}&prompt=select_account`
 
-  // Essayer d'abord PKCE (code flow), fallback sur implicit si bloqué
-  const urlPKCE=`https://login.microsoftonline.com/${tid}/oauth2/v2.0/authorize?client_id=${cid}&response_type=code&redirect_uri=${redir}&scope=${scopes}&response_mode=query&code_challenge=${challenge}&code_challenge_method=S256&state=${state}&prompt=select_account`
-
-  clearInterval(pi)
-  barre.style.width='40%'
-
-  // Ouvrir dans la même page (redirect flow) — pas de popup pour PKCE
-  fermerModal('modalConnexion')
-  ajouterJournal('Redirection vers Microsoft pour authentification…','info')
-  window.location.href = urlPKCE
+  const popup=window.open(url,'msp_auth','width=520,height=660,menubar=no,toolbar=no')
+  const poll=setInterval(()=>{
+    try {
+      if(popup&&!popup.closed&&popup.location&&popup.location.hash){
+        const hash=popup.location.hash; popup.close()
+        clearInterval(poll); clearInterval(pi)
+        const params=new URLSearchParams(hash.substring(1))
+        const token=params.get('access_token')
+        if(token){ barre.style.width='100%'; recupererProfil(token) }
+        else{ echec(params.get('error_description')||'annulé') }
+      }
+    } catch(e){}
+    if(popup&&popup.closed){ clearInterval(poll); clearInterval(pi); echec('Fenêtre fermée') }
+  },400)
 }
 
-// Gérer le retour OAuth après redirection
-async function gererRetourOAuth() {
-  const params = new URLSearchParams(window.location.search)
-  const code = params.get('code')
-  const state = params.get('state')
-  const erreur = params.get('error')
-
-  if(erreur) {
-    ajouterJournal('Erreur auth : '+params.get('error_description'),'err')
-    // Nettoyer l'URL
-    window.history.replaceState({}, '', window.location.pathname)
-    return
-  }
-
-  if(!code) return
-
-  // Nettoyer l'URL immédiatement
-  window.history.replaceState({}, '', window.location.pathname)
-
-  const verifier = sessionStorage.getItem('pkce_verifier')
-  const cid = sessionStorage.getItem('msp_cid') || S.clientId
-  const tid = sessionStorage.getItem('msp_tid') || S.tenantId || 'common'
-
-  if(!verifier || !cid) { ajouterJournal('Erreur PKCE : données manquantes','err'); return }
-
-  ajouterJournal('Code reçu, échange du jeton…','info')
-
-  const redir = window.location.href.split('?')[0].split('#')[0]
-  try {
-    const r = await fetch(`https://login.microsoftonline.com/${tid}/oauth2/v2.0/token`, {
-      method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body: new URLSearchParams({
-        client_id: cid,
-        code,
-        redirect_uri: redir,
-        grant_type: 'authorization_code',
-        code_verifier: verifier,
-        scope: 'openid profile email Mail.Send Mail.Read User.Read offline_access'
-      })
-    })
-    const data = await r.json()
-    if(data.access_token) {
-      sessionStorage.removeItem('pkce_verifier')
-      sessionStorage.removeItem('pkce_state')
-      sessionStorage.removeItem('msp_cid')
-      sessionStorage.removeItem('msp_tid')
-      await recupererProfil(data.access_token)
-    } else {
-      ajouterJournal('Erreur token : '+(data.error_description||data.error),'err')
-    }
-  } catch(e) {
-    ajouterJournal('Erreur échange token : '+e.message,'err')
-  }
-}
+function gererRetourOAuth() {}
 
 async function recupererProfil(token) {
   try {
@@ -1349,16 +1287,23 @@ function remplirSelectListeSeq() {
   aperçuListeSeq()
 }
 
-async function sauvegarderEtLancer() {
+async function sauvegarderEtLancer(statut='active') {
   const nom = document.getElementById('nomSeq').value.trim()
   if(!nom) { alert('Nommez la séquence'); return }
   if(!flowRoot.sujet.trim()) { alert("Complétez l'email initial"); return }
 
   const lid = document.getElementById('seqListeSel')?.value
-  if(!lid) { alert('Sélectionnez une liste de prospects'); return }
+  if(!lid && statut==='active') { alert('Sélectionnez une liste de prospects pour publier'); return }
+  if(!lid && statut==='brouillon') {
+    // Brouillon sans liste : juste sauvegarder la séquence
+    sauvegarderSeq()
+    const status = document.getElementById('seqLancementStatus')
+    if(status) status.innerHTML = `<div class="info-box i-gray">💾 Séquence enregistrée en brouillon.</div>`
+    return
+  }
   const liste = S.listes.find(l=>l.id===lid)
   if(!liste || !liste.contacts.length) { alert('La liste sélectionnée est vide'); return }
-  if(!S.accessToken && !confirm("Outlook non connecté. Mode démonstration ?")) return
+  if(statut==='active' && !S.accessToken && !confirm("Outlook non connecté. Mode démonstration ?")) return
 
   // 1. Sauvegarder la séquence
   const seq = { id: seqIdEnEdition||uid(), nom, flowRoot: JSON.parse(JSON.stringify(flowRoot)), etapes: aplatiArbre(flowRoot), creee: isoMaint() }
@@ -1378,7 +1323,7 @@ async function sauvegarderEtLancer() {
     fuseau: 'Europe/Paris',
     delai: +(document.getElementById('seqDelai')?.value || 45),
     joursOuvres: document.getElementById('seqJours')?.value === 'semaine',
-    statut: 'active', creee: isoMaint()
+    statut: statut, creee: isoMaint()
   })
 
   // 3. Créer les prospects
@@ -1390,17 +1335,22 @@ async function sauvegarderEtLancer() {
   }))
 
   sauver()
-  ajouterJournal(`🚀 Campagne "${nomCamp}" lancée — ${liste.contacts.length} prospects`, 'ok')
+  const statusEl = document.getElementById('seqLancementStatus')
 
-  // 4. Statut visuel
-  const status = document.getElementById('seqLancementStatus')
-  if(status) status.innerHTML = `<div class="info-box i-green">✓ Campagne lancée ! ${liste.contacts.length} prospects en file d'envoi.</div>`
+  if(statut === 'active') {
+    ajouterJournal(`🚀 Campagne "${nomCamp}" publiée — ${liste.contacts.length} prospects`, 'ok')
+    if(statusEl) statusEl.innerHTML = `<div class="info-box i-green">🚀 Campagne publiée ! ${liste.contacts.length} prospects — les envois démarrent.</div>`
+    // Lancer les envois immédiatement
+    seq._etapesFlat = getEtapesSeq(seq)
+    envoyerLot(campId, seq, S.campagnes[S.campagnes.length-1].delai)
+    // Démarrer les triggers auto si pas encore actifs
+    demarrerSynchroAuto()
+  } else {
+    ajouterJournal(`💾 Campagne "${nomCamp}" enregistrée en brouillon`, 'ok')
+    if(statusEl) statusEl.innerHTML = `<div class="info-box i-gray">💾 Brouillon enregistré. Publiez depuis la page Campagnes quand vous êtes prêt.</div>`
+  }
 
-  // 5. Lancer les envois
-  seq._etapesFlat = getEtapesSeq(seq)
-  envoyerLot(campId, seq, S.campagnes[S.campagnes.length-1].delai)
-
-  // 6. Fermer après 1.5s
+  // Fermer après 1.5s
   setTimeout(() => {
     fermerModal('modalSeq')
     aller('tableau', document.querySelector('[onclick*=tableau]'))
@@ -2032,6 +1982,7 @@ function afficherTableau(){
   const repandus=S.prospects.filter(p=>p.repandu).length
   const enAttente=S.prospects.filter(p=>!p.termine&&!p.repandu&&p.prochainEnvoi).length
   const actives=S.campagnes.filter(c=>c.statut==='active').length
+  const brouillons=S.campagnes.filter(c=>c.statut==='brouillon').length
   const el=document.getElementById('contenu-tableau')
   el.innerHTML=`
     <div class="stats-grid">
@@ -2095,7 +2046,28 @@ function afficherListeCamp(){
     </div>`}).join('')
 }
 
-function statutCamp(id,s){const c=S.campagnes.find(c=>c.id===id);if(c){c.statut=s;sauver();afficherListeCamp();afficherTableau()}}
+function statutCamp(id,s){
+  const c=S.campagnes.find(c=>c.id===id)
+  if(c){c.statut=s;sauver();afficherListeCamp();afficherTableau()}
+}
+
+async function publierCamp(id) {
+  const camp = S.campagnes.find(c=>c.id===id)
+  if(!camp) return
+  if(!S.accessToken && !confirm("Outlook non connecté. Mode démonstration ?")) return
+  camp.statut = 'active'
+  sauver()
+  ajouterJournal(`🚀 Campagne "${camp.nom}" publiée`, 'ok')
+  // Lancer les envois
+  const seq = S.sequences.find(s=>s.id===camp.seqId)
+  if(seq) {
+    seq._etapesFlat = getEtapesSeq(seq)
+    envoyerLot(camp.id, seq, camp.delai||45)
+  }
+  demarrerSynchroAuto()
+  afficherListeCamp()
+  afficherTableau()
+}
 function supprimerCamp(id){if(!confirm('Supprimer cette campagne et tous ses prospects ?'))return;S.campagnes=S.campagnes.filter(c=>c.id!==id);S.prospects=S.prospects.filter(p=>p.campagneId!==id);sauver();afficherListeCamp();afficherTableau()}
 function voirProspects(campId){aller('prospects',document.querySelector('[onclick*=prospects]'));document.getElementById('prospCampSel').value=campId;afficherProspects()}
 
@@ -2208,10 +2180,7 @@ function afficherJournaux(){
 // ═══ INIT ═══
 mettreAJourBadges()
 afficherTableau()
-// Gérer le retour après redirection OAuth PKCE
-if(window.location.search.includes('code=') || window.location.search.includes('error=')) {
-  gererRetourOAuth()
-}
+
 </script>
 </body>
 </html>
