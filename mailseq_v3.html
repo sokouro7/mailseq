@@ -562,36 +562,99 @@ tr:hover td{background:var(--g50)}
 <!-- ═══ MODAL SÉQUENCE ═══ -->
 <div class="overlay" id="modalSeq" style="display:none">
   <div class="modal modal-full">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-      <div class="modal-title" id="titreModalSeq">nouvelle séquence</div>
+    <!-- HEADER -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--g100)">
+      <div>
+        <div class="modal-title" id="titreModalSeq" style="margin-bottom:0">nouvelle séquence</div>
+        <div style="font-size:12px;color:var(--g400);margin-top:3px">Rédigez vos emails · choisissez vos prospects · lancez</div>
+      </div>
       <button class="close-panel" onclick="fermerModal('modalSeq')">×</button>
     </div>
-    <div class="modal-sub">Construisez votre flow d'emails — cliquez sur un email pour l'éditer, ajoutez des branches par condition</div>
-    <div class="grid-2" style="gap:16px;margin-bottom:16px">
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">Nom de la séquence</label>
-        <input class="form-input form-mono" id="nomSeq" placeholder="saas-b2b-3-relances">
-      </div>
+
+    <!-- LAYOUT 2 COLONNES : flow | config -->
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start">
+
+      <!-- COLONNE GAUCHE : builder flow -->
       <div>
-        <div class="form-label" style="margin-bottom:6px">Variables — cliquer dans le corps puis sur la variable</div>
-        <div>
-          <span class="var-pill" onclick="insererVar('{{prenom}}')">{{prenom}}</span>
-          <span class="var-pill" onclick="insererVar('{{nom}}')">{{nom}}</span>
-          <span class="var-pill" onclick="insererVar('{{societe}}')">{{societe}}</span>
-          <span class="var-pill" onclick="insererVar('{{poste}}')">{{poste}}</span>
-          <span class="var-pill" onclick="insererVar('{{email}}')">{{email}}</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="form-label" style="margin-bottom:0">Flow d'emails</div>
+          <div>
+            <span class="var-pill" onclick="insererVar('{{prenom}}')">{{prenom}}</span>
+            <span class="var-pill" onclick="insererVar('{{nom}}')">{{nom}}</span>
+            <span class="var-pill" onclick="insererVar('{{societe}}')">{{societe}}</span>
+            <span class="var-pill" onclick="insererVar('{{poste}}')">{{poste}}</span>
+            <span class="var-pill" onclick="insererVar('{{email}}')">{{email}}</span>
+          </div>
         </div>
+        <div style="background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--rm);padding:20px">
+          <div class="flow-canvas" id="flowCanvas"></div>
+        </div>
+        <div id="editorPanel" style="display:none"></div>
       </div>
-    </div>
-    <!-- FLOW CANVAS -->
-    <div style="background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--rm);padding:20px">
-      <div class="flow-canvas" id="flowCanvas"></div>
-    </div>
-    <!-- EDITOR PANEL (s'affiche quand on clique un node) -->
-    <div id="editorPanel" style="display:none"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="fermerModal('modalSeq')">annuler</button>
-      <button class="btn btn-primary" onclick="sauvegarderSeq()">✓ enregistrer la séquence</button>
+
+      <!-- COLONNE DROITE : config + lancement -->
+      <div style="position:sticky;top:0">
+
+        <!-- Nom séquence -->
+        <div class="form-group">
+          <label class="form-label">Nom de la séquence</label>
+          <input class="form-input form-mono" id="nomSeq" placeholder="saas-b2b-3-relances">
+        </div>
+
+        <!-- Séparateur -->
+        <div style="height:1px;background:var(--g100);margin:14px 0"></div>
+
+        <!-- Sélection liste prospects -->
+        <div style="margin-bottom:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <label class="form-label" style="margin-bottom:0">Liste de prospects</label>
+            <button class="btn btn-xs btn-ghost" onclick="fermerModal('modalSeq');aller('listes',null)">+ créer une liste</button>
+          </div>
+          <select class="form-select" id="seqListeSel" onchange="aperçuListeSeq()">
+            <option value="">— sélectionner une liste —</option>
+          </select>
+          <div id="seqListeApercu" style="margin-top:6px"></div>
+        </div>
+
+        <!-- Paramètres envoi -->
+        <div style="height:1px;background:var(--g100);margin:14px 0"></div>
+        <div class="form-label" style="margin-bottom:10px">Paramètres d'envoi</div>
+        <div class="form-group">
+          <label class="form-label">Heure d'envoi</label>
+          <input type="time" class="form-input" id="seqHeure" value="09:00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Jours actifs</label>
+          <select class="form-select" id="seqJours">
+            <option value="semaine">Lun → Ven uniquement</option>
+            <option value="tous">Tous les jours</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Délai anti-spam entre envois (sec)</label>
+          <input type="number" class="form-input form-mono" id="seqDelai" value="45" min="15">
+        </div>
+
+        <!-- BOUTONS ACTIONS -->
+        <div style="height:1px;background:var(--g100);margin:14px 0"></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <!-- Bouton principal : Enregistrer ET lancer -->
+          <button class="btn btn-primary" style="width:100%;height:42px;font-size:13px;justify-content:center" onclick="sauvegarderEtLancer()">
+            🚀 Enregistrer et lancer la campagne
+          </button>
+          <!-- Bouton secondaire : juste enregistrer -->
+          <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="sauvegarderSeq()">
+            💾 Enregistrer sans lancer
+          </button>
+          <button class="btn btn-ghost" style="width:100%;justify-content:center;color:var(--g400)" onclick="fermerModal('modalSeq')">
+            annuler
+          </button>
+        </div>
+
+        <!-- Statut -->
+        <div id="seqLancementStatus" style="margin-top:10px"></div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -992,6 +1055,8 @@ function ouvrirModalSeq(seqId) {
   selectedNodeId = null
   document.getElementById('editorPanel').style.display='none'
   rendreFlow()
+  // Peupler le select de listes
+  remplirSelectListeSeq()
   document.getElementById('modalSeq').style.display='flex'
 }
 
@@ -1262,6 +1327,85 @@ function sauvegarderSeq() {
   }
   sauver(); fermerModal('modalSeq'); afficherSequences()
   ajouterJournal(`Séquence enregistrée : ${nom}`,'ok')
+}
+
+function aperçuListeSeq() {
+  const lid = document.getElementById('seqListeSel')?.value
+  const el = document.getElementById('seqListeApercu')
+  if(!el) return
+  if(!lid) { el.innerHTML=''; return }
+  const liste = S.listes.find(l=>l.id===lid)
+  if(!liste) { el.innerHTML=''; return }
+  el.innerHTML = `<div class="info-box i-accent" style="margin-bottom:0;font-size:11.5px">
+    <strong>${liste.contacts.length} contacts</strong> — ${liste.contacts.slice(0,3).map(p=>p.prenom?p.prenom+' ('+p.societe+')':p.email).join(', ')}${liste.contacts.length>3?` +${liste.contacts.length-3} autres`:''}
+  </div>`
+}
+
+function remplirSelectListeSeq() {
+  const sel = document.getElementById('seqListeSel')
+  if(!sel) return
+  sel.innerHTML = '<option value="">— sélectionner une liste —</option>' +
+    S.listes.map(l=>`<option value="${l.id}">${l.nom} (${l.contacts.length} contacts)</option>`).join('')
+  aperçuListeSeq()
+}
+
+async function sauvegarderEtLancer() {
+  const nom = document.getElementById('nomSeq').value.trim()
+  if(!nom) { alert('Nommez la séquence'); return }
+  if(!flowRoot.sujet.trim()) { alert('Rédigez au moins l'email initial'); return }
+
+  const lid = document.getElementById('seqListeSel')?.value
+  if(!lid) { alert('Sélectionnez une liste de prospects'); return }
+  const liste = S.listes.find(l=>l.id===lid)
+  if(!liste || !liste.contacts.length) { alert('La liste sélectionnée est vide'); return }
+  if(!S.accessToken && !confirm('Outlook non connecté. Lancer en mode démonstration ?')) return
+
+  // 1. Sauvegarder la séquence
+  const seq = { id: seqIdEnEdition||uid(), nom, flowRoot: JSON.parse(JSON.stringify(flowRoot)), etapes: aplatiArbre(flowRoot), creee: isoMaint() }
+  if(seqIdEnEdition) {
+    const idx = S.sequences.findIndex(s=>s.id===seqIdEnEdition)
+    if(idx>=0) S.sequences[idx] = seq; else S.sequences.push(seq)
+  } else {
+    S.sequences.push(seq)
+  }
+
+  // 2. Créer la campagne automatiquement
+  const campId = uid()
+  const nomCamp = nom + ' — ' + liste.nom
+  S.campagnes.push({
+    id: campId, nom: nomCamp, seqId: seq.id, listeId: lid,
+    heureEnvoi: document.getElementById('seqHeure')?.value || '09:00',
+    fuseau: 'Europe/Paris',
+    delai: +(document.getElementById('seqDelai')?.value || 45),
+    joursOuvres: document.getElementById('seqJours')?.value === 'semaine',
+    statut: 'active', creee: isoMaint()
+  })
+
+  // 3. Créer les prospects
+  liste.contacts.forEach(p => S.prospects.push({
+    id: uid(), campagneId: campId,
+    email: p.email, prenom: p.prenom||'', nom: p.nom||'', societe: p.societe||'', poste: p.poste||'',
+    etapeCourante: 0, prochainEnvoi: isoMaint(),
+    repandu: false, termine: false, ouvertures: 0, tag: null, historique: []
+  }))
+
+  sauver()
+  ajouterJournal(`🚀 Campagne "${nomCamp}" lancée — ${liste.contacts.length} prospects`, 'ok')
+
+  // 4. Statut visuel
+  const status = document.getElementById('seqLancementStatus')
+  if(status) status.innerHTML = `<div class="info-box i-green">✓ Campagne lancée ! ${liste.contacts.length} prospects en file d'envoi.</div>`
+
+  // 5. Lancer les envois
+  seq._etapesFlat = getEtapesSeq(seq)
+  envoyerLot(campId, seq, S.campagnes[S.campagnes.length-1].delai)
+
+  // 6. Fermer après 1.5s
+  setTimeout(() => {
+    fermerModal('modalSeq')
+    aller('tableau', document.querySelector('[onclick*=tableau]'))
+    afficherTableau()
+  }, 1500)
 }
 
 function afficherSequences() {
