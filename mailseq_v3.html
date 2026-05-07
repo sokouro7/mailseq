@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mailseq v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --w:#fff;--off:#fafafa;--g50:#f5f5f5;--g100:#ebebeb;--g200:#e2e2e2;
+  --g300:#c8c8c8;--g400:#a0a0a0;--g500:#737373;--g600:#525252;
+  --g700:#404040;--g800:#262626;--g900:#171717;--blk:#0a0a0a;
+  --ok:#16a34a;--ok-bg:#f0fdf4;--ok-b:#bbf7d0;
+  --warn:#d97706;--warn-bg:#fffbeb;--warn-b:#fde68a;
+  --err:#dc2626;--err-bg:#fef2f2;--err-b:#fecaca;
+  --info:#2563eb;--info-bg:#eff6ff;--info-b:#bfdbfe;
+  --sans:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;
+  --r:4px;--rm:6px;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--sans);background:var(--w);color:var(--g900);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--g200);border-radius:4px}
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* SIDEBAR */
+.sb{width:210px;min-width:210px;background:var(--off);border-right:1px solid var(--g200);display:flex;flex-direction:column}
+.logo{height:48px;display:flex;align-items:center;padding:0 14px;border-bottom:1px solid var(--g200);gap:8px;flex-shrink:0}
+.logo-mark{width:18px;height:18px;background:var(--blk);border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-ver{font-family:var(--mono);font-size:9px;color:var(--g400);background:var(--g100);padding:1px 5px;border-radius:3px}
+.logo-name{font-family:var(--mono);font-size:11.5px;font-weight:500}
+.conn-block{margin:8px;padding:8px 10px;background:var(--w);border:1px solid var(--g200);border-radius:var(--r);cursor:pointer;transition:border-color .15s}
+.conn-block:hover{border-color:var(--g400)}
+.conn-row{display:flex;align-items:center;gap:6px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--err);flex-shrink:0;transition:background .3s}
+.dot.on{background:var(--ok)}
+.conn-label{font-size:11px;color:var(--g600);font-weight:500;font-family:var(--mono)}
+.conn-email{font-size:10px;color:var(--g400);margin-top:3px;font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+nav{flex:1;overflow-y:auto;padding:4px 0}
+.nav-section{padding:14px 14px 4px;font-size:9.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);font-weight:500;font-family:var(--mono)}
+.nav-item{display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;font-size:12.5px;color:var(--g500);transition:all .1s;user-select:none;position:relative}
+.nav-item:hover{color:var(--g900);background:var(--g100)}
+.nav-item.active{color:var(--g900);background:var(--g100);font-weight:500}
+.nav-item.active::before{content:'';position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--blk);border-radius:0 2px 2px 0}
+.nav-badge{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--g400);background:var(--g100);padding:1px 5px;border-radius:10px;border:1px solid var(--g200)}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:48px;border-bottom:1px solid var(--g200);display:flex;align-items:center;padding:0 20px;gap:8px;flex-shrink:0;background:var(--w)}
+.topbar-title{font-size:12.5px;font-weight:500;flex:1;font-family:var(--mono)}
+.content{flex:1;overflow-y:auto;padding:20px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:0 11px;height:30px;border-radius:var(--r);font-size:12px;font-family:var(--sans);font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .12s;white-space:nowrap}
+.btn-primary{background:var(--blk);color:var(--w);border-color:var(--blk)}
+.btn-primary:hover{background:var(--g800)}
+.btn-ghost{background:transparent;color:var(--g700);border-color:var(--g200)}
+.btn-ghost:hover{background:var(--g50);border-color:var(--g300);color:var(--g900)}
+.btn-danger{color:var(--err);border-color:var(--err-b);background:transparent}
+.btn-danger:hover{background:var(--err-bg)}
+.btn-success{color:var(--ok);border-color:var(--ok-b);background:transparent}
+.btn-success:hover{background:var(--ok-bg)}
+.btn-sm{height:26px;padding:0 10px;font-size:11px}
+.btn-xs{height:22px;padding:0 8px;font-size:10px;border-radius:3px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* CARDS */
+.card{background:var(--w);border:1px solid var(--g200);border-radius:var(--rm);padding:16px 18px;margin-bottom:10px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-title{font-size:11.5px;font-weight:500;color:var(--g900);font-family:var(--mono)}
+.card-sub{font-size:11px;color:var(--g400);margin-top:2px}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.stats-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.stat-card{background:var(--w);border:1px solid var(--g200);border-radius:var(--rm);padding:14px 16px}
+.stat-label{font-size:10px;color:var(--g400);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;font-family:var(--mono)}
+.stat-value{font-size:28px;font-weight:300;line-height:1;color:var(--g900);font-family:var(--mono);letter-spacing:-1px}
+.stat-sub{font-size:10px;color:var(--g400);margin-top:5px}
+.c-ok{color:var(--ok)}.c-warn{color:var(--warn)}.c-info{color:var(--info)}.c-err{color:var(--err)}
+
+/* FORMS */
+.form-group{margin-bottom:12px}
+.form-label{display:block;font-size:11px;color:var(--g500);margin-bottom:4px;font-weight:500}
+.form-input,.form-select,.form-textarea{width:100%;background:var(--w);border:1px solid var(--g200);border-radius:var(--r);padding:0 10px;height:32px;color:var(--g900);font-family:var(--sans);font-size:13px;transition:border-color .15s,box-shadow .15s;outline:none}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--g900);box-shadow:0 0 0 3px rgba(0,0,0,.05)}
+.form-input::placeholder{color:var(--g300)}
+.form-select{cursor:pointer}
+.form-textarea{height:auto;padding:8px 10px;resize:vertical;min-height:90px;line-height:1.6}
+.form-mono{font-family:var(--mono);font-size:12px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+
+/* TABLES */
+table{width:100%;border-collapse:collapse}
+thead{background:var(--g50)}
+th{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--g400);font-weight:500;font-family:var(--mono);padding:8px 12px;text-align:left;border-bottom:1px solid var(--g200)}
+td{padding:9px 12px;font-size:12.5px;color:var(--g700);border-bottom:1px solid var(--g100)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--g50)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:500;font-family:var(--mono);border:1px solid transparent}
+.bg-green{background:var(--ok-bg);color:#15803d;border-color:var(--ok-b)}
+.bg-amber{background:var(--warn-bg);color:#92400e;border-color:var(--warn-b)}
+.bg-red{background:var(--err-bg);color:#b91c1c;border-color:var(--err-b)}
+.bg-blue{background:var(--info-bg);color:#1d4ed8;border-color:var(--info-b)}
+.bg-gray{background:var(--g50);color:var(--g500);border-color:var(--g200)}
+.bg-black{background:var(--blk);color:var(--w)}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--g200);margin-bottom:16px}
+.tab{padding:0 14px;height:36px;display:flex;align-items:center;cursor:pointer;font-size:12px;color:var(--g500);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;user-select:none}
+.tab:hover{color:var(--g900)}
+.tab.active{color:var(--g900);border-bottom-color:var(--blk);font-weight:500}
+
+/* DROP ZONE */
+.drop-zone{border:1px dashed var(--g300);border-radius:var(--rm);padding:28px 24px;text-align:center;cursor:pointer;transition:all .15s;color:var(--g400);background:var(--g50)}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--g900);background:var(--w);color:var(--g900)}
+
+/* RICH EDITOR */
+.editor-wrap{border:1px solid var(--g200);border-radius:var(--rm);overflow:hidden;background:var(--w)}
+.editor-wrap:focus-within{border-color:var(--g900);box-shadow:0 0 0 3px rgba(0,0,0,.05)}
+.editor-toolbar{display:flex;gap:2px;padding:6px 8px;border-bottom:1px solid var(--g100);background:var(--g50);flex-wrap:wrap;align-items:center}
+.tb-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:none;background:transparent;border-radius:3px;cursor:pointer;color:var(--g600);font-size:12px;font-family:var(--sans);transition:all .1s}
+.tb-btn:hover{background:var(--g200);color:var(--g900)}
+.tb-sep{width:1px;height:18px;background:var(--g200);margin:0 3px}
+.tb-select{height:24px;padding:0 6px;font-size:11px;background:var(--w);border:1px solid var(--g200);border-radius:3px;color:var(--g700);font-family:var(--sans);cursor:pointer;outline:none}
+.editor-body{min-height:120px;padding:12px 14px;outline:none;font-size:13px;line-height:1.7;color:var(--g900)}
+.editor-body:empty::before{content:attr(data-placeholder);color:var(--g300);pointer-events:none}
+.editor-body img{max-width:100%;border-radius:4px}
+.editor-body table{border-collapse:collapse;width:100%;margin:8px 0}
+.editor-body table td{border:1px solid var(--g200);padding:6px 8px;font-size:12px}
+.editor-body a{color:var(--info)}
+.editor-footer{padding:5px 10px;border-top:1px solid var(--g100);display:flex;justify-content:flex-end}
+.char-count{font-size:10px;color:var(--g400);font-family:var(--mono)}
+
+/* SEQ BUILDER */
+.seq-wrap{background:var(--g50);border:1px solid var(--g200);border-radius:var(--rm);padding:12px}
+.email-step{background:var(--w);border:1px solid var(--g200);border-radius:var(--r);padding:14px;margin-bottom:6px}
+.step-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.step-num{width:22px;height:22px;border-radius:50%;background:var(--blk);color:var(--w);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;font-family:var(--mono);flex-shrink:0}
+.step-lbl{font-size:12px;font-weight:500;flex:1;color:var(--g700);font-family:var(--mono)}
+
+/* TRIGGER BLOCK — nouveau design v3 */
+.trigger-block{background:var(--g50);border:1px solid var(--g200);border-radius:var(--r);padding:12px 14px;margin-bottom:10px}
+.trigger-title{font-size:11px;font-weight:500;color:var(--g500);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.trigger-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.trigger-row:last-child{margin-bottom:0}
+.trigger-label{font-size:12px;color:var(--g600);flex-shrink:0}
+.trigger-val{font-size:12px;color:var(--g900);font-family:var(--mono)}
+.cond-select{height:28px;padding:0 8px;font-size:12px;background:var(--w);border:1px solid var(--g200);border-radius:var(--r);color:var(--g900);font-family:var(--sans);cursor:pointer;outline:none;transition:border-color .15s}
+.cond-select:focus{border-color:var(--g900)}
+.cond-num{height:28px;padding:0 8px;font-size:12px;font-family:var(--mono);background:var(--w);border:1px solid var(--g200);border-radius:var(--r);color:var(--g900);outline:none;width:56px;text-align:center;transition:border-color .15s}
+.cond-num:focus{border-color:var(--g900)}
+
+/* CONNECTOR */
+.connector-row{display:flex;align-items:center;gap:8px;padding:5px 4px}
+.conn-line{flex:1;height:1px;background:var(--g200)}
+.conn-summary{font-size:11px;background:var(--w);padding:4px 10px;border-radius:20px;border:1px solid var(--g200);white-space:nowrap;color:var(--g500);font-family:var(--mono)}
+
+/* VAR PILLS */
+.var-pill{display:inline-flex;align-items:center;background:var(--g50);color:var(--g600);padding:2px 7px;border-radius:3px;font-size:11px;font-family:var(--mono);cursor:pointer;margin:2px;border:1px solid var(--g200);user-select:none;transition:all .1s}
+.var-pill:hover{background:var(--blk);color:var(--w);border-color:var(--blk)}
+
+/* TAGS */
+.tag-area{background:var(--w);border:1px solid var(--g200);border-radius:var(--r);padding:6px;min-height:68px;cursor:text;display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;transition:border-color .15s,box-shadow .15s}
+.tag-area:focus-within{border-color:var(--g900);box-shadow:0 0 0 3px rgba(0,0,0,.05)}
+.tag-area input{background:none;border:none;outline:none;color:var(--g900);font-size:13px;min-width:140px;padding:2px 4px;height:22px;font-family:var(--sans)}
+.prospect-tag{display:inline-flex;align-items:center;gap:4px;background:var(--g100);border:1px solid var(--g200);border-radius:3px;padding:1px 6px 1px 4px;font-size:11px;font-family:var(--mono);color:var(--g700);height:22px}
+.tag-av{width:14px;height:14px;border-radius:50%;background:var(--blk);color:var(--w);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;flex-shrink:0}
+.tag-rm{background:none;border:none;color:var(--g400);cursor:pointer;font-size:13px;padding:0;line-height:1}
+.tag-rm:hover{color:var(--err)}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:200}
+.modal{background:var(--w);border:1px solid var(--g200);border-radius:var(--rm);padding:24px;width:620px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.1)}
+.modal-wide{width:740px}
+.modal-title{font-size:13.5px;font-weight:500;margin-bottom:4px;font-family:var(--mono)}
+.modal-sub{font-size:12px;color:var(--g500);margin-bottom:18px}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--g100)}
+
+/* PROGRESS */
+.progress{height:2px;background:var(--g100);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--blk);border-radius:2px;transition:width .4s}
+
+/* FUNNEL */
+.funnel-step-row{display:flex;align-items:center;gap:0;margin-bottom:3px}
+.funnel-label{min-width:100px;text-align:right;padding-right:12px;font-size:10px;font-family:var(--mono);color:var(--g400)}
+.funnel-bar-wrap{flex:1;height:44px;position:relative;display:flex;align-items:center;padding:0 12px}
+.funnel-bar-bg{position:absolute;left:0;top:0;bottom:0;border-radius:3px;transition:width .5s}
+.funnel-bar-content{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;width:100%}
+.funnel-conn{display:flex;align-items:center;gap:8px;padding:3px 0 3px 112px}
+.funnel-conn-line{flex:1;height:1px;background:var(--g100)}
+.funnel-conn-pill{font-size:10px;font-family:var(--mono);color:var(--g400);background:var(--g50);border:0.5px solid var(--g200);border-radius:20px;padding:2px 8px;white-space:nowrap}
+.funnel-outcomes{display:flex;gap:8px;margin-top:12px;padding-left:112px}
+.funnel-outcome{flex:1;border:0.5px solid var(--g200);border-radius:var(--r);padding:10px 12px;background:var(--g50)}
+.funnel-outcome-val{font-size:18px;font-weight:500;font-family:var(--mono);letter-spacing:-0.5px}
+.funnel-outcome-lbl{font-size:9px;font-family:var(--mono);color:var(--g400);margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+
+/* CHARTS */
+.chart-bar-wrap{display:flex;flex-direction:column;gap:6px}
+.chart-bar-row{display:flex;align-items:center;gap:10px;font-size:11px}
+.chart-bar-label{width:100px;color:var(--g500);text-align:right;flex-shrink:0;font-family:var(--mono);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chart-bar-track{flex:1;background:var(--g100);border-radius:2px;height:8px;overflow:hidden}
+.chart-bar-fill{height:100%;border-radius:2px;transition:width .5s}
+.chart-bar-val{width:36px;text-align:right;color:var(--g700);font-family:var(--mono);font-size:11px;flex-shrink:0}
+
+/* CAMP CARD */
+.camp-card{background:var(--w);border:1px solid var(--g200);border-radius:var(--rm);padding:14px 16px;margin-bottom:8px;transition:border-color .15s}
+.camp-card:hover{border-color:var(--g300)}
+.camp-meta{display:flex;gap:14px;font-size:11px;color:var(--g400);margin:5px 0;font-family:var(--mono)}
+.camp-meta strong{color:var(--g700)}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 24px;color:var(--g400)}
+.empty-icon{font-size:20px;margin-bottom:10px;filter:grayscale(1);opacity:.4}
+.empty-title{font-size:12.5px;font-weight:500;color:var(--g600);margin-bottom:4px;font-family:var(--mono)}
+
+/* INFO BOXES */
+.info-box{padding:10px 12px;border-radius:var(--r);font-size:12px;margin-bottom:12px;line-height:1.6}
+.i-green{background:var(--ok-bg);border:1px solid var(--ok-b);color:#15803d}
+.i-amber{background:var(--warn-bg);border:1px solid var(--warn-b);color:#92400e}
+.i-blue{background:var(--info-bg);border:1px solid var(--info-b);color:#1e40af}
+.i-gray{background:var(--g50);border:1px solid var(--g200);color:var(--g600)}
+
+/* LOGS */
+.log-entry{display:flex;gap:12px;padding:7px 0;border-bottom:1px solid var(--g100);font-size:11.5px;font-family:var(--mono)}
+.log-entry:last-child{border-bottom:none}
+.log-time{color:var(--g400);flex-shrink:0}
+.log-ok{color:var(--ok)}.log-err{color:var(--err)}.log-warn{color:var(--warn)}.log-info{color:var(--g700)}
+
+/* SETUP STEPS */
+.setup-step{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--g100)}
+.setup-step:last-child{border-bottom:none}
+.s-num{width:22px;height:22px;border-radius:50%;background:var(--blk);color:var(--w);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;font-family:var(--mono);flex-shrink:0;margin-top:1px}
+.s-text{font-size:12px;color:var(--g600);line-height:1.7}
+.s-text strong{color:var(--g900)}
+.s-text code{background:var(--g100);padding:1px 5px;border-radius:3px;font-family:var(--mono);font-size:11px}
+
+.note{font-size:11px;color:var(--g400);margin-top:4px}
+.divider{height:1px;background:var(--g100);margin:14px 0}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sb">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="white"><rect x="0" y="0" width="4" height="4" rx="1"/><rect x="6" y="0" width="4" height="4" rx="1"/><rect x="0" y="6" width="4" height="4" rx="1"/><rect x="6" y="6" width="4" height="4" rx="1"/></svg>
+      </div>
+      <div class="logo-name">mailseq</div>
+      <span class="logo-ver">v3</span>
+    </div>
+
+    <div class="conn-block" onclick="ouvrirConnexion()">
+      <div class="conn-row"><div class="dot" id="statusDot"></div><div class="conn-label" id="statusLabel">non connecté</div></div>
+      <div class="conn-email" id="statusEmail">cliquer pour connecter Outlook →</div>
+    </div>
+
+    <nav>
+      <div class="nav-section">Vue d'ensemble</div>
+      <div class="nav-item active" onclick="aller('tableau',this)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="9.5" y="1.5" width="5" height="5" rx="1"/><rect x="1.5" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></svg>
+        tableau de bord
+      </div>
+      <div class="nav-item" onclick="aller('analytiques',this)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12l3-4 3 2 3-5 3 2"/></svg>
+        analytiques
+      </div>
+      <div class="nav-section">Prospection</div>
+      <div class="nav-item" onclick="aller('sequences',this)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h10"/></svg>
+        séquences
+        <span class="nav-badge" id="seqBadge">0</span>
+      </div>
+      <div class="nav-item" onclick="aller('campagnes',this)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="2"/><path d="M1 5l7 5 7-5"/></svg>
+        campagnes
+        <span class="nav-badge" id="campBadge">0</span>
+      </div>
+      <div class="nav-section">Paramètres</div>
+      <div class="nav-item" onclick="aller('signature',this)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12c2-4 8-6 12-2M2 12l2-6 4 4"/></svg>
+        signature
+      </div>
+      <div class="nav-item" onclick="aller('prospects',this)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="5" r="3"/><path d="M1 14.5c0-2.5 2-4 5-4s5 1.5 5 4"/><path d="M12 7v4M10 9h4"/></svg>
+        prospects
+      </div>
+      <div class="nav-item" onclick="aller('journaux',this)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M5 6h6M5 9h4"/></svg>
+        journaux d'envoi
+      </div>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- TABLEAU DE BORD -->
+    <div id="page-tableau" class="page">
+      <div class="topbar">
+        <div class="topbar-title">tableau de bord</div>
+        <button class="btn btn-ghost btn-sm" onclick="verifierReponses()">↻ synchroniser</button>
+        <button class="btn btn-ghost btn-sm" onclick="lancerDeclencheurs()">⚡ déclencher</button>
+        <button class="btn btn-primary btn-sm" onclick="aller('campagnes',null);afficherOngletCamp('nouvelle')">+ nouvelle campagne</button>
+      </div>
+      <div class="content" id="contenu-tableau"></div>
+    </div>
+
+    <!-- ANALYTIQUES -->
+    <div id="page-analytiques" class="page" style="display:none">
+      <div class="topbar">
+        <div class="topbar-title">analytiques</div>
+        <button class="btn btn-ghost btn-sm" onclick="afficherAnalytiques()">↻ actualiser</button>
+      </div>
+      <div class="content" id="contenu-analytiques"></div>
+    </div>
+
+    <!-- SÉQUENCES -->
+    <div id="page-sequences" class="page" style="display:none">
+      <div class="topbar">
+        <div class="topbar-title">séquences</div>
+        <button class="btn btn-primary btn-sm" onclick="ouvrirModalSeq(null)">+ nouvelle séquence</button>
+      </div>
+      <div class="content" id="contenu-sequences"></div>
+    </div>
+
+    <!-- CAMPAGNES -->
+    <div id="page-campagnes" class="page" style="display:none">
+      <div class="topbar"><div class="topbar-title">campagnes</div></div>
+      <div class="content">
+        <div class="tabs">
+          <div class="tab active" id="ctab-nouvelle" onclick="afficherOngletCamp('nouvelle')">nouvelle campagne</div>
+          <div class="tab" id="ctab-liste" onclick="afficherOngletCamp('liste')">toutes les campagnes (<span id="campCount">0</span>)</div>
+        </div>
+        <div id="panel-nouvelle-camp">
+          <div class="card">
+            <div class="card-header"><div><div class="card-title">01 — campagne</div><div class="card-sub">nom et séquence</div></div></div>
+            <div class="form-group"><label class="form-label">Nom de la campagne</label><input class="form-input form-mono" id="campNom" placeholder="prospection-q2-saas-paris"></div>
+            <div class="form-group"><label class="form-label">Séquence</label>
+              <select class="form-select" id="campSeq" onchange="aperçuSeq()"><option value="">— sélectionner —</option></select>
+            </div>
+            <div id="aperçuSeqRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:-4px"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div><div class="card-title">02 — prospects</div><div class="card-sub">import ou saisie directe</div></div></div>
+            <div class="tabs" style="margin-bottom:14px">
+              <div class="tab active" id="itab-fichier" onclick="afficherOngletImport('fichier')">Fichier Excel / CSV</div>
+              <div class="tab" id="itab-manuel" onclick="afficherOngletImport('manuel')">Saisie manuelle</div>
+            </div>
+            <div id="imp-fichier">
+              <div class="drop-zone" onclick="document.getElementById('fileInput').click()"
+                ondragover="event.preventDefault();this.classList.add('drag-over')"
+                ondragleave="this.classList.remove('drag-over')"
+                ondrop="gererDrop(event)">
+                <div style="font-size:20px;margin-bottom:8px">⬆</div>
+                <div style="font-size:13px;font-weight:500;color:var(--g700)">Glisser le fichier ou cliquer</div>
+                <div style="font-size:11px;margin-top:3px">Excel · CSV — colonnes : email, prénom, nom, société, poste</div>
+              </div>
+              <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="gererFichier(event)">
+              <div id="aperçuFichier"></div>
+            </div>
+            <div id="imp-manuel" style="display:none">
+              <div class="form-label">Coller les emails — séparés par ; ou virgule</div>
+              <div class="tag-area" onclick="document.getElementById('tagInput').focus()">
+                <div id="tagList" style="display:contents"></div>
+                <input id="tagInput" placeholder="nom@entreprise.com" onkeydown="gererTouche(event)" onpaste="gererColler(event)">
+              </div>
+              <div class="note" id="tagCount">0 email</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div><div class="card-title">03 — paramètres d'envoi</div><div class="card-sub">horaires et conformité RGPD</div></div></div>
+            <div class="grid-2">
+              <div class="form-group"><label class="form-label">Heure d'envoi</label><input type="time" class="form-input" id="campHeure" value="09:00"></div>
+              <div class="form-group"><label class="form-label">Délai anti-spam entre envois (secondes)</label><input type="number" class="form-input form-mono" id="campDelai" value="45" min="15"></div>
+              <div class="form-group"><label class="form-label">Jours actifs</label>
+                <select class="form-select" id="campJours"><option value="semaine">Lun → Ven uniquement</option><option value="tous">Tous les jours</option></select>
+              </div>
+              <div class="form-group"><label class="form-label">Fuseau horaire</label>
+                <select class="form-select" id="campFuseau"><option value="Europe/Paris">Europe/Paris</option><option value="Europe/London">Europe/London</option><option value="America/New_York">America/New_York</option></select>
+              </div>
+            </div>
+            <div class="info-box i-gray" style="display:flex;gap:8px;margin-bottom:0">
+              <span style="font-family:var(--mono);font-size:11px;flex-shrink:0">RGPD</span>
+              <span>Chaque email est envoyé individuellement — 1 appel SMTP par destinataire. Aucun envoi groupé ni copie cachée.</span>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:24px">
+            <button class="btn btn-ghost" onclick="reinitialiserFormCamp()">réinitialiser</button>
+            <button class="btn btn-primary" onclick="lancerCampagne()">→ lancer la campagne</button>
+          </div>
+        </div>
+        <div id="panel-liste-camp" style="display:none"><div id="contenu-liste-camp"></div></div>
+      </div>
+    </div>
+
+    <!-- SIGNATURE -->
+    <div id="page-signature" class="page" style="display:none">
+      <div class="topbar"><div class="topbar-title">signature email</div><button class="btn btn-primary btn-sm" onclick="sauvegarderSig()">enregistrer</button></div>
+      <div class="content">
+        <div class="card">
+          <div class="card-header"><div class="card-title">signature globale</div><div class="card-sub">Ajoutée automatiquement à chaque email envoyé</div></div>
+          <div class="info-box i-blue">La signature est injectée en bas de chaque email au format HTML.</div>
+          <label class="form-label">Éditeur de signature</label>
+          <div class="editor-wrap">
+            <div class="editor-toolbar">
+              <button class="tb-btn" onclick="cmd('bold')"><b>G</b></button>
+              <button class="tb-btn" onclick="cmd('italic')"><i>I</i></button>
+              <button class="tb-btn" onclick="cmd('underline')"><u>S</u></button>
+              <div class="tb-sep"></div>
+              <button class="tb-btn" onclick="ajouterLien('sig-body')">🔗</button>
+              <button class="tb-btn" onclick="ajouterImage('sig-body')">🖼</button>
+            </div>
+            <div id="sig-body" class="editor-body" contenteditable="true" data-placeholder="Maxence Desbois | La Poste Groupe | +33 6 00 00 00 00"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROSPECTS -->
+    <div id="page-prospects" class="page" style="display:none">
+      <div class="topbar">
+        <div class="topbar-title">prospects</div>
+        <select class="form-select" style="width:240px;height:28px;font-size:12px" id="prospCampSel" onchange="afficherProspects()">
+          <option value="">— sélectionner une campagne —</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="exporterCSV()">↓ exporter CSV</button>
+      </div>
+      <div class="content"><div class="card" style="padding:0;overflow:hidden"><div id="tableau-prospects"></div></div></div>
+    </div>
+
+    <!-- JOURNAUX -->
+    <div id="page-journaux" class="page" style="display:none">
+      <div class="topbar"><div class="topbar-title">journaux d'envoi</div><button class="btn btn-danger btn-sm" onclick="S.journaux=[];sauver();afficherJournaux()">vider</button></div>
+      <div class="content"><div class="card" id="contenu-journaux"></div></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ═══ MODAL CONNEXION ═══ -->
+<div class="overlay" id="modalConnexion" style="display:none">
+  <div class="modal">
+    <div class="modal-title">connexion outlook</div>
+    <div class="modal-sub">Microsoft Graph API — OAuth2 · vos emails partent depuis votre vrai compte Outlook</div>
+    <div id="conn-etape1">
+      <div style="background:var(--g50);border:1px solid var(--g200);border-radius:var(--rm);padding:14px;margin-bottom:16px">
+        <div class="setup-step"><div class="s-num">1</div><div class="s-text"><strong>Créer l'app Azure AD</strong> — <a href="https://portal.azure.com" target="_blank" style="color:var(--info)">portal.azure.com</a> → Inscriptions d'applications → Nouvelle inscription</div></div>
+        <div class="setup-step"><div class="s-num">2</div><div class="s-text"><strong>Authentification</strong> → Ajouter une plateforme → Application monopage → URI : <code id="uriRedir"></code></div></div>
+        <div class="setup-step"><div class="s-num">3</div><div class="s-text"><strong>Autorisations API</strong> → Microsoft Graph → Déléguées : <code>Mail.Send</code> <code>Mail.Read</code> <code>User.Read</code></div></div>
+        <div class="setup-step"><div class="s-num">4</div><div class="s-text">Copier l'<strong>ID d'application (client)</strong> depuis la page Vue d'ensemble → coller ci-dessous</div></div>
+      </div>
+      <div class="form-group"><label class="form-label">ID client</label><input class="form-input form-mono" id="clientIdInput" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>
+      <div class="form-group"><label class="form-label">ID de locataire (laisser "common" pour un compte Outlook personnel)</label><input class="form-input form-mono" id="tenantIdInput" placeholder="common" value="common"></div>
+    </div>
+    <div id="conn-etape2" style="display:none;text-align:center;padding:20px 0">
+      <div style="font-size:28px;margin-bottom:10px">🔐</div>
+      <div style="font-size:13px;font-weight:500;font-family:var(--mono)">authentification en cours…</div>
+      <div style="font-size:12px;color:var(--g400);margin-top:4px">Une fenêtre Microsoft va s'ouvrir pour autoriser l'accès</div>
+      <div class="progress" style="margin-top:14px"><div class="progress-fill" id="barreAuth" style="width:0%"></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fermerModal('modalConnexion')">annuler</button>
+      <button class="btn btn-primary" id="btnConnecter" onclick="connecter()">connecter →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL SÉQUENCE ═══ -->
+<div class="overlay" id="modalSeq" style="display:none">
+  <div class="modal modal-wide">
+    <div class="modal-title" id="titreModalSeq">nouvelle séquence</div>
+    <div class="modal-sub">définissez vos emails et les conditions de déclenchement des relances</div>
+    <div class="form-group"><label class="form-label">Nom de la séquence</label><input class="form-input form-mono" id="nomSeq" placeholder="saas-b2b-3-relances"></div>
+    <div style="margin-bottom:14px">
+      <div class="form-label" style="margin-bottom:5px">variables — cliquer dans un champ texte puis sur la variable</div>
+      <div>
+        <span class="var-pill" onclick="insererVar('{{prenom}}')">{{prenom}}</span>
+        <span class="var-pill" onclick="insererVar('{{nom}}')">{{nom}}</span>
+        <span class="var-pill" onclick="insererVar('{{societe}}')">{{societe}}</span>
+        <span class="var-pill" onclick="insererVar('{{poste}}')">{{poste}}</span>
+        <span class="var-pill" onclick="insererVar('{{email}}')">{{email}}</span>
+      </div>
+    </div>
+    <div class="seq-wrap" id="etapesSeq"></div>
+    <button class="btn btn-ghost" style="width:100%;margin-top:8px" onclick="ajouterEtape()">+ ajouter un email</button>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fermerModal('modalSeq')">annuler</button>
+      <button class="btn btn-primary" onclick="sauvegarderSeq()">enregistrer la séquence</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══ ÉTAT ═══
+const S = (() => {
+  const d = { sequences:[], campagnes:[], prospects:[], journaux:[], clientId:'', tenantId:'common', accessToken:null, userEmail:null, signature:'' }
+  try { return Object.assign(d, JSON.parse(localStorage.getItem('msp_v3')||'{}')) } catch { return d }
+})()
+
+function sauver() {
+  try { localStorage.setItem('msp_v3', JSON.stringify(S)) } catch {}
+  mettreAJourBadges()
+}
+
+const uid = () => Math.random().toString(36).slice(2)+Date.now().toString(36)
+const isoMaint = () => new Date().toISOString()
+const fmt = d => d ? new Date(d).toLocaleString('fr-FR') : '—'
+const fmtD = d => d ? new Date(d).toLocaleDateString('fr-FR') : '—'
+const pct = (n,d) => d ? Math.round(n/d*100) : 0
+
+function interp(texte, p) {
+  return (texte||'')
+    .replace(/\{\{prenom\}\}/gi, p.prenom||'')
+    .replace(/\{\{nom\}\}/gi, p.nom||'')
+    .replace(/\{\{societe\}\}/gi, p.societe||'')
+    .replace(/\{\{poste\}\}/gi, p.poste||'')
+    .replace(/\{\{email\}\}/gi, p.email||'')
+}
+
+function ajouterJournal(msg, type='info') {
+  S.journaux.unshift({ id:uid(), heure:new Date().toLocaleTimeString('fr-FR'), msg, type })
+  if(S.journaux.length>300) S.journaux.pop()
+  sauver()
+}
+
+function badge(libelle, cls, icone='') {
+  return `<span class="badge bg-${cls}">${icone?icone+' ':''}${libelle}</span>`
+}
+
+// ═══ NAVIGATION ═══
+function aller(id, el) {
+  document.querySelectorAll('.page').forEach(p=>p.style.display='none')
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'))
+  const pg=document.getElementById('page-'+id)
+  pg.style.display='flex'; pg.style.flexDirection='column'
+  if(el) el.classList.add('active')
+  if(id==='tableau') afficherTableau()
+  if(id==='analytiques') afficherAnalytiques()
+  if(id==='sequences') afficherSequences()
+  if(id==='campagnes') { remplirSelectSeq(); afficherListeCamp() }
+  if(id==='signature') chargerSig()
+  if(id==='prospects') { remplirSelectProspCamp(); afficherProspects() }
+  if(id==='journaux') afficherJournaux()
+}
+
+function mettreAJourBadges() {
+  document.getElementById('seqBadge').textContent = S.sequences.length
+  document.getElementById('campBadge').textContent = S.campagnes.length
+  document.getElementById('campCount').textContent = S.campagnes.length
+}
+
+function afficherOngletCamp(t) {
+  document.getElementById('ctab-nouvelle').classList.toggle('active', t==='nouvelle')
+  document.getElementById('ctab-liste').classList.toggle('active', t==='liste')
+  document.getElementById('panel-nouvelle-camp').style.display = t==='nouvelle'?'block':'none'
+  document.getElementById('panel-liste-camp').style.display = t==='liste'?'block':'none'
+  if(t==='liste') afficherListeCamp()
+}
+
+function afficherOngletImport(t) {
+  document.getElementById('itab-fichier').classList.toggle('active', t==='fichier')
+  document.getElementById('itab-manuel').classList.toggle('active', t==='manuel')
+  document.getElementById('imp-fichier').style.display = t==='fichier'?'block':'none'
+  document.getElementById('imp-manuel').style.display = t==='manuel'?'block':'none'
+}
+
+// ═══ CONNEXION OUTLOOK ═══
+function ouvrirConnexion() {
+  document.getElementById('uriRedir').textContent = window.location.href.split('?')[0].split('#')[0]
+  document.getElementById('clientIdInput').value = S.clientId||''
+  document.getElementById('tenantIdInput').value = S.tenantId||'common'
+  document.getElementById('conn-etape1').style.display='block'
+  document.getElementById('conn-etape2').style.display='none'
+  document.getElementById('btnConnecter').disabled=false
+  document.getElementById('modalConnexion').style.display='flex'
+}
+
+function fermerModal(id) { document.getElementById(id).style.display='none' }
+
+async function connecter() {
+  const cid=document.getElementById('clientIdInput').value.trim()
+  const tid=document.getElementById('tenantIdInput').value.trim()||'common'
+  if(!cid) { alert('Veuillez entrer votre ID client'); return }
+  S.clientId=cid; S.tenantId=tid; sauver()
+  document.getElementById('conn-etape1').style.display='none'
+  document.getElementById('conn-etape2').style.display='block'
+  document.getElementById('btnConnecter').disabled=true
+  const barre=document.getElementById('barreAuth')
+  let prog=0; const pi=setInterval(()=>{ prog=Math.min(prog+4,88); barre.style.width=prog+'%' },200)
+  const redir=encodeURIComponent(window.location.href.split('?')[0].split('#')[0])
+  const scopes=encodeURIComponent('openid profile email Mail.Send Mail.Read User.Read offline_access')
+  const url=`https://login.microsoftonline.com/${tid}/oauth2/v2.0/authorize?client_id=${cid}&response_type=token&redirect_uri=${redir}&scope=${scopes}&response_mode=fragment&nonce=${uid()}&prompt=select_account`
+  const popup=window.open(url,'msp_auth','width=520,height=660,menubar=no,toolbar=no')
+  const poll=setInterval(()=>{
+    try {
+      if(popup&&!popup.closed&&popup.location&&popup.location.hash){
+        const hash=popup.location.hash; popup.close()
+        clearInterval(poll);clearInterval(pi)
+        const params=new URLSearchParams(hash.substring(1))
+        const token=params.get('access_token')
+        if(token){barre.style.width='100%';recupererProfil(token)}
+        else{echec(params.get('error_description')||'annulé')}
+      }
+    } catch(e){}
+    if(popup&&popup.closed){clearInterval(poll);clearInterval(pi);echec('Fenêtre fermée')}
+  },400)
+}
+
+async function recupererProfil(token) {
+  try {
+    const r=await fetch('https://graph.microsoft.com/v1.0/me',{headers:{Authorization:'Bearer '+token}})
+    if(!r.ok) throw new Error()
+    const u=await r.json()
+    S.accessToken=token; S.userEmail=u.mail||u.userPrincipalName; sauver()
+    document.getElementById('statusDot').classList.add('on')
+    document.getElementById('statusLabel').textContent='outlook · connecté'
+    document.getElementById('statusEmail').textContent=S.userEmail
+    ajouterJournal(`Connecté : ${S.userEmail}`,'ok')
+    setTimeout(()=>fermerModal('modalConnexion'),800)
+    demarrerSynchroAuto()
+  } catch(e){echec(e.message)}
+}
+
+function echec(msg) {
+  document.getElementById('conn-etape1').style.display='block'
+  document.getElementById('conn-etape2').style.display='none'
+  document.getElementById('btnConnecter').disabled=false
+  ajouterJournal('Échec connexion : '+msg,'err')
+}
+
+if(S.accessToken&&S.userEmail){
+  document.getElementById('statusDot').classList.add('on')
+  document.getElementById('statusLabel').textContent='outlook · connecté'
+  document.getElementById('statusEmail').textContent=S.userEmail
+}
+
+// ═══ ÉDITEUR RICH TEXT ═══
+function cmd(c,v=null) { document.execCommand(c,false,v) }
+
+function outilsEditeur(id) {
+  return `
+    <button class="tb-btn" title="Gras" onclick="cmdSur('${id}','bold')"><b>G</b></button>
+    <button class="tb-btn" title="Italique" onclick="cmdSur('${id}','italic')"><i>I</i></button>
+    <button class="tb-btn" title="Souligné" onclick="cmdSur('${id}','underline')"><u>S</u></button>
+    <div class="tb-sep"></div>
+    <select class="tb-select" onchange="cmdSur('${id}','fontSize',this.value);this.value=''">
+      <option value="">Taille</option>
+      <option value="2">Petit</option>
+      <option value="3">Normal</option>
+      <option value="4">Grand</option>
+    </select>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" onclick="couleurSur('${id}')">🎨</button>
+    <button class="tb-btn" onclick="ajouterLien('${id}')">🔗</button>
+    <button class="tb-btn" onclick="ajouterImage('${id}')">🖼</button>
+    <button class="tb-btn" onclick="ajouterTableau('${id}')">⊞</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" onclick="cmdSur('${id}','insertUnorderedList')">≡</button>
+    <button class="tb-btn" onclick="cmdSur('${id}','justifyCenter')">↔</button>`
+}
+
+function cmdSur(id,c,v=null){ document.getElementById(id).focus(); document.execCommand(c,false,v) }
+function couleurSur(id){ const i=document.createElement('input');i.type='color';i.value='#2563eb';i.onchange=()=>{document.getElementById(id).focus();document.execCommand('foreColor',false,i.value)};i.click() }
+function ajouterLien(id){ const u=prompt('URL du lien :','https://');if(u){document.getElementById(id).focus();document.execCommand('createLink',false,u)} }
+function ajouterImage(id){ const u=prompt("URL de l'image :","https://");if(u){document.getElementById(id).focus();document.execCommand('insertImage',false,u)} }
+function ajouterTableau(id){
+  const c=parseInt(prompt('Colonnes :','3')||'3'), r=parseInt(prompt('Lignes :','2')||'2')
+  let h='<table style="border-collapse:collapse;width:100%">'
+  for(let i=0;i<r;i++){h+='<tr>';for(let j=0;j<c;j++)h+=`<td style="border:1px solid #e2e2e2;padding:6px 8px">${i===0?'Col '+(j+1):' '}</td>`;h+='</tr>'}
+  h+='</table><p></p>'
+  document.getElementById(id).focus(); document.execCommand('insertHTML',false,h)
+}
+
+// ═══ SIGNATURE ═══
+function chargerSig(){const el=document.getElementById('sig-body');if(el&&S.signature)el.innerHTML=S.signature}
+function sauvegarderSig(){S.signature=document.getElementById('sig-body')?.innerHTML||'';sauver();ajouterJournal('Signature enregistrée','ok');alert('Signature enregistrée ✓')}
+
+// ═══ SÉQUENCES ═══
+// STRUCTURE D'UNE ÉTAPE v3 :
+// { sujet, corps, condition: 'pas_de_reponse'|'non_lu'|'lu'|'delai', delaiJours, heureEnvoi, tagSiNonLu, tagSiLu }
+
+let seqIdEnEdition=null, etapesEnCours=[]
+let dernierEditeurFocus=null
+
+function ouvrirModalSeq(seqId) {
+  seqIdEnEdition=seqId
+  const seq=seqId?S.sequences.find(s=>s.id===seqId):null
+  document.getElementById('titreModalSeq').textContent=seq?'modifier la séquence':'nouvelle séquence'
+  document.getElementById('nomSeq').value=seq?.nom||''
+  etapesEnCours=seq?JSON.parse(JSON.stringify(seq.etapes)):[{sujet:'',corps:'',condition:'pas_de_reponse',delaiJours:2,heureEnvoi:'09:00',tagSiNonLu:false,tagSiLu:false}]
+  rendreEtapes()
+  document.getElementById('modalSeq').style.display='flex'
+}
+
+function insererVar(v) {
+  if(!dernierEditeurFocus) return
+  const el=document.getElementById(dernierEditeurFocus)
+  if(!el) return
+  if(el.tagName==='INPUT'){
+    const pos=el.selectionStart, cur=el.value
+    const idx=dernierEditeurFocus.split('-')[1]
+    el.value=cur.slice(0,pos)+v+cur.slice(el.selectionEnd)
+    etapesEnCours[+idx].sujet=el.value
+    el.focus();el.setSelectionRange(pos+v.length,pos+v.length)
+  } else {
+    el.focus();document.execCommand('insertText',false,v)
+  }
+}
+
+function ajouterEtape() {
+  etapesEnCours.push({sujet:'',corps:'',condition:'pas_de_reponse',delaiJours:3,heureEnvoi:'09:00',tagSiNonLu:false,tagSiLu:false})
+  rendreEtapes()
+}
+
+function supprimerEtape(i){etapesEnCours.splice(i,1);rendreEtapes()}
+
+const LABELS_COND = {
+  pas_de_reponse: 'Si pas de réponse',
+  non_lu: 'Si email non lu',
+  lu: 'Si email lu',
+  delai: 'Délai fixe'
+}
+
+function condSummary(etape) {
+  const c = LABELS_COND[etape.condition]||''
+  return `${c} · après ${etape.delaiJours}j · envoi à ${etape.heureEnvoi}`
+}
+
+function rendreEtapes() {
+  const el=document.getElementById('etapesSeq')
+  el.innerHTML=etapesEnCours.map((e,i)=>`
+    ${i>0?`
+    <div class="connector-row">
+      <div class="conn-line"></div>
+      <div class="conn-summary">${condSummary(e)}</div>
+      <div class="conn-line"></div>
+    </div>`:''}
+    <div class="email-step">
+      <div class="step-head">
+        <div class="step-num">${i+1}</div>
+        <div class="step-lbl">${i===0?'email_initial':`relance_${i}`}</div>
+        ${i>0?`<button class="btn btn-danger btn-sm" onclick="supprimerEtape(${i})">supprimer</button>`:''}
+      </div>
+
+      ${i>0?`
+      <!-- BLOC CONDITIONS v3 -->
+      <div class="trigger-block">
+        <div class="trigger-title">condition de déclenchement</div>
+        <div class="trigger-row">
+          <span class="trigger-label">Envoyer</span>
+          <select class="cond-select" onchange="etapesEnCours[${i}].condition=this.value;rendreEtapes()">
+            <option value="pas_de_reponse" ${e.condition==='pas_de_reponse'?'selected':''}>Si pas de réponse</option>
+            <option value="non_lu" ${e.condition==='non_lu'?'selected':''}>Si email non lu</option>
+            <option value="lu" ${e.condition==='lu'?'selected':''}>Si email lu (sans réponse)</option>
+            <option value="delai" ${e.condition==='delai'?'selected':''}>Délai fixe (toujours)</option>
+          </select>
+          <span class="trigger-label">après</span>
+          <input type="number" class="cond-num" min="1" max="90" value="${e.delaiJours}" onchange="etapesEnCours[${i}].delaiJours=+this.value;rendreEtapes()">
+          <span class="trigger-label">jour${e.delaiJours>1?'s':''}</span>
+        </div>
+        <div class="trigger-row">
+          <span class="trigger-label">Heure d'envoi</span>
+          <input type="time" class="cond-select" style="width:100px" value="${e.heureEnvoi}" onchange="etapesEnCours[${i}].heureEnvoi=this.value">
+        </div>
+        <div class="trigger-row" style="gap:16px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--g600)">
+            <input type="checkbox" ${e.tagSiNonLu?'checked':''} onchange="etapesEnCours[${i}].tagSiNonLu=this.checked">
+            Taguer <span class="badge bg-amber" style="font-size:10px">non lu</span> si pas d'ouverture détectée
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--g600)">
+            <input type="checkbox" ${e.tagSiLu?'checked':''} onchange="etapesEnCours[${i}].tagSiLu=this.checked">
+            Taguer <span class="badge bg-blue" style="font-size:10px">lu</span> si ouverture sans réponse
+          </label>
+        </div>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--g100);font-size:11px;color:var(--g400)">
+          ${e.condition==='pas_de_reponse'?'→ Déclenché si aucune réponse reçue dans le délai imparti':
+            e.condition==='non_lu'?'→ Déclenché uniquement si l\'email précédent n\'a pas été ouvert (détection via Graph API)':
+            e.condition==='lu'?'→ Déclenché si l\'email précédent a été ouvert mais sans réponse':
+            '→ Envoi systématique après le délai, quels que soient les comportements précédents'}
+        </div>
+      </div>`:''}
+
+      <div class="form-group">
+        <label class="form-label">Objet</label>
+        <input class="form-input" id="sf-${i}-sujet" value="${(e.sujet||'').replace(/"/g,'&quot;')}"
+          placeholder="Question rapide, {{prenom}}"
+          oninput="etapesEnCours[${i}].sujet=this.value"
+          onfocus="dernierEditeurFocus='sf-${i}-sujet'">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Corps du message</label>
+        <div class="editor-wrap">
+          <div class="editor-toolbar">${outilsEditeur('se-'+i)}</div>
+          <div id="se-${i}" class="editor-body" contenteditable="true"
+            data-placeholder="Bonjour {{prenom}},&#10;&#10;..."
+            onfocus="dernierEditeurFocus='se-${i}'"
+            oninput="etapesEnCours[${i}].corps=this.innerHTML">${e.corps||''}</div>
+          <div class="editor-footer"><span class="char-count">rich text · html supporté</span></div>
+        </div>
+      </div>
+    </div>`).join('')
+}
+
+function sauvegarderSeq() {
+  const nom=document.getElementById('nomSeq').value.trim()
+  if(!nom) { alert('Nommez la séquence'); return }
+  etapesEnCours.forEach((e,i)=>{ const ed=document.getElementById('se-'+i); if(ed) e.corps=ed.innerHTML })
+  if(etapesEnCours.some(e=>!e.sujet.trim()||!e.corps.replace(/<[^>]*>/g,'').trim())) { alert('Complétez tous les objets et corps des emails'); return }
+  if(seqIdEnEdition){
+    const s=S.sequences.find(x=>x.id===seqIdEnEdition); s.nom=nom; s.etapes=JSON.parse(JSON.stringify(etapesEnCours))
+  } else {
+    S.sequences.push({id:uid(),nom,etapes:JSON.parse(JSON.stringify(etapesEnCours)),creee:isoMaint()})
+  }
+  sauver(); fermerModal('modalSeq'); afficherSequences()
+  ajouterJournal(`Séquence enregistrée : ${nom}`,'ok')
+}
+
+function afficherSequences() {
+  const el=document.getElementById('contenu-sequences')
+  if(!S.sequences.length){el.innerHTML=`<div class="empty"><div class="empty-icon">🔗</div><div class="empty-title">aucune séquence</div><p>Créez une séquence avec des relances automatiques conditionnelles</p></div>`;return}
+  el.innerHTML=S.sequences.map(s=>`
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">${s.nom}</div><div class="card-sub">${s.etapes.length} email${s.etapes.length>1?'s':''} · ${fmtD(s.creee)}</div></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="ouvrirModalSeq('${s.id}')">modifier</button>
+          <button class="btn btn-danger btn-sm" onclick="supprimerSeq('${s.id}')">supprimer</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        ${s.etapes.map((et,i)=>`
+          <span style="display:flex;align-items:center;gap:5px">
+            ${i>0?`<span style="font-size:10px;color:var(--g400);font-family:var(--mono)">→ ${LABELS_COND[et.condition]||''} J+${et.delaiJours}</span>`:''}
+            <span style="background:var(--g50);border:1px solid var(--g200);border-radius:4px;padding:5px 10px">
+              <div style="font-family:var(--mono);font-size:11px;font-weight:500">${i===0?'initial':`relance_${i}`}</div>
+              <div style="font-size:11px;color:var(--g400)">${(et.sujet||'').slice(0,28)}${et.sujet?.length>28?'…':''}</div>
+              ${i>0&&(et.tagSiNonLu||et.tagSiLu)?`<div style="display:flex;gap:3px;margin-top:3px">
+                ${et.tagSiNonLu?badge('non lu','amber'):''}
+                ${et.tagSiLu?badge('lu','blue'):''}
+              </div>`:''}
+            </span>
+          </span>`).join('')}
+      </div>
+    </div>`).join('')
+}
+
+function supprimerSeq(id){if(!confirm('Supprimer cette séquence ?'))return;S.sequences=S.sequences.filter(s=>s.id!==id);sauver();afficherSequences()}
+
+// ═══ IMPORT ═══
+let prospectsImportes=[], tagsManuel=[]
+
+function gererDrop(e){e.preventDefault();e.currentTarget.classList.remove('drag-over');traiterFichier(e.dataTransfer.files[0])}
+function gererFichier(e){traiterFichier(e.target.files[0])}
+
+function trouverCle(row,candidats){const ks=Object.keys(row);for(const c of candidats){const k=ks.find(k=>k.toLowerCase().includes(c));if(k)return k}return null}
+
+function traiterFichier(file){
+  if(!file)return
+  const r=new FileReader()
+  r.onload=e=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'})
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''})
+      prospectsImportes=rows.map(r=>({
+        email:String(r[trouverCle(r,['email','mail','e-mail'])]||'').trim().toLowerCase(),
+        prenom:r[trouverCle(r,['prénom','prenom','first','firstname'])]||'',
+        nom:r[trouverCle(r,['nom','last','lastname','surname'])]||'',
+        societe:r[trouverCle(r,['société','societe','company','entreprise'])]||'',
+        poste:r[trouverCle(r,['poste','job','title','fonction'])]||''
+      })).filter(p=>p.email.includes('@'))
+      document.getElementById('aperçuFichier').innerHTML=`<div class="info-box i-green" style="margin-top:8px;margin-bottom:0">✓ ${prospectsImportes.length} contacts valides détectés</div>`
+    }catch(e){alert('Erreur lecture fichier : '+e.message)}
+  }
+  r.readAsArrayBuffer(file)
+}
+
+function gererTouche(e){if([',',';','Entrée','Enter'].includes(e.key)){e.preventDefault();ajouterTag(document.getElementById('tagInput').value);document.getElementById('tagInput').value=''}}
+function gererColler(e){e.preventDefault();e.clipboardData.getData('text').split(/[;,\n\r\s]+/).forEach(ajouterTag)}
+function ajouterTag(email){const e=(email||'').trim().toLowerCase();if(!e.includes('@')||tagsManuel.includes(e))return;tagsManuel.push(e);afficherTags()}
+function supprimerTag(email){tagsManuel=tagsManuel.filter(x=>x!==email);afficherTags()}
+function afficherTags(){
+  document.getElementById('tagList').innerHTML=tagsManuel.map(t=>`
+    <div class="prospect-tag"><div class="tag-av">${t[0].toUpperCase()}</div>${t}
+    <button class="tag-rm" onclick="supprimerTag('${t}')">×</button></div>`).join('')
+  document.getElementById('tagCount').textContent=tagsManuel.length+' email'+(tagsManuel.length>1?'s':'')
+}
+
+// ═══ CAMPAGNES ═══
+function remplirSelectSeq(){
+  const sel=document.getElementById('campSeq'),cur=sel.value
+  sel.innerHTML='<option value="">— sélectionner —</option>'+S.sequences.map(s=>`<option value="${s.id}">${s.nom} (${s.etapes.length} email${s.etapes.length>1?'s':''})</option>`).join('')
+  sel.value=cur; aperçuSeq()
+}
+
+function aperçuSeq(){
+  const sid=document.getElementById('campSeq').value
+  const seq=S.sequences.find(s=>s.id===sid)
+  const el=document.getElementById('aperçuSeqRow')
+  if(!seq){el.innerHTML='';return}
+  el.innerHTML=seq.etapes.map((et,i)=>`
+    <span style="display:flex;align-items:center;gap:4px">
+      ${i>0?`<span style="font-size:10px;color:var(--g400);font-family:var(--mono)">→ J+${et.delaiJours}</span>`:''}
+      <span class="badge bg-gray">${i===0?'initial':`relance_${i}`}</span>
+      ${i>0&&et.tagSiNonLu?badge('non lu','amber'):''}
+      ${i>0&&et.tagSiLu?badge('lu','blue'):''}
+    </span>`).join('')
+}
+
+async function lancerCampagne(){
+  const nom=document.getElementById('campNom').value.trim()
+  const seqId=document.getElementById('campSeq').value
+  const estFichier=document.getElementById('imp-fichier').style.display!=='none'
+  const tousP=estFichier?prospectsImportes:tagsManuel.map(e=>({email:e,prenom:'',nom:'',societe:'',poste:''}))
+  if(!nom) return alert('Nommez la campagne')
+  if(!seqId) return alert('Sélectionnez une séquence')
+  if(!tousP.length) return alert('Ajoutez des prospects')
+  if(!S.accessToken&&!confirm('Outlook non connecté. Mode démonstration (aucun vrai email envoyé) ?')) return
+
+  const delai=+document.getElementById('campDelai').value||45
+  const campId=uid()
+  S.campagnes.push({
+    id:campId, nom, seqId,
+    heureEnvoi:document.getElementById('campHeure').value,
+    fuseau:document.getElementById('campFuseau').value,
+    delai, joursOuvres:document.getElementById('campJours').value==='semaine',
+    statut:'active', creee:isoMaint()
+  })
+
+  tousP.forEach(p=>S.prospects.push({
+    id:uid(), campagneId:campId,
+    email:p.email, prenom:p.prenom||'', nom:p.nom||'', societe:p.societe||'', poste:p.poste||'',
+    etapeCourante:0, prochainEnvoi:isoMaint(),
+    repandu:false, termine:false,
+    ouvertures:0, tag:null, // tag: 'lu' | 'non_lu' | null
+    historique:[]
+  }))
+
+  sauver(); ajouterJournal(`Campagne "${nom}" lancée — ${tousP.length} prospects`,'ok')
+  const seq=S.sequences.find(s=>s.id===seqId)
+  envoyerLot(campId,seq,delai)
+  reinitialiserFormCamp(); afficherOngletCamp('liste'); afficherTableau()
+}
+
+function reinitialiserFormCamp(){
+  document.getElementById('campNom').value=''
+  document.getElementById('campSeq').value=''
+  document.getElementById('aperçuSeqRow').innerHTML=''
+  document.getElementById('aperçuFichier').innerHTML=''
+  prospectsImportes=[]; tagsManuel=[]; afficherTags()
+}
+
+// ═══ ENVOI ═══
+let envoyant=false
+
+async function envoyerUn(prospect, sujet, corpsHtml) {
+  const corpsComplet=corpsHtml+(S.signature?`<br><br><hr style="border:none;border-top:1px solid #eee;margin:16px 0">${S.signature}`:'')
+  if(!S.accessToken){ajouterJournal(`[DÉMO] → ${prospect.email} · "${sujet}"`,'ok');return true}
+  try{
+    const r=await fetch('https://graph.microsoft.com/v1.0/me/sendMail',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+S.accessToken,'Content-Type':'application/json'},
+      body:JSON.stringify({
+        message:{
+          subject:interp(sujet,prospect),
+          body:{contentType:'HTML',content:interp(corpsComplet,prospect)},
+          toRecipients:[{emailAddress:{address:prospect.email}}]
+        },
+        saveToSentItems:true
+      })
+    })
+    if(r.ok||r.status===202){ajouterJournal(`✓ ${prospect.email} · étape ${prospect.etapeCourante+1} · "${sujet}"`,'ok');return true}
+    if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session expirée — reconnectez-vous','err');return false}
+    const err=await r.json().catch(()=>({}))
+    ajouterJournal(`✗ ${prospect.email} · ${err.error?.message||r.status}`,'err');return false
+  }catch(e){ajouterJournal(`✗ ${prospect.email} · ${e.message}`,'err');return false}
+}
+
+async function envoyerLot(campId, seq, delaiMs) {
+  if(envoyant)return
+  envoyant=true
+  const maint=new Date()
+  const enAttente=S.prospects.filter(p=>p.campagneId===campId&&!p.termine&&!p.repandu&&p.prochainEnvoi&&new Date(p.prochainEnvoi)<=maint)
+
+  for(const p of enAttente){
+    if(p.etapeCourante>=seq.etapes.length){p.termine=true;continue}
+
+    // Vérifier condition avant d'envoyer
+    const etapeActuelle=seq.etapes[p.etapeCourante]
+    if(p.etapeCourante>0){
+      const cond=etapeActuelle.condition
+      if(cond==='non_lu'&&p.ouvertures>0){
+        // Lu → ne pas envoyer cette étape, passer
+        ajouterJournal(`⏭ ${p.email} — email lu, condition "non lu" non remplie, étape sautée`,'warn')
+        p.etapeCourante++
+        if(p.etapeCourante>=seq.etapes.length){p.termine=true;p.prochainEnvoi=null}
+        sauver();continue
+      }
+      if(cond==='lu'&&p.ouvertures===0){
+        // Non lu → ne pas envoyer
+        ajouterJournal(`⏭ ${p.email} — email non lu, condition "lu" non remplie, étape sautée`,'warn')
+        p.etapeCourante++
+        if(p.etapeCourante>=seq.etapes.length){p.termine=true;p.prochainEnvoi=null}
+        sauver();continue
+      }
+    }
+
+    const etape=seq.etapes[p.etapeCourante]
+    const ok=await envoyerUn(p,etape.sujet,etape.corps)
+    if(ok){
+      p.historique=p.historique||[]
+      p.historique.push({etape:p.etapeCourante,envoyeA:isoMaint(),condition:etape.condition})
+      p.etapeCourante++
+      if(p.etapeCourante<seq.etapes.length){
+        const prochaineEtape=seq.etapes[p.etapeCourante]
+        const nd=new Date()
+        nd.setDate(nd.getDate()+(prochaineEtape.delaiJours||2))
+        const camp=S.campagnes.find(c=>c.id===campId)
+        if(camp?.joursOuvres){const d=nd.getDay();if(d===0)nd.setDate(nd.getDate()+1);if(d===6)nd.setDate(nd.getDate()+2)}
+        // Appliquer l'heure d'envoi configurée
+        const [h,m]=(prochaineEtape.heureEnvoi||'09:00').split(':')
+        nd.setHours(+h,+m,0,0)
+        p.prochainEnvoi=nd.toISOString()
+      }else{p.termine=true;p.prochainEnvoi=null}
+    }
+    sauver()
+    if(enAttente.indexOf(p)<enAttente.length-1)await new Promise(r=>setTimeout(r,delaiMs*1000))
+  }
+  envoyant=false; mettreAJourBadges()
+}
+
+// ═══ VÉRIFICATION RÉPONSES + OUVERTURES (Tags) ═══
+let intervalSynchro=null
+
+function lancerDeclencheurs(){
+  const maint=new Date(); let n=0
+  for(const camp of S.campagnes){
+    if(camp.statut!=='active')continue
+    const seq=S.sequences.find(s=>s.id===camp.seqId)
+    if(!seq)continue
+    const enAtt=S.prospects.filter(p=>p.campagneId===camp.id&&!p.termine&&!p.repandu&&p.prochainEnvoi&&new Date(p.prochainEnvoi)<=maint)
+    if(enAtt.length){n+=enAtt.length;envoyerLot(camp.id,seq,camp.delai||45)}
+  }
+  ajouterJournal(n?`⚡ ${n} déclenchement${n>1?'s':''} lancé${n>1?'s':''}`:'Aucun déclenchement en attente',n?'warn':'info')
+  afficherTableau()
+}
+
+async function verifierReponses(){
+  if(!S.accessToken){ajouterJournal('[DÉMO] Synchronisation ignorée','warn');return}
+  ajouterJournal('Synchronisation boîte mail…','info')
+  try{
+    const depuis=new Date(Date.now()-7*24*3600*1000).toISOString()
+
+    // Réponses reçues (boîte de réception)
+    const r=await fetch(`https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages?$filter=receivedDateTime ge ${depuis}&$select=from,receivedDateTime,subject&$top=50`,
+      {headers:{Authorization:'Bearer '+S.accessToken}})
+    if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session expirée','err');return}
+    const data=await r.json()
+    let nRep=0
+    for(const msg of data.value||[]){
+      const from=(msg.from?.emailAddress?.address||'').toLowerCase()
+      const matches=S.prospects.filter(p=>p.email.toLowerCase()===from&&!p.repandu&&!p.termine)
+      for(const p of matches){p.repandu=true;p.termine=true;p.prochainEnvoi=null;p.tag='repandu';nRep++;ajouterJournal(`↩ Réponse de ${from} — séquence stoppée`,'warn')}
+    }
+
+    // Détection ouvertures via éléments envoyés (approximation Graph)
+    const sr=await fetch(`https://graph.microsoft.com/v1.0/me/mailFolders/SentItems/messages?$select=toRecipients,isRead,lastModifiedDateTime&$top=50&$filter=lastModifiedDateTime ge ${depuis}`,
+      {headers:{Authorization:'Bearer '+S.accessToken}})
+    const sdata=await sr.json()
+    let nOuv=0
+    for(const msg of sdata.value||[]){
+      if(!msg.isRead)continue
+      for(const rec of msg.toRecipients||[]){
+        const addr=(rec.emailAddress?.address||'').toLowerCase()
+        const p=S.prospects.find(x=>x.email.toLowerCase()===addr&&!x.repandu&&!x.termine)
+        if(p){
+          p.ouvertures=(p.ouvertures||0)+1
+          nOuv++
+          // Appliquer les tags selon configuration de la séquence
+          const camp=S.campagnes.find(c=>c.id===p.campagneId)
+          const seq=camp?S.sequences.find(s=>s.id===camp.seqId):null
+          if(seq&&p.etapeCourante<seq.etapes.length){
+            const etCour=seq.etapes[Math.max(0,p.etapeCourante-1)]
+            if(etCour?.tagSiLu&&!p.repandu) p.tag='lu'
+          }
+        }
+      }
+    }
+
+    // Taguer "non lu" ceux dont l'étape précédente n'a pas été ouverte
+    for(const camp of S.campagnes){
+      const seq=S.sequences.find(s=>s.id===camp.seqId)
+      if(!seq)continue
+      S.prospects.filter(p=>p.campagneId===camp.id&&!p.repandu&&!p.termine&&p.etapeCourante>0).forEach(p=>{
+        const etCour=seq.etapes[Math.max(0,p.etapeCourante-1)]
+        if(etCour?.tagSiNonLu&&p.ouvertures===0&&!p.tag) p.tag='non_lu'
+      })
+    }
+
+    if(!nRep&&!nOuv)ajouterJournal('Synchronisation OK — aucun événement','info')
+    else ajouterJournal(`Synchro : ${nRep} réponse${nRep>1?'s':''}, ${nOuv} ouverture${nOuv>1?'s':''}`,'ok')
+    sauver(); afficherTableau()
+  }catch(e){ajouterJournal('Erreur synchro : '+e.message,'err')}
+}
+
+function demarrerSynchroAuto(){
+  if(intervalSynchro)clearInterval(intervalSynchro)
+  intervalSynchro=setInterval(()=>{lancerDeclencheurs();verifierReponses()},5*60*1000)
+  ajouterJournal('Synchronisation automatique activée — toutes les 5 min','ok')
+}
+if(S.accessToken)setTimeout(demarrerSynchroAuto,2000)
+
+// ═══ FUNNEL DE CAMPAGNE ═══
+function rendreFunnel(campId) {
+  const camp=S.campagnes.find(c=>c.id===campId)
+  const seq=camp?S.sequences.find(s=>s.id===camp.seqId):null
+  const ps=S.prospects.filter(p=>p.campagneId===campId)
+  if(!camp||!seq||!ps.length) return ''
+
+  const etapesStats=seq.etapes.map((et,i)=>{
+    const envoyes=ps.filter(p=>p.etapeCourante>i||p.termine).length
+    return {label:i===0?'initial':`relance_${i}`, sujet:et.sujet, envoyes, condition:et.condition, delaiJours:et.delaiJours}
+  })
+  const max=etapesStats[0]?.envoyes||1
+  const repandus=ps.filter(p=>p.repandu).length
+  const termines=ps.filter(p=>p.termine&&!p.repandu).length
+  const nonLus=ps.filter(p=>p.tag==='non_lu').length
+  const lus=ps.filter(p=>p.tag==='lu').length
+  const txRep=pct(repandus,max)
+
+  const couleurs=['rgba(10,10,10,0.85)','rgba(10,10,10,0.55)','rgba(10,10,10,0.3)','rgba(10,10,10,0.15)']
+
+  return `
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--g100)">
+      ${etapesStats.map((et,i)=>`
+        ${i>0?`<div class="funnel-conn">
+          <div class="funnel-conn-line"></div>
+          <div class="funnel-conn-pill">${LABELS_COND[et.condition]||''} · J+${et.delaiJours} · ${max-et.envoyes} sortis</div>
+          <div class="funnel-conn-line"></div>
+        </div>`:''}
+        <div class="funnel-step-row">
+          <div class="funnel-label">${et.label}</div>
+          <div class="funnel-bar-wrap">
+            <div class="funnel-bar-bg" style="width:${pct(et.envoyes,max)}%;background:${couleurs[i]||couleurs[3]};opacity:0.12"></div>
+            <div class="funnel-bar-bg" style="width:${pct(et.envoyes,max)}%;background:${couleurs[i]||couleurs[3]}"></div>
+            <div class="funnel-bar-content">
+              <div style="font-family:var(--mono);font-size:11px;font-weight:500">${et.sujet.slice(0,32)}${et.sujet.length>32?'…':''}</div>
+              <div style="text-align:right">
+                <div style="font-size:16px;font-weight:500;font-family:var(--mono);letter-spacing:-0.5px">${et.envoyes}</div>
+                <div style="font-size:10px;color:var(--g400);font-family:var(--mono)">${pct(et.envoyes,max)}%</div>
+              </div>
+            </div>
+          </div>
+        </div>`).join('')}
+      <div class="funnel-outcomes">
+        <div class="funnel-outcome">
+          <div class="funnel-outcome-val" style="color:var(--ok)">${repandus}</div>
+          <div class="funnel-outcome-lbl">réponses</div>
+        </div>
+        <div class="funnel-outcome">
+          <div class="funnel-outcome-val" style="color:var(--warn)">${termines}</div>
+          <div class="funnel-outcome-lbl">terminés</div>
+        </div>
+        <div class="funnel-outcome">
+          <div class="funnel-outcome-val" style="color:var(--info)">${lus}</div>
+          <div class="funnel-outcome-lbl">tagués lu</div>
+        </div>
+        <div class="funnel-outcome">
+          <div class="funnel-outcome-val" style="color:var(--g500)">${nonLus}</div>
+          <div class="funnel-outcome-lbl">tagués non lu</div>
+        </div>
+        <div class="funnel-outcome">
+          <div class="funnel-outcome-val">${txRep}%</div>
+          <div class="funnel-outcome-lbl">taux de réponse</div>
+        </div>
+      </div>
+    </div>`
+}
+
+// ═══ TABLEAU DE BORD ═══
+function afficherTableau(){
+  const envoyes=S.prospects.filter(p=>p.etapeCourante>0).length
+  const repandus=S.prospects.filter(p=>p.repandu).length
+  const enAttente=S.prospects.filter(p=>!p.termine&&!p.repandu&&p.prochainEnvoi).length
+  const actives=S.campagnes.filter(c=>c.statut==='active').length
+  const el=document.getElementById('contenu-tableau')
+  el.innerHTML=`
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">emails envoyés</div><div class="stat-value">${envoyes}</div><div class="stat-sub">toutes campagnes</div></div>
+      <div class="stat-card"><div class="stat-label">réponses</div><div class="stat-value c-ok">${repandus}</div><div class="stat-sub">${envoyes?pct(repandus,envoyes)+'% taux de réponse':'—'}</div></div>
+      <div class="stat-card"><div class="stat-label">en attente</div><div class="stat-value c-warn">${enAttente}</div><div class="stat-sub">envois planifiés</div></div>
+      <div class="stat-card"><div class="stat-label">campagnes actives</div><div class="stat-value c-info">${actives}</div></div>
+    </div>
+    ${enAttente>0?`<div class="info-box i-amber">⚡ <strong>${enAttente}</strong> envoi${enAttente>1?'s':''} prêt${enAttente>1?'s':''} — <button class="btn btn-ghost btn-sm" style="margin-left:8px" onclick="lancerDeclencheurs()">déclencher maintenant</button></div>`:''}
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">campagnes récentes</div>
+        <button class="btn btn-ghost btn-sm" onclick="aller('campagnes',document.querySelector('[onclick*=campagnes]'))">voir tout →</button>
+      </div>
+      ${!S.campagnes.length?`<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">aucune campagne</div></div>`:
+      `<table><thead><tr><th>nom</th><th>envoyés</th><th>ouvertures</th><th>réponses</th><th>taux</th><th>statut</th></tr></thead><tbody>
+        ${S.campagnes.slice(0,6).map(c=>{
+          const ps=S.prospects.filter(p=>p.campagneId===c.id)
+          const env=ps.filter(p=>p.etapeCourante>0).length
+          const rep=ps.filter(p=>p.repandu).length
+          const ouv=ps.filter(p=>p.ouvertures>0).length
+          const tx=pct(rep,env)
+          return `<tr>
+            <td style="font-family:var(--mono);font-size:12px">${c.nom}</td>
+            <td>${env}</td><td>${ouv}</td><td>${rep}</td>
+            <td>${badge(tx+'%',tx>15?'green':tx>5?'amber':'gray')}</td>
+            <td>${badge(c.statut==='active'?'active':c.statut==='pause'?'pausée':'terminée',c.statut==='active'?'green':c.statut==='pause'?'amber':'gray')}</td>
+          </tr>`}).join('')}
+      </tbody></table>`}
+    </div>`
+}
+
+// ═══ LISTE CAMPAGNES ═══
+function afficherListeCamp(){
+  const el=document.getElementById('contenu-liste-camp')
+  if(!S.campagnes.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📂</div><div class="empty-title">aucune campagne</div></div>`;return}
+  el.innerHTML=S.campagnes.map(c=>{
+    const ps=S.prospects.filter(p=>p.campagneId===c.id)
+    const termine=ps.filter(p=>p.termine).length
+    const rep=ps.filter(p=>p.repandu).length
+    const env=ps.filter(p=>p.etapeCourante>0).length
+    return `<div class="camp-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between">
+        <div>
+          <div style="font-family:var(--mono);font-size:13px;font-weight:500">${c.nom}</div>
+          <div class="camp-meta"><span>${ps.length} prospects</span><span>envoyés <strong>${env}</strong></span><span>réponses <strong style="color:var(--ok)">${rep}</strong></span><span>${fmtD(c.creee)}</span></div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${badge(c.statut==='active'?'active':c.statut==='pause'?'pausée':'terminée',c.statut==='active'?'green':c.statut==='pause'?'amber':'gray')}
+          ${c.statut==='active'?`<button class="btn btn-ghost btn-sm" onclick="statutCamp('${c.id}','pause')">⏸ pause</button>`:''}
+          ${c.statut==='pause'?`<button class="btn btn-success btn-sm" onclick="statutCamp('${c.id}','active')">▶ reprendre</button>`:''}
+          <button class="btn btn-ghost btn-sm" onclick="voirProspects('${c.id}')">prospects</button>
+          <button class="btn btn-danger btn-sm" onclick="supprimerCamp('${c.id}')">✕</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+        <div class="progress" style="flex:1"><div class="progress-fill" style="width:${pct(termine,ps.length)}%"></div></div>
+        <span style="font-size:10px;color:var(--g400);font-family:var(--mono)">${pct(termine,ps.length)}%</span>
+      </div>
+      ${rendreFunnel(c.id)}
+    </div>`}).join('')
+}
+
+function statutCamp(id,s){const c=S.campagnes.find(c=>c.id===id);if(c){c.statut=s;sauver();afficherListeCamp();afficherTableau()}}
+function supprimerCamp(id){if(!confirm('Supprimer cette campagne et tous ses prospects ?'))return;S.campagnes=S.campagnes.filter(c=>c.id!==id);S.prospects=S.prospects.filter(p=>p.campagneId!==id);sauver();afficherListeCamp();afficherTableau()}
+function voirProspects(campId){aller('prospects',document.querySelector('[onclick*=prospects]'));document.getElementById('prospCampSel').value=campId;afficherProspects()}
+
+// ═══ PROSPECTS ═══
+function remplirSelectProspCamp(){
+  const sel=document.getElementById('prospCampSel'),cur=sel.value
+  sel.innerHTML='<option value="">— sélectionner une campagne —</option>'+S.campagnes.map(c=>`<option value="${c.id}">${c.nom}</option>`).join('')
+  sel.value=cur
+}
+
+function afficherProspects(){
+  const cid=document.getElementById('prospCampSel').value
+  const el=document.getElementById('tableau-prospects')
+  const ps=cid?S.prospects.filter(p=>p.campagneId===cid):[]
+  if(!cid){el.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-title">sélectionner une campagne</div></div>`;return}
+  if(!ps.length){el.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-title">aucun prospect</div></div>`;return}
+  el.innerHTML=`<table><thead><tr><th>email</th><th>prénom</th><th>société</th><th>étape</th><th>ouvertures</th><th>tag</th><th>statut</th></tr></thead><tbody>
+    ${ps.map(p=>`<tr>
+      <td style="font-family:var(--mono);font-size:11.5px">${p.email}</td>
+      <td>${p.prenom} ${p.nom}</td>
+      <td style="color:var(--g500)">${p.societe||'—'}</td>
+      <td>${badge('étape_'+p.etapeCourante,'gray')}</td>
+      <td style="font-family:var(--mono);font-size:11px">${p.ouvertures||0}</td>
+      <td>${p.tag==='lu'?badge('lu','blue'):p.tag==='non_lu'?badge('non lu','amber'):p.tag==='repandu'?badge('répondu','green'):'—'}</td>
+      <td>${p.repandu?badge('répondu','green'):p.termine?badge('terminé','gray'):badge('actif','amber')}</td>
+    </tr>`).join('')}
+  </tbody></table>`
+}
+
+function exporterCSV(){
+  const cid=document.getElementById('prospCampSel').value
+  const ps=cid?S.prospects.filter(p=>p.campagneId===cid):S.prospects
+  if(!ps.length){alert('Aucun prospect à exporter');return}
+  const rows=[['email','prénom','nom','société','poste','étape','ouvertures','tag','répondu','terminé']]
+  ps.forEach(p=>rows.push([p.email,p.prenom,p.nom,p.societe,p.poste,p.etapeCourante,p.ouvertures||0,p.tag||'',p.repandu?'oui':'non',p.termine?'oui':'non']))
+  const csv='\uFEFF'+rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n')
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='prospects_mailseq.csv';a.click()
+}
+
+// ═══ ANALYTIQUES ═══
+function afficherAnalytiques(){
+  const el=document.getElementById('contenu-analytiques')
+  if(!S.campagnes.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">aucune donnée</div><p>Lancez une campagne pour voir les analytiques</p></div>`;return}
+
+  const envTotal=S.prospects.filter(p=>p.etapeCourante>0).length
+  const repTotal=S.prospects.filter(p=>p.repandu).length
+  const ouvTotal=S.prospects.filter(p=>p.ouvertures>0).length
+  const txRep=pct(repTotal,envTotal), txOuv=pct(ouvTotal,envTotal)
+
+  const statsSeq=S.sequences.map(seq=>{
+    const camps=S.campagnes.filter(c=>c.seqId===seq.id)
+    const ps=S.prospects.filter(p=>camps.some(c=>c.id===p.campagneId))
+    const env=ps.filter(p=>p.etapeCourante>0).length
+    const rep=ps.filter(p=>p.repandu).length
+    const tx=pct(rep,env)
+    return {nom:seq.nom,env,rep,tx}
+  }).sort((a,b)=>b.tx-a.tx)
+
+  el.innerHTML=`
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">taux de réponse</div><div class="stat-value ${txRep>15?'c-ok':txRep>5?'c-warn':'c-err'}">${txRep}%</div><div class="stat-sub">${repTotal} / ${envTotal} envoyés</div></div>
+      <div class="stat-card"><div class="stat-label">taux d'ouverture</div><div class="stat-value c-info">${txOuv}%</div><div class="stat-sub">via Graph API</div></div>
+      <div class="stat-card"><div class="stat-label">tagués "lu"</div><div class="stat-value">${S.prospects.filter(p=>p.tag==='lu').length}</div><div class="stat-sub">ouverts sans réponse</div></div>
+      <div class="stat-card"><div class="stat-label">tagués "non lu"</div><div class="stat-value">${S.prospects.filter(p=>p.tag==='non_lu').length}</div><div class="stat-sub">non ouverts</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">taux de réponse par séquence</div></div>
+      <div class="chart-bar-wrap">
+        ${statsSeq.map(s=>`<div class="chart-bar-row">
+          <div class="chart-bar-label" title="${s.nom}">${s.nom}</div>
+          <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${s.tx}%;background:${s.tx>15?'var(--ok)':s.tx>5?'var(--warn)':'var(--err)'}"></div></div>
+          <div class="chart-bar-val">${s.tx}%</div>
+        </div>`).join('')}
+        ${!statsSeq.length?'<div style="color:var(--g400);font-size:12px;padding:8px 0">Aucune donnée</div>':''}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">performance par campagne</div></div>
+      ${S.campagnes.length?`<table><thead><tr><th>campagne</th><th>envoyés</th><th>ouvertures</th><th>réponses</th><th>taux</th><th>lus</th><th>non lus</th></tr></thead><tbody>
+        ${S.campagnes.map(c=>{
+          const ps=S.prospects.filter(p=>p.campagneId===c.id)
+          const env=ps.filter(p=>p.etapeCourante>0).length
+          const ouv=ps.filter(p=>p.ouvertures>0).length
+          const rep=ps.filter(p=>p.repandu).length
+          const lus=ps.filter(p=>p.tag==='lu').length
+          const nonLus=ps.filter(p=>p.tag==='non_lu').length
+          const tx=pct(rep,env)
+          return `<tr>
+            <td style="font-family:var(--mono);font-size:12px">${c.nom}</td>
+            <td>${env}</td><td>${ouv}</td><td>${rep}</td>
+            <td>${badge(tx+'%',tx>15?'green':tx>5?'amber':'gray')}</td>
+            <td>${badge(lus,'blue')}</td>
+            <td>${badge(nonLus,'amber')}</td>
+          </tr>`}).join('')}
+      </tbody></table>`:'<div style="color:var(--g400);font-size:12px">Aucune campagne</div>'}
+    </div>`
+}
+
+// ═══ JOURNAUX ═══
+function afficherJournaux(){
+  const el=document.getElementById('contenu-journaux')
+  if(!S.journaux.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">aucun journal</div></div>`;return}
+  el.innerHTML=S.journaux.map(l=>`<div class="log-entry">
+    <span class="log-time">${l.heure}</span>
+    <span class="log-${l.type==='ok'?'ok':l.type==='err'?'err':l.type==='warn'?'warn':'info'}">${l.type==='ok'?'✓':l.type==='err'?'✗':l.type==='warn'?'↩':'·'}</span>
+    <span class="log-info" style="flex:1">${l.msg}</span>
+  </div>`).join('')
+}
+
+// ═══ INIT ═══
+mettreAJourBadges()
+afficherTableau()
+</script>
+</body>
+</html>
