@@ -330,9 +330,14 @@ tr:hover td{background:var(--g50)}
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12c2-4 8-6 12-2M2 12l2-6 4 4"/></svg>
         signature
       </div>
+      <div class="nav-item" onclick="aller('listes',this)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="3" rx="1"/><rect x="1" y="7" width="14" height="3" rx="1"/><rect x="1" y="12" width="14" height="3" rx="1"/></svg>
+        listes prospects
+        <span class="nav-badge" id="listesBadge">0</span>
+      </div>
       <div class="nav-item" onclick="aller('prospects',this)">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="5" r="3"/><path d="M1 14.5c0-2.5 2-4 5-4s5 1.5 5 4"/><path d="M12 7v4M10 9h4"/></svg>
-        prospects
+        tous les prospects
       </div>
       <div class="nav-item" onclick="aller('journaux',this)">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M5 6h6M5 9h4"/></svg>
@@ -391,10 +396,23 @@ tr:hover td{background:var(--g50)}
             <div id="aperçuSeqRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:-4px"></div>
           </div>
           <div class="card">
-            <div class="card-header"><div><div class="card-title">02 — prospects</div><div class="card-sub">import ou saisie directe</div></div></div>
+            <div class="card-header"><div><div class="card-title">02 — prospects</div><div class="card-sub">choisir une liste ou importer directement</div></div></div>
             <div class="tabs" style="margin-bottom:14px">
-              <div class="tab active" id="itab-fichier" onclick="afficherOngletImport('fichier')">Fichier Excel / CSV</div>
+              <div class="tab active" id="itab-liste" onclick="afficherOngletImport('liste')">Depuis une liste</div>
+              <div class="tab" id="itab-fichier" onclick="afficherOngletImport('fichier')">Fichier Excel / CSV</div>
               <div class="tab" id="itab-manuel" onclick="afficherOngletImport('manuel')">Saisie manuelle</div>
+            </div>
+            <div id="imp-liste">
+              <div class="form-group">
+                <label class="form-label">Sélectionner une liste de prospects</label>
+                <select class="form-select" id="campListeSel" onchange="aperçuListeCamp()">
+                  <option value="">— choisir une liste —</option>
+                </select>
+              </div>
+              <div id="campListeApercu"></div>
+              <div style="margin-top:10px;font-size:12px;color:var(--g400)">
+                Pas encore de liste ? <button class="btn btn-ghost btn-sm" onclick="aller('listes',null);fermerModal('modalSeq')">→ Créer une liste</button>
+              </div>
             </div>
             <div id="imp-fichier">
               <div class="drop-zone" onclick="document.getElementById('fileInput').click()"
@@ -495,6 +513,15 @@ tr:hover td{background:var(--g50)}
       <div class="content"><div class="card" style="padding:0;overflow:hidden"><div id="tableau-prospects"></div></div></div>
     </div>
 
+    <!-- LISTES DE PROSPECTS -->
+    <div id="page-listes" class="page" style="display:none">
+      <div class="topbar">
+        <div class="topbar-title">listes de prospects</div>
+        <button class="btn btn-primary btn-sm" onclick="ouvrirModalListe(null)">+ nouvelle liste</button>
+      </div>
+      <div class="content" id="contenu-listes"></div>
+    </div>
+
     <!-- JOURNAUX -->
     <div id="page-journaux" class="page" style="display:none">
       <div class="topbar"><div class="topbar-title">journaux d'envoi</div><button class="btn btn-danger btn-sm" onclick="S.journaux=[];sauver();afficherJournaux()">vider</button></div>
@@ -569,10 +596,66 @@ tr:hover td{background:var(--g50)}
   </div>
 </div>
 
+<!-- ═══ MODAL LISTE ═══ -->
+<div class="overlay" id="modalListe" style="display:none">
+  <div class="modal" style="width:700px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+      <div class="modal-title" id="titreModalListe">nouvelle liste</div>
+      <button class="close-panel" onclick="fermerModal('modalListe')">×</button>
+    </div>
+    <div class="modal-sub">Nommez votre liste et importez vos contacts</div>
+    <div class="form-group">
+      <label class="form-label">Nom de la liste</label>
+      <input class="form-input" id="nomListe" placeholder="Ex: Startups Paris Q2, Grands comptes, Leads LinkedIn…">
+    </div>
+    <div class="tabs" style="margin-bottom:14px" id="listeImportTabs">
+      <div class="tab active" id="ltab-fichier" onclick="switchListeImport('fichier')">Excel / CSV</div>
+      <div class="tab" id="ltab-manuel" onclick="switchListeImport('manuel')">Saisie manuelle</div>
+    </div>
+    <div id="limp-fichier">
+      <div class="drop-zone" onclick="document.getElementById('listeFileInput').click()"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="handleListeDrop(event)">
+        <div style="font-size:20px;margin-bottom:8px">⬆</div>
+        <div style="font-size:13px;font-weight:500;color:var(--g700)">Glisser le fichier ou cliquer</div>
+        <div style="font-size:11px;margin-top:3px">Excel · CSV — colonnes : email, prénom, nom, société, poste</div>
+      </div>
+      <input type="file" id="listeFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleListeFile(event)">
+      <div id="listeFilePreview"></div>
+    </div>
+    <div id="limp-manuel" style="display:none">
+      <div class="form-label" style="margin-bottom:6px">Ajouter un contact</div>
+      <div style="background:var(--g50);border:1px solid var(--g100);border-radius:var(--rm);padding:14px;margin-bottom:12px">
+        <div class="grid-2" style="margin-bottom:8px">
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Email *</label><input class="form-input form-mono" id="lmanEmail" placeholder="nom@entreprise.com"></div>
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Prénom</label><input class="form-input" id="lmanPrenom" placeholder="Jean"></div>
+        </div>
+        <div class="grid-2" style="margin-bottom:8px">
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Nom</label><input class="form-input" id="lmanNom" placeholder="Dupont"></div>
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Société</label><input class="form-input" id="lmanSociete" placeholder="Acme Corp"></div>
+        </div>
+        <div class="grid-2" style="margin-bottom:10px">
+          <div class="form-group" style="margin-bottom:0"><label class="form-label">Poste</label><input class="form-input" id="lmanPoste" placeholder="Directeur Commercial"></div>
+          <div></div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="ajouterContactListe()">+ Ajouter</button>
+      </div>
+      <div id="listeManuelTable"></div>
+    </div>
+    <!-- Aperçu contacts importés -->
+    <div id="listeApercu" style="margin-top:10px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fermerModal('modalListe')">annuler</button>
+      <button class="btn btn-primary" onclick="sauvegarderListe()">✓ enregistrer la liste</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══ ÉTAT ═══
 const S = (() => {
-  const d = { sequences:[], campagnes:[], prospects:[], journaux:[], clientId:'', tenantId:'common', accessToken:null, userEmail:null, signature:'' }
+  const d = { sequences:[], campagnes:[], prospects:[], listes:[], journaux:[], clientId:'', tenantId:'common', accessToken:null, userEmail:null, signature:'' }
   try { return Object.assign(d, JSON.parse(localStorage.getItem('msp_v3')||'{}')) } catch { return d }
 })()
 
@@ -616,8 +699,9 @@ function aller(id, el) {
   if(id==='tableau') afficherTableau()
   if(id==='analytiques') afficherAnalytiques()
   if(id==='sequences') afficherSequences()
-  if(id==='campagnes') { remplirSelectSeq(); afficherListeCamp() }
+  if(id==='campagnes') { remplirSelectSeq(); remplirSelectListeCamp(); afficherListeCamp() }
   if(id==='signature') chargerSig()
+  if(id==='listes') { afficherListes() }
   if(id==='prospects') { remplirSelectProspCamp(); afficherProspects() }
   if(id==='journaux') afficherJournaux()
 }
@@ -626,6 +710,8 @@ function mettreAJourBadges() {
   document.getElementById('seqBadge').textContent = S.sequences.length
   document.getElementById('campBadge').textContent = S.campagnes.length
   document.getElementById('campCount').textContent = S.campagnes.length
+  const lb = document.getElementById('listesBadge')
+  if(lb) lb.textContent = S.listes.length
 }
 
 function afficherOngletCamp(t) {
@@ -637,10 +723,34 @@ function afficherOngletCamp(t) {
 }
 
 function afficherOngletImport(t) {
-  document.getElementById('itab-fichier').classList.toggle('active', t==='fichier')
-  document.getElementById('itab-manuel').classList.toggle('active', t==='manuel')
-  document.getElementById('imp-fichier').style.display = t==='fichier'?'block':'none'
-  document.getElementById('imp-manuel').style.display = t==='manuel'?'block':'none'
+  ;['liste','fichier','manuel'].forEach(tab => {
+    const btn = document.getElementById('itab-'+tab)
+    const panel = document.getElementById('imp-'+tab)
+    if(btn) btn.classList.toggle('active', t===tab)
+    if(panel) panel.style.display = t===tab ? 'block' : 'none'
+  })
+  if(t==='liste') remplirSelectListeCamp()
+}
+
+function remplirSelectListeCamp() {
+  const sel = document.getElementById('campListeSel')
+  if(!sel) return
+  sel.innerHTML = '<option value="">— choisir une liste —</option>' +
+    S.listes.map(l=>`<option value="${l.id}">${l.nom} (${l.contacts.length} contacts)</option>`).join('')
+  aperçuListeCamp()
+}
+
+function aperçuListeCamp() {
+  const lid = document.getElementById('campListeSel')?.value
+  const el = document.getElementById('campListeApercu')
+  if(!el) return
+  if(!lid) { el.innerHTML=''; return }
+  const liste = S.listes.find(l=>l.id===lid)
+  if(!liste) return
+  el.innerHTML = `<div class="info-box i-accent" style="margin-top:8px;margin-bottom:0">
+    ✓ <strong>${liste.contacts.length} contacts</strong> dans "${liste.nom}" —
+    aperçu : ${liste.contacts.slice(0,3).map(p=>p.prenom?p.prenom+' '+p.nom:p.email).join(', ')}${liste.contacts.length>3?' …':''}
+  </div>`
 }
 
 // ═══ CONNEXION OUTLOOK ═══
@@ -1207,6 +1317,169 @@ function getEtapesSeq(seq) {
 
 
 
+// ═══ LISTES DE PROSPECTS ═══
+let listeIdEnEdition = null
+let listeContactsTemp = []   // contacts en cours d'édition dans le modal
+let listeFileImport = []     // contacts importés via fichier dans le modal
+
+function ouvrirModalListe(listeId) {
+  listeIdEnEdition = listeId
+  const liste = listeId ? S.listes.find(l=>l.id===listeId) : null
+  document.getElementById('titreModalListe').textContent = liste ? 'modifier la liste' : 'nouvelle liste'
+  document.getElementById('nomListe').value = liste?.nom || ''
+  listeContactsTemp = liste ? JSON.parse(JSON.stringify(liste.contacts)) : []
+  listeFileImport = []
+  document.getElementById('listeFilePreview').innerHTML = ''
+  document.getElementById('listeManuelTable').innerHTML = ''
+  switchListeImport('fichier')
+  afficherApercuListeModal()
+  document.getElementById('modalListe').style.display = 'flex'
+}
+
+function switchListeImport(t) {
+  document.getElementById('ltab-fichier').classList.toggle('active', t==='fichier')
+  document.getElementById('ltab-manuel').classList.toggle('active', t==='manuel')
+  document.getElementById('limp-fichier').style.display = t==='fichier' ? 'block' : 'none'
+  document.getElementById('limp-manuel').style.display = t==='manuel' ? 'block' : 'none'
+}
+
+function handleListeDrop(e) {
+  e.preventDefault(); e.currentTarget.classList.remove('drag-over')
+  traiterFichierListe(e.dataTransfer.files[0])
+}
+function handleListeFile(e) { traiterFichierListe(e.target.files[0]) }
+
+function traiterFichierListe(file) {
+  if(!file) return
+  const reader = new FileReader()
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'})
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''})
+      listeFileImport = rows.map(r => ({
+        email: String(r[trouverCle(r,['email','mail','e-mail'])]||'').trim().toLowerCase(),
+        prenom: r[trouverCle(r,['prénom','prenom','first','firstname'])]||'',
+        nom: r[trouverCle(r,['nom','last','lastname','surname'])]||'',
+        societe: r[trouverCle(r,['société','societe','company','entreprise'])]||'',
+        poste: r[trouverCle(r,['poste','job','title','fonction'])]||''
+      })).filter(p=>p.email.includes('@'))
+      document.getElementById('listeFilePreview').innerHTML =
+        `<div class="info-box i-green" style="margin-top:8px;margin-bottom:0">✓ ${listeFileImport.length} contacts valides détectés</div>`
+      afficherApercuListeModal()
+    } catch(e) { alert('Erreur lecture fichier : '+e.message) }
+  }
+  reader.readAsArrayBuffer(file)
+}
+
+function ajouterContactListe() {
+  const email = document.getElementById('lmanEmail').value.trim().toLowerCase()
+  if(!email || !email.includes('@')) { alert('Email invalide'); return }
+  if(listeContactsTemp.find(p=>p.email===email)) { alert('Email déjà dans la liste'); return }
+  listeContactsTemp.push({
+    email,
+    prenom: document.getElementById('lmanPrenom').value.trim(),
+    nom: document.getElementById('lmanNom').value.trim(),
+    societe: document.getElementById('lmanSociete').value.trim(),
+    poste: document.getElementById('lmanPoste').value.trim()
+  })
+  ;['lmanEmail','lmanPrenom','lmanNom','lmanSociete','lmanPoste'].forEach(id=>document.getElementById(id).value='')
+  document.getElementById('lmanEmail').focus()
+  afficherApercuListeModal()
+}
+
+function afficherApercuListeModal() {
+  const tous = [...listeContactsTemp, ...listeFileImport]
+  const el = document.getElementById('listeApercu')
+  if(!tous.length) { el.innerHTML=''; return }
+  // Dédoublonner
+  const uniq = tous.filter((p,i,a)=>a.findIndex(x=>x.email===p.email)===i)
+  el.innerHTML = `<div style="margin-top:8px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div class="form-label" style="margin-bottom:0">${uniq.length} contact${uniq.length>1?'s':''} dans cette liste</div>
+    </div>
+    <div style="max-height:220px;overflow-y:auto;border:1px solid var(--g100);border-radius:var(--rm);overflow:hidden">
+      <table><thead><tr><th>Email</th><th>Prénom</th><th>Nom</th><th>Société</th><th>Poste</th><th></th></tr></thead>
+      <tbody>${uniq.map(p=>`<tr>
+        <td style="font-family:var(--mono);font-size:11px">${p.email}</td>
+        <td>${p.prenom||'—'}</td><td>${p.nom||'—'}</td>
+        <td>${p.societe||'—'}</td><td>${p.poste||'—'}</td>
+        <td><button class="btn btn-xs btn-danger" onclick="retirerContactListe('${p.email}')">✕</button></td>
+      </tr>`).join('')}</tbody></table>
+    </div>
+  </div>`
+}
+
+function retirerContactListe(email) {
+  listeContactsTemp = listeContactsTemp.filter(p=>p.email!==email)
+  listeFileImport = listeFileImport.filter(p=>p.email!==email)
+  afficherApercuListeModal()
+}
+
+function sauvegarderListe() {
+  const nom = document.getElementById('nomListe').value.trim()
+  if(!nom) { alert('Nommez la liste'); return }
+  const tous = [...listeContactsTemp, ...listeFileImport]
+  const contacts = tous.filter((p,i,a)=>a.findIndex(x=>x.email===p.email)===i)
+  if(!contacts.length) { alert('Ajoutez au moins un contact'); return }
+  const liste = { id: listeIdEnEdition||uid(), nom, contacts, creee: isoMaint(), modifiee: isoMaint() }
+  if(listeIdEnEdition) {
+    const idx = S.listes.findIndex(l=>l.id===listeIdEnEdition)
+    if(idx>=0) S.listes[idx] = liste
+  } else {
+    S.listes.push(liste)
+  }
+  sauver(); fermerModal('modalListe'); afficherListes()
+  ajouterJournal(`Liste "${nom}" enregistrée — ${contacts.length} contacts`, 'ok')
+}
+
+function afficherListes() {
+  const el = document.getElementById('contenu-listes')
+  if(!S.listes.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">aucune liste</div><p>Créez des listes de prospects réutilisables à associer à vos campagnes</p></div>`
+    return
+  }
+  el.innerHTML = S.listes.map(l => {
+    const campagnesAssoc = S.campagnes.filter(c=>c.listeId===l.id)
+    return `<div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">${l.nom}</div>
+          <div class="card-sub">${l.contacts.length} contact${l.contacts.length>1?'s':''} · créée ${fmtD(l.creee)}
+            ${campagnesAssoc.length?` · utilisée dans ${campagnesAssoc.length} campagne${campagnesAssoc.length>1?'s':''}`:' · non utilisée'}
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="ouvrirModalListe('${l.id}')">✏ modifier</button>
+          <button class="btn btn-danger btn-sm" onclick="supprimerListe('${l.id}')">supprimer</button>
+        </div>
+      </div>
+      <!-- Aperçu contacts -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+        ${l.contacts.slice(0,8).map(p=>`
+          <div style="display:flex;align-items:center;gap:5px;background:var(--g50);border:1px solid var(--g100);border-radius:20px;padding:3px 10px 3px 5px;font-size:11px">
+            <div style="width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">${(p.prenom||p.email)[0].toUpperCase()}</div>
+            <span style="color:var(--g600)">${p.prenom?p.prenom+' '+p.nom:p.email}</span>
+            ${p.societe?`<span style="color:var(--g400)">· ${p.societe}</span>`:''}
+          </div>`).join('')}
+        ${l.contacts.length>8?`<div style="display:flex;align-items:center;padding:3px 10px;background:var(--g50);border:1px solid var(--g100);border-radius:20px;font-size:11px;color:var(--g400)">+${l.contacts.length-8} autres</div>`:''}
+      </div>
+      <!-- Campagnes associées -->
+      ${campagnesAssoc.length?`<div style="font-size:11px;color:var(--g400)">
+        Utilisée dans : ${campagnesAssoc.map(c=>`<span class="badge bg-accent" style="margin-right:4px">${c.nom}</span>`).join('')}
+      </div>`:''}
+    </div>`
+  }).join('')
+  // Update badge
+  const badge = document.getElementById('listesBadge')
+  if(badge) badge.textContent = S.listes.length
+}
+
+function supprimerListe(id) {
+  if(!confirm('Supprimer cette liste ? Les campagnes associées ne seront pas affectées.')) return
+  S.listes = S.listes.filter(l=>l.id!==id)
+  sauver(); afficherListes()
+}
+
 // ═══ IMPORT ═══
 let prospectsImportes=[], tagsManuel=[]
 
@@ -1327,8 +1600,19 @@ function aperçuSeq(){
 async function lancerCampagne(){
   const nom=document.getElementById('campNom').value.trim()
   const seqId=document.getElementById('campSeq').value
-  const estFichier=document.getElementById('imp-fichier').style.display!=='none'
-  const tousP=estFichier?prospectsImportes:tagsManuel
+  const activeTab = ['liste','fichier','manuel'].find(t=>{const el=document.getElementById('imp-'+t);return el&&el.style.display!=='none'}) || 'fichier'
+  let tousP = []
+  if(activeTab==='liste') {
+    const lid = document.getElementById('campListeSel')?.value
+    const liste = lid ? S.listes.find(l=>l.id===lid) : null
+    if(!liste) return alert('Sélectionnez une liste de prospects')
+    tousP = liste.contacts
+    S.campagnes[S.campagnes.length] // will be pushed below
+  } else if(activeTab==='fichier') {
+    tousP = prospectsImportes
+  } else {
+    tousP = tagsManuel
+  }
   if(!nom) return alert('Nommez la campagne')
   if(!seqId) return alert('Sélectionnez une séquence')
   if(!tousP.length) return alert('Ajoutez des prospects')
@@ -1336,8 +1620,9 @@ async function lancerCampagne(){
 
   const delai=+document.getElementById('campDelai').value||45
   const campId=uid()
+  const listeIdCamp = document.getElementById('campListeSel')?.value || null
   S.campagnes.push({
-    id:campId, nom, seqId,
+    id:campId, nom, seqId, listeId:listeIdCamp,
     heureEnvoi:document.getElementById('campHeure').value,
     fuseau:document.getElementById('campFuseau').value,
     delai, joursOuvres:document.getElementById('campJours').value==='semaine',
@@ -1365,7 +1650,7 @@ function reinitialiserFormCamp(){
   document.getElementById('campSeq').value=''
   document.getElementById('aperçuSeqRow').innerHTML=''
   document.getElementById('aperçuFichier').innerHTML=''
-  prospectsImportes=[]; tagsManuel=[]; afficherTags(); const ml=document.getElementById('manProspectsList'); if(ml)ml.innerHTML=''
+  prospectsImportes=[]; tagsManuel=[]; afficherTags(); const ml=document.getElementById('manProspectsList'); if(ml)ml.innerHTML=''; const ls=document.getElementById('campListeSel'); if(ls)ls.value=''; const la=document.getElementById('campListeApercu'); if(la)la.innerHTML=''
 }
 
 // ═══ ENVOI ═══
