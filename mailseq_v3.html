@@ -354,7 +354,7 @@ tr:hover td{background:var(--g50)}
       <div class="topbar">
         <div class="topbar-title">tableau de bord</div>
         <button class="btn btn-ghost btn-sm" onclick="verifierReponses()">↻ synchroniser</button>
-        <button class="btn btn-ghost btn-sm" onclick="lancerDeclencheurs()">⚡ déclencher</button>
+  
         <button class="btn btn-primary btn-sm" onclick="aller('campagnes',null);afficherOngletCamp('nouvelle')">+ nouvelle campagne</button>
       </div>
       <div class="content" id="contenu-tableau"></div>
@@ -1991,7 +1991,7 @@ function afficherTableau(){
       <div class="stat-card"><div class="stat-label">en attente</div><div class="stat-value c-warn">${enAttente}</div><div class="stat-sub">envois planifiés</div></div>
       <div class="stat-card"><div class="stat-label">campagnes actives</div><div class="stat-value c-info">${actives}</div></div>
     </div>
-    ${enAttente>0?`<div class="info-box i-amber">⚡ <strong>${enAttente}</strong> envoi${enAttente>1?'s':''} prêt${enAttente>1?'s':''} — <button class="btn btn-ghost btn-sm" style="margin-left:8px" onclick="lancerDeclencheurs()">déclencher maintenant</button></div>`:''}
+    ${enAttente>0?`<div class="info-box i-green">✓ <strong>${enAttente}</strong> envoi${enAttente>1?'s':''} planifié${enAttente>1?'s':''} — partira automatiquement à la prochaine ouverture</div>`:''}
     <div class="card">
       <div class="card-header">
         <div class="card-title">campagnes récentes</div>
