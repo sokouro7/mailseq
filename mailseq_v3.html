@@ -8,241 +8,277 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --w:#fff;--off:#fafafa;--g50:#f5f5f5;--g100:#ebebeb;--g200:#e2e2e2;
-  --g300:#c8c8c8;--g400:#a0a0a0;--g500:#737373;--g600:#525252;
-  --g700:#404040;--g800:#262626;--g900:#171717;--blk:#0a0a0a;
-  --ok:#16a34a;--ok-bg:#f0fdf4;--ok-b:#bbf7d0;
-  --warn:#d97706;--warn-bg:#fffbeb;--warn-b:#fde68a;
-  --err:#dc2626;--err-bg:#fef2f2;--err-b:#fecaca;
-  --info:#2563eb;--info-bg:#eff6ff;--info-b:#bfdbfe;
-  --sans:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;
-  --r:4px;--rm:6px;
+  --bg:#F8F9FC;--w:#FFFFFF;--g50:#F4F5F8;--g100:#ECEEF2;--g200:#DDE0E8;
+  --g300:#C1C7D4;--g400:#8C95A8;--g500:#5E6B82;--g600:#3D4A60;
+  --g700:#2A3347;--g800:#1A2236;--g900:#0F1623;
+  --accent:#6366F1;--accent-light:#EEF2FF;--accent-mid:#C7D2FE;
+  --green:#10B981;--green-bg:#ECFDF5;--green-b:#A7F3D0;
+  --amber:#F59E0B;--amber-bg:#FFFBEB;--amber-b:#FDE68A;
+  --red:#EF4444;--red-bg:#FEF2F2;--red-b:#FECACA;
+  --blue:#3B82F6;--blue-bg:#EFF6FF;--blue-b:#BFDBFE;
+  --sans:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;
+  --r:6px;--rm:10px;--rl:14px;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,.08),0 2px 4px rgba(0,0,0,.04);
 }
 html,body{height:100%;overflow:hidden}
-body{font-family:var(--sans);background:var(--w);color:var(--g900);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
-::-webkit-scrollbar{width:4px;height:4px}
-::-webkit-scrollbar-thumb{background:var(--g200);border-radius:4px}
+body{font-family:var(--sans);background:var(--bg);color:var(--g800);font-size:13px;line-height:1.55;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--g200);border-radius:10px}
+::-webkit-scrollbar-track{background:transparent}
 .app{display:flex;height:100vh;overflow:hidden}
 
-/* SIDEBAR */
-.sb{width:210px;min-width:210px;background:var(--off);border-right:1px solid var(--g200);display:flex;flex-direction:column}
-.logo{height:48px;display:flex;align-items:center;padding:0 14px;border-bottom:1px solid var(--g200);gap:8px;flex-shrink:0}
-.logo-mark{width:18px;height:18px;background:var(--blk);border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.logo-ver{font-family:var(--mono);font-size:9px;color:var(--g400);background:var(--g100);padding:1px 5px;border-radius:3px}
-.logo-name{font-family:var(--mono);font-size:11.5px;font-weight:500}
-.conn-block{margin:8px;padding:8px 10px;background:var(--w);border:1px solid var(--g200);border-radius:var(--r);cursor:pointer;transition:border-color .15s}
-.conn-block:hover{border-color:var(--g400)}
-.conn-row{display:flex;align-items:center;gap:6px}
-.dot{width:6px;height:6px;border-radius:50%;background:var(--err);flex-shrink:0;transition:background .3s}
-.dot.on{background:var(--ok)}
-.conn-label{font-size:11px;color:var(--g600);font-weight:500;font-family:var(--mono)}
-.conn-email{font-size:10px;color:var(--g400);margin-top:3px;font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-nav{flex:1;overflow-y:auto;padding:4px 0}
-.nav-section{padding:14px 14px 4px;font-size:9.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);font-weight:500;font-family:var(--mono)}
-.nav-item{display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;font-size:12.5px;color:var(--g500);transition:all .1s;user-select:none;position:relative}
-.nav-item:hover{color:var(--g900);background:var(--g100)}
-.nav-item.active{color:var(--g900);background:var(--g100);font-weight:500}
-.nav-item.active::before{content:'';position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--blk);border-radius:0 2px 2px 0}
-.nav-badge{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--g400);background:var(--g100);padding:1px 5px;border-radius:10px;border:1px solid var(--g200)}
+/* ── SIDEBAR ── */
+.sb{width:220px;min-width:220px;background:var(--w);border-right:1px solid var(--g100);display:flex;flex-direction:column;box-shadow:1px 0 0 var(--g100)}
+.logo{height:56px;display:flex;align-items:center;padding:0 20px;border-bottom:1px solid var(--g100);gap:10px;flex-shrink:0}
+.logo-mark{width:28px;height:28px;background:linear-gradient(135deg,#6366F1,#8B5CF6);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(99,102,241,.3)}
+.logo-mark svg{width:14px;height:14px}
+.logo-text{display:flex;flex-direction:column}
+.logo-name{font-size:13px;font-weight:600;color:var(--g900);letter-spacing:-.3px}
+.logo-ver{font-size:10px;color:var(--g400);font-family:var(--mono);margin-top:1px}
+.conn-block{margin:12px;padding:10px 12px;background:var(--g50);border:1px solid var(--g100);border-radius:var(--rm);cursor:pointer;transition:all .2s}
+.conn-block:hover{background:var(--w);border-color:var(--g200);box-shadow:var(--shadow)}
+.conn-row{display:flex;align-items:center;gap:7px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0;transition:background .3s}
+.dot.on{background:var(--green);box-shadow:0 0 0 3px var(--green-bg)}
+.conn-label{font-size:11.5px;color:var(--g600);font-weight:500}
+.conn-email{font-size:10.5px;color:var(--g400);margin-top:3px;font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+nav{flex:1;overflow-y:auto;padding:8px 0}
+.nav-section{padding:16px 16px 6px;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--g300);font-weight:600}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 14px;margin:1px 8px;cursor:pointer;font-size:13px;color:var(--g500);transition:all .15s;user-select:none;border-radius:var(--r);position:relative}
+.nav-item:hover{color:var(--g800);background:var(--g50)}
+.nav-item.active{color:var(--accent);background:var(--accent-light);font-weight:500}
+.nav-item.active .nav-icon{color:var(--accent)}
+.nav-icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
+.nav-item.active .nav-icon,.nav-item:hover .nav-icon{opacity:1}
+.nav-badge{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--accent);background:var(--accent-light);padding:2px 7px;border-radius:20px;border:1px solid var(--accent-mid);font-weight:500}
 
-/* MAIN */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.topbar{height:48px;border-bottom:1px solid var(--g200);display:flex;align-items:center;padding:0 20px;gap:8px;flex-shrink:0;background:var(--w)}
-.topbar-title{font-size:12.5px;font-weight:500;flex:1;font-family:var(--mono)}
-.content{flex:1;overflow-y:auto;padding:20px}
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.topbar{height:56px;border-bottom:1px solid var(--g100);display:flex;align-items:center;padding:0 24px;gap:10px;flex-shrink:0;background:var(--w);box-shadow:0 1px 0 var(--g100)}
+.topbar-title{font-size:15px;font-weight:600;flex:1;color:var(--g900);letter-spacing:-.3px}
+.content{flex:1;overflow-y:auto;padding:24px}
 
-/* BUTTONS */
-.btn{display:inline-flex;align-items:center;gap:5px;padding:0 11px;height:30px;border-radius:var(--r);font-size:12px;font-family:var(--sans);font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .12s;white-space:nowrap}
-.btn-primary{background:var(--blk);color:var(--w);border-color:var(--blk)}
-.btn-primary:hover{background:var(--g800)}
-.btn-ghost{background:transparent;color:var(--g700);border-color:var(--g200)}
-.btn-ghost:hover{background:var(--g50);border-color:var(--g300);color:var(--g900)}
-.btn-danger{color:var(--err);border-color:var(--err-b);background:transparent}
-.btn-danger:hover{background:var(--err-bg)}
-.btn-success{color:var(--ok);border-color:var(--ok-b);background:transparent}
-.btn-success:hover{background:var(--ok-bg)}
-.btn-sm{height:26px;padding:0 10px;font-size:11px}
-.btn-xs{height:22px;padding:0 8px;font-size:10px;border-radius:3px}
-.btn:disabled{opacity:.4;cursor:not-allowed}
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:0 14px;height:34px;border-radius:var(--r);font-size:13px;font-family:var(--sans);font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap;letter-spacing:-.1px}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 2px 4px rgba(99,102,241,.25)}
+.btn-primary:hover{background:#4F46E5;box-shadow:0 4px 8px rgba(99,102,241,.3)}
+.btn-ghost{background:var(--w);color:var(--g600);border-color:var(--g200);box-shadow:var(--shadow)}
+.btn-ghost:hover{background:var(--g50);border-color:var(--g300);color:var(--g800)}
+.btn-danger{color:var(--red);border-color:var(--red-b);background:var(--red-bg)}
+.btn-danger:hover{background:#fee2e2;border-color:#fca5a5}
+.btn-success{color:var(--green);border-color:var(--green-b);background:var(--green-bg)}
+.btn-success:hover{background:#d1fae5}
+.btn-sm{height:28px;padding:0 11px;font-size:12px}
+.btn-xs{height:24px;padding:0 8px;font-size:11px;border-radius:4px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
 
-/* CARDS */
-.card{background:var(--w);border:1px solid var(--g200);border-radius:var(--rm);padding:16px 18px;margin-bottom:10px}
-.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.card-title{font-size:11.5px;font-weight:500;color:var(--g900);font-family:var(--mono)}
-.card-sub{font-size:11px;color:var(--g400);margin-top:2px}
+/* ── CARDS ── */
+.card{background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px;margin-bottom:12px;box-shadow:var(--shadow)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:13px;font-weight:600;color:var(--g900);letter-spacing:-.2px}
+.card-sub{font-size:11.5px;color:var(--g400);margin-top:2px}
 
-/* STATS */
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
-.stats-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
-.stat-card{background:var(--w);border:1px solid var(--g200);border-radius:var(--rm);padding:14px 16px}
-.stat-label{font-size:10px;color:var(--g400);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;font-family:var(--mono)}
-.stat-value{font-size:28px;font-weight:300;line-height:1;color:var(--g900);font-family:var(--mono);letter-spacing:-1px}
-.stat-sub{font-size:10px;color:var(--g400);margin-top:5px}
-.c-ok{color:var(--ok)}.c-warn{color:var(--warn)}.c-info{color:var(--info)}.c-err{color:var(--err)}
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:16px 18px;box-shadow:var(--shadow)}
+.stat-label{font-size:11px;color:var(--g400);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-weight:500}
+.stat-value{font-size:30px;font-weight:300;line-height:1;color:var(--g900);font-family:var(--mono);letter-spacing:-1.5px}
+.stat-sub{font-size:11px;color:var(--g400);margin-top:6px}
+.c-ok{color:var(--green)}.c-warn{color:var(--amber)}.c-info{color:var(--blue)}.c-accent{color:var(--accent)}
 
-/* FORMS */
-.form-group{margin-bottom:12px}
-.form-label{display:block;font-size:11px;color:var(--g500);margin-bottom:4px;font-weight:500}
-.form-input,.form-select,.form-textarea{width:100%;background:var(--w);border:1px solid var(--g200);border-radius:var(--r);padding:0 10px;height:32px;color:var(--g900);font-family:var(--sans);font-size:13px;transition:border-color .15s,box-shadow .15s;outline:none}
-.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--g900);box-shadow:0 0 0 3px rgba(0,0,0,.05)}
+/* ── FORMS ── */
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:12px;color:var(--g500);margin-bottom:5px;font-weight:500}
+.form-input,.form-select,.form-textarea{width:100%;background:var(--w);border:1.5px solid var(--g200);border-radius:var(--r);padding:0 11px;height:36px;color:var(--g900);font-family:var(--sans);font-size:13px;transition:border-color .15s,box-shadow .15s;outline:none}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.1)}
 .form-input::placeholder{color:var(--g300)}
-.form-select{cursor:pointer}
-.form-textarea{height:auto;padding:8px 10px;resize:vertical;min-height:90px;line-height:1.6}
+.form-select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%238C95A8' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;background-size:16px;appearance:none;padding-right:28px}
+.form-textarea{height:auto;padding:10px 11px;resize:vertical;min-height:110px;line-height:1.6}
 .form-mono{font-family:var(--mono);font-size:12px}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 
-/* TABLES */
+/* ── TABLES ── */
 table{width:100%;border-collapse:collapse}
 thead{background:var(--g50)}
-th{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--g400);font-weight:500;font-family:var(--mono);padding:8px 12px;text-align:left;border-bottom:1px solid var(--g200)}
-td{padding:9px 12px;font-size:12.5px;color:var(--g700);border-bottom:1px solid var(--g100)}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--g400);font-weight:600;padding:10px 14px;text-align:left;border-bottom:1px solid var(--g100)}
+td{padding:11px 14px;font-size:13px;color:var(--g700);border-bottom:1px solid var(--g50)}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:var(--g50)}
 
-/* BADGES */
-.badge{display:inline-flex;align-items:center;gap:4px;padding:1px 7px;border-radius:3px;font-size:10px;font-weight:500;font-family:var(--mono);border:1px solid transparent}
-.bg-green{background:var(--ok-bg);color:#15803d;border-color:var(--ok-b)}
-.bg-amber{background:var(--warn-bg);color:#92400e;border-color:var(--warn-b)}
-.bg-red{background:var(--err-bg);color:#b91c1c;border-color:var(--err-b)}
-.bg-blue{background:var(--info-bg);color:#1d4ed8;border-color:var(--info-b)}
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid transparent}
+.bg-green{background:var(--green-bg);color:#065F46;border-color:var(--green-b)}
+.bg-amber{background:var(--amber-bg);color:#92400E;border-color:var(--amber-b)}
+.bg-red{background:var(--red-bg);color:#991B1B;border-color:var(--red-b)}
+.bg-blue{background:var(--blue-bg);color:#1E40AF;border-color:var(--blue-b)}
 .bg-gray{background:var(--g50);color:var(--g500);border-color:var(--g200)}
-.bg-black{background:var(--blk);color:var(--w)}
+.bg-accent{background:var(--accent-light);color:#4338CA;border-color:var(--accent-mid)}
 
-/* TABS */
-.tabs{display:flex;border-bottom:1px solid var(--g200);margin-bottom:16px}
-.tab{padding:0 14px;height:36px;display:flex;align-items:center;cursor:pointer;font-size:12px;color:var(--g500);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;user-select:none}
-.tab:hover{color:var(--g900)}
-.tab.active{color:var(--g900);border-bottom-color:var(--blk);font-weight:500}
+/* ── TABS ── */
+.tabs{display:flex;border-bottom:2px solid var(--g100);margin-bottom:20px;gap:4px}
+.tab{padding:0 16px;height:38px;display:flex;align-items:center;cursor:pointer;font-size:13px;color:var(--g400);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;user-select:none;font-weight:500}
+.tab:hover{color:var(--g700)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 
-/* DROP ZONE */
-.drop-zone{border:1px dashed var(--g300);border-radius:var(--rm);padding:28px 24px;text-align:center;cursor:pointer;transition:all .15s;color:var(--g400);background:var(--g50)}
-.drop-zone:hover,.drop-zone.drag-over{border-color:var(--g900);background:var(--w);color:var(--g900)}
+/* ── DROP ZONE ── */
+.drop-zone{border:2px dashed var(--g200);border-radius:var(--rm);padding:36px 24px;text-align:center;cursor:pointer;transition:all .2s;color:var(--g400);background:var(--g50)}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
 
-/* RICH EDITOR */
-.editor-wrap{border:1px solid var(--g200);border-radius:var(--rm);overflow:hidden;background:var(--w)}
-.editor-wrap:focus-within{border-color:var(--g900);box-shadow:0 0 0 3px rgba(0,0,0,.05)}
-.editor-toolbar{display:flex;gap:2px;padding:6px 8px;border-bottom:1px solid var(--g100);background:var(--g50);flex-wrap:wrap;align-items:center}
-.tb-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border:none;background:transparent;border-radius:3px;cursor:pointer;color:var(--g600);font-size:12px;font-family:var(--sans);transition:all .1s}
-.tb-btn:hover{background:var(--g200);color:var(--g900)}
-.tb-sep{width:1px;height:18px;background:var(--g200);margin:0 3px}
-.tb-select{height:24px;padding:0 6px;font-size:11px;background:var(--w);border:1px solid var(--g200);border-radius:3px;color:var(--g700);font-family:var(--sans);cursor:pointer;outline:none}
-.editor-body{min-height:120px;padding:12px 14px;outline:none;font-size:13px;line-height:1.7;color:var(--g900)}
+/* ── RICH EDITOR ── */
+.editor-wrap{border:1.5px solid var(--g200);border-radius:var(--rm);overflow:hidden;background:var(--w);transition:border-color .15s,box-shadow .15s}
+.editor-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+.editor-toolbar{display:flex;gap:2px;padding:8px 10px;border-bottom:1px solid var(--g100);background:var(--g50);flex-wrap:wrap;align-items:center}
+.tb-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:none;background:transparent;border-radius:5px;cursor:pointer;color:var(--g500);font-size:13px;font-family:var(--sans);transition:all .1s}
+.tb-btn:hover{background:var(--w);color:var(--g900);box-shadow:var(--shadow)}
+.tb-sep{width:1px;height:18px;background:var(--g200);margin:0 4px}
+.tb-select{height:26px;padding:0 8px;font-size:11px;background:var(--w);border:1px solid var(--g200);border-radius:5px;color:var(--g600);font-family:var(--sans);cursor:pointer;outline:none}
+.editor-body{min-height:130px;padding:14px 16px;outline:none;font-size:13.5px;line-height:1.75;color:var(--g800)}
 .editor-body:empty::before{content:attr(data-placeholder);color:var(--g300);pointer-events:none}
-.editor-body img{max-width:100%;border-radius:4px}
-.editor-body table{border-collapse:collapse;width:100%;margin:8px 0}
+.editor-body img{max-width:100%;border-radius:6px}
 .editor-body table td{border:1px solid var(--g200);padding:6px 8px;font-size:12px}
-.editor-body a{color:var(--info)}
-.editor-footer{padding:5px 10px;border-top:1px solid var(--g100);display:flex;justify-content:flex-end}
-.char-count{font-size:10px;color:var(--g400);font-family:var(--mono)}
+.editor-body a{color:var(--accent)}
+.editor-footer{padding:6px 12px;border-top:1px solid var(--g100);display:flex;justify-content:flex-end}
+.char-count{font-size:10px;color:var(--g300);font-family:var(--mono)}
 
-/* SEQ BUILDER */
-.seq-wrap{background:var(--g50);border:1px solid var(--g200);border-radius:var(--rm);padding:12px}
-.email-step{background:var(--w);border:1px solid var(--g200);border-radius:var(--r);padding:14px;margin-bottom:6px}
-.step-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.step-num{width:22px;height:22px;border-radius:50%;background:var(--blk);color:var(--w);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;font-family:var(--mono);flex-shrink:0}
-.step-lbl{font-size:12px;font-weight:500;flex:1;color:var(--g700);font-family:var(--mono)}
+/* ── FLOW BUILDER (nouveau v4) ── */
+.flow-canvas{overflow-x:auto;overflow-y:visible;padding:8px 0 20px;min-height:200px}
+.flow-row{display:flex;align-items:flex-start;gap:0;min-width:max-content}
+.flow-col{display:flex;flex-direction:column;gap:10px;min-width:180px}
+.flow-connector{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;padding-top:28px;min-width:140px}
+.flow-arrow{display:flex;align-items:center;gap:0;flex-shrink:0;margin-bottom:10px;cursor:pointer}
+.flow-arrow-line{flex:1;height:2px;min-width:20px;transition:opacity .15s}
+.flow-arrow-head{width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;flex-shrink:0}
+.flow-cond-pill{font-size:10.5px;padding:3px 9px;border-radius:20px;white-space:nowrap;font-weight:500;margin-bottom:4px;border:1px solid;font-family:var(--mono);cursor:pointer;transition:all .15s}
+.flow-cond-pill:hover{filter:brightness(.95);transform:translateY(-1px)}
+.email-node{width:172px;background:var(--w);border:1.5px solid var(--g200);border-radius:var(--rm);padding:14px;box-shadow:var(--shadow);cursor:pointer;transition:all .2s;flex-shrink:0}
+.email-node:hover{border-color:var(--accent);box-shadow:0 4px 12px rgba(99,102,241,.15);transform:translateY(-1px)}
+.email-node.selected{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+.email-node.initial{border-top:3px solid var(--accent)}
+.node-num{font-size:10px;font-family:var(--mono);color:var(--g400);margin-bottom:5px;font-weight:500}
+.node-label{font-size:11px;font-weight:600;color:var(--g700);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.node-subject{font-size:11.5px;color:var(--g500);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.node-tags{display:flex;gap:3px;margin-top:6px;flex-wrap:wrap}
+.add-branch-btn{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--accent);cursor:pointer;padding:6px 10px;border:1.5px dashed var(--accent-mid);border-radius:var(--r);background:var(--accent-light);transition:all .15s;font-weight:500;margin-top:4px}
+.add-branch-btn:hover{background:var(--accent-mid);border-color:var(--accent)}
+.add-node-btn{display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;color:var(--g400);cursor:pointer;padding:8px;border:1.5px dashed var(--g200);border-radius:var(--rm);background:transparent;transition:all .15s;width:172px;font-weight:500}
+.add-node-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+.node-actions{display:flex;gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid var(--g100)}
 
-/* TRIGGER BLOCK — nouveau design v3 */
-.trigger-block{background:var(--g50);border:1px solid var(--g200);border-radius:var(--r);padding:12px 14px;margin-bottom:10px}
-.trigger-title{font-size:11px;font-weight:500;color:var(--g500);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
-.trigger-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
-.trigger-row:last-child{margin-bottom:0}
-.trigger-label{font-size:12px;color:var(--g600);flex-shrink:0}
-.trigger-val{font-size:12px;color:var(--g900);font-family:var(--mono)}
-.cond-select{height:28px;padding:0 8px;font-size:12px;background:var(--w);border:1px solid var(--g200);border-radius:var(--r);color:var(--g900);font-family:var(--sans);cursor:pointer;outline:none;transition:border-color .15s}
-.cond-select:focus{border-color:var(--g900)}
-.cond-num{height:28px;padding:0 8px;font-size:12px;font-family:var(--mono);background:var(--w);border:1px solid var(--g200);border-radius:var(--r);color:var(--g900);outline:none;width:56px;text-align:center;transition:border-color .15s}
-.cond-num:focus{border-color:var(--g900)}
+/* ── EMAIL EDITOR PANEL ── */
+.editor-panel{background:var(--w);border:1.5px solid var(--g100);border-radius:var(--rm);padding:20px;margin-top:16px;box-shadow:var(--shadow-md);animation:slideUp .2s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.editor-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--g100)}
+.editor-panel-title{font-size:13px;font-weight:600;color:var(--g900)}
+.close-panel{background:none;border:none;cursor:pointer;color:var(--g400);font-size:18px;padding:0;line-height:1;transition:color .15s}
+.close-panel:hover{color:var(--g900)}
 
-/* CONNECTOR */
-.connector-row{display:flex;align-items:center;gap:8px;padding:5px 4px}
-.conn-line{flex:1;height:1px;background:var(--g200)}
-.conn-summary{font-size:11px;background:var(--w);padding:4px 10px;border-radius:20px;border:1px solid var(--g200);white-space:nowrap;color:var(--g500);font-family:var(--mono)}
+/* ── CONDITION CHIPS ── */
+.cond-nr-style{background:var(--green-bg);color:#065F46;border-color:var(--green-b)}
+.cond-lu-style{background:var(--blue-bg);color:#1E40AF;border-color:var(--blue-b)}
+.cond-nlu-style{background:var(--amber-bg);color:#92400E;border-color:var(--amber-b)}
+.cond-del-style{background:var(--g50);color:var(--g600);border-color:var(--g200)}
+.arrow-nr{background:#10B981}.arrow-lu{background:#3B82F6}.arrow-nlu{background:#F59E0B}.arrow-del{background:#8C95A8}
+.head-nr{border-left-color:#10B981}.head-lu{border-left-color:#3B82F6}.head-nlu{border-left-color:#F59E0B}.head-del{border-left-color:#8C95A8}
 
-/* VAR PILLS */
-.var-pill{display:inline-flex;align-items:center;background:var(--g50);color:var(--g600);padding:2px 7px;border-radius:3px;font-size:11px;font-family:var(--mono);cursor:pointer;margin:2px;border:1px solid var(--g200);user-select:none;transition:all .1s}
-.var-pill:hover{background:var(--blk);color:var(--w);border-color:var(--blk)}
+/* ── VAR PILLS ── */
+.var-pill{display:inline-flex;align-items:center;background:var(--accent-light);color:var(--accent);padding:3px 9px;border-radius:20px;font-size:11px;font-family:var(--mono);cursor:pointer;margin:2px;border:1px solid var(--accent-mid);user-select:none;transition:all .15s;font-weight:500}
+.var-pill:hover{background:var(--accent);color:#fff}
 
-/* TAGS */
-.tag-area{background:var(--w);border:1px solid var(--g200);border-radius:var(--r);padding:6px;min-height:68px;cursor:text;display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;transition:border-color .15s,box-shadow .15s}
-.tag-area:focus-within{border-color:var(--g900);box-shadow:0 0 0 3px rgba(0,0,0,.05)}
-.tag-area input{background:none;border:none;outline:none;color:var(--g900);font-size:13px;min-width:140px;padding:2px 4px;height:22px;font-family:var(--sans)}
-.prospect-tag{display:inline-flex;align-items:center;gap:4px;background:var(--g100);border:1px solid var(--g200);border-radius:3px;padding:1px 6px 1px 4px;font-size:11px;font-family:var(--mono);color:var(--g700);height:22px}
-.tag-av{width:14px;height:14px;border-radius:50%;background:var(--blk);color:var(--w);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;flex-shrink:0}
-.tag-rm{background:none;border:none;color:var(--g400);cursor:pointer;font-size:13px;padding:0;line-height:1}
-.tag-rm:hover{color:var(--err)}
+/* ── TAGS INPUT ── */
+.tag-area{background:var(--w);border:1.5px solid var(--g200);border-radius:var(--r);padding:8px;min-height:72px;cursor:text;display:flex;flex-wrap:wrap;gap:5px;align-content:flex-start;transition:border-color .15s,box-shadow .15s}
+.tag-area:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.1)}
+.tag-area input{background:none;border:none;outline:none;color:var(--g900);font-size:13px;min-width:140px;padding:2px 4px;height:24px;font-family:var(--sans)}
+.prospect-tag{display:inline-flex;align-items:center;gap:5px;background:var(--accent-light);border:1px solid var(--accent-mid);border-radius:20px;padding:2px 8px 2px 5px;font-size:12px;color:#4338CA;height:24px}
+.tag-av{width:16px;height:16px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.tag-rm{background:none;border:none;color:var(--accent-mid);cursor:pointer;font-size:14px;padding:0;line-height:1;transition:color .1s}
+.tag-rm:hover{color:var(--red)}
 
-/* MODAL */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:200}
-.modal{background:var(--w);border:1px solid var(--g200);border-radius:var(--rm);padding:24px;width:620px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.1)}
-.modal-wide{width:740px}
-.modal-title{font-size:13.5px;font-weight:500;margin-bottom:4px;font-family:var(--mono)}
-.modal-sub{font-size:12px;color:var(--g500);margin-bottom:18px}
-.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--g100)}
+/* ── MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(15,22,35,.4);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:200}
+.modal{background:var(--w);border:1px solid var(--g100);border-radius:var(--rl);padding:28px;width:640px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.modal-wide{width:860px}
+.modal-full{width:96vw;max-width:1100px}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:5px;letter-spacing:-.3px}
+.modal-sub{font-size:13px;color:var(--g400);margin-bottom:20px}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--g100)}
 
-/* PROGRESS */
-.progress{height:2px;background:var(--g100);border-radius:2px;overflow:hidden}
-.progress-fill{height:100%;background:var(--blk);border-radius:2px;transition:width .4s}
+/* ── PROGRESS ── */
+.progress{height:4px;background:var(--g100);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#8B5CF6);border-radius:4px;transition:width .5s}
 
-/* FUNNEL */
-.funnel-step-row{display:flex;align-items:center;gap:0;margin-bottom:3px}
-.funnel-label{min-width:100px;text-align:right;padding-right:12px;font-size:10px;font-family:var(--mono);color:var(--g400)}
-.funnel-bar-wrap{flex:1;height:44px;position:relative;display:flex;align-items:center;padding:0 12px}
-.funnel-bar-bg{position:absolute;left:0;top:0;bottom:0;border-radius:3px;transition:width .5s}
-.funnel-bar-content{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;width:100%}
-.funnel-conn{display:flex;align-items:center;gap:8px;padding:3px 0 3px 112px}
+/* ── FUNNEL ── */
+.funnel-step-row{display:flex;align-items:center;gap:0;margin-bottom:4px}
+.funnel-label{min-width:110px;text-align:right;padding-right:14px;font-size:11px;font-family:var(--mono);color:var(--g400)}
+.funnel-bar-wrap{flex:1;height:46px;position:relative;display:flex;align-items:center;padding:0 14px;border-radius:var(--r);overflow:hidden}
+.funnel-bg{position:absolute;left:0;top:0;bottom:0;border-radius:var(--r);transition:width .6s}
+.funnel-content{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;width:100%}
+.funnel-conn{display:flex;align-items:center;gap:10px;padding:4px 0 4px 124px}
 .funnel-conn-line{flex:1;height:1px;background:var(--g100)}
-.funnel-conn-pill{font-size:10px;font-family:var(--mono);color:var(--g400);background:var(--g50);border:0.5px solid var(--g200);border-radius:20px;padding:2px 8px;white-space:nowrap}
-.funnel-outcomes{display:flex;gap:8px;margin-top:12px;padding-left:112px}
-.funnel-outcome{flex:1;border:0.5px solid var(--g200);border-radius:var(--r);padding:10px 12px;background:var(--g50)}
-.funnel-outcome-val{font-size:18px;font-weight:500;font-family:var(--mono);letter-spacing:-0.5px}
-.funnel-outcome-lbl{font-size:9px;font-family:var(--mono);color:var(--g400);margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+.funnel-conn-pill{font-size:10px;font-family:var(--mono);color:var(--g400);background:var(--g50);border:1px solid var(--g100);border-radius:20px;padding:2px 10px;white-space:nowrap}
+.funnel-outcomes{display:flex;gap:10px;margin-top:14px;padding-left:124px}
+.funnel-outcome{flex:1;border:1px solid var(--g100);border-radius:var(--rm);padding:12px 14px;background:var(--g50)}
+.funnel-outcome-val{font-size:20px;font-weight:500;font-family:var(--mono);letter-spacing:-1px}
+.funnel-outcome-lbl{font-size:10px;font-family:var(--mono);color:var(--g400);margin-top:3px;text-transform:uppercase;letter-spacing:.4px}
 
-/* CHARTS */
-.chart-bar-wrap{display:flex;flex-direction:column;gap:6px}
-.chart-bar-row{display:flex;align-items:center;gap:10px;font-size:11px}
-.chart-bar-label{width:100px;color:var(--g500);text-align:right;flex-shrink:0;font-family:var(--mono);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.chart-bar-track{flex:1;background:var(--g100);border-radius:2px;height:8px;overflow:hidden}
-.chart-bar-fill{height:100%;border-radius:2px;transition:width .5s}
-.chart-bar-val{width:36px;text-align:right;color:var(--g700);font-family:var(--mono);font-size:11px;flex-shrink:0}
+/* ── CHARTS ── */
+.chart-bar-wrap{display:flex;flex-direction:column;gap:8px}
+.chart-bar-row{display:flex;align-items:center;gap:12px;font-size:12px}
+.chart-bar-label{width:110px;color:var(--g500);text-align:right;flex-shrink:0;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chart-bar-track{flex:1;background:var(--g100);border-radius:4px;height:10px;overflow:hidden}
+.chart-bar-fill{height:100%;border-radius:4px;transition:width .6s}
+.chart-bar-val{width:36px;text-align:right;color:var(--g700);font-family:var(--mono);font-size:11px;flex-shrink:0;font-weight:500}
 
-/* CAMP CARD */
-.camp-card{background:var(--w);border:1px solid var(--g200);border-radius:var(--rm);padding:14px 16px;margin-bottom:8px;transition:border-color .15s}
-.camp-card:hover{border-color:var(--g300)}
-.camp-meta{display:flex;gap:14px;font-size:11px;color:var(--g400);margin:5px 0;font-family:var(--mono)}
+/* ── CAMP CARD ── */
+.camp-card{background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:16px 20px;margin-bottom:10px;box-shadow:var(--shadow);transition:all .2s}
+.camp-card:hover{border-color:var(--g200);box-shadow:var(--shadow-md)}
+.camp-meta{display:flex;gap:16px;font-size:11.5px;color:var(--g400);margin:5px 0}
 .camp-meta strong{color:var(--g700)}
 
-/* EMPTY */
-.empty{text-align:center;padding:40px 24px;color:var(--g400)}
-.empty-icon{font-size:20px;margin-bottom:10px;filter:grayscale(1);opacity:.4}
-.empty-title{font-size:12.5px;font-weight:500;color:var(--g600);margin-bottom:4px;font-family:var(--mono)}
-
-/* INFO BOXES */
-.info-box{padding:10px 12px;border-radius:var(--r);font-size:12px;margin-bottom:12px;line-height:1.6}
-.i-green{background:var(--ok-bg);border:1px solid var(--ok-b);color:#15803d}
-.i-amber{background:var(--warn-bg);border:1px solid var(--warn-b);color:#92400e}
-.i-blue{background:var(--info-bg);border:1px solid var(--info-b);color:#1e40af}
-.i-gray{background:var(--g50);border:1px solid var(--g200);color:var(--g600)}
-
-/* LOGS */
-.log-entry{display:flex;gap:12px;padding:7px 0;border-bottom:1px solid var(--g100);font-size:11.5px;font-family:var(--mono)}
-.log-entry:last-child{border-bottom:none}
-.log-time{color:var(--g400);flex-shrink:0}
-.log-ok{color:var(--ok)}.log-err{color:var(--err)}.log-warn{color:var(--warn)}.log-info{color:var(--g700)}
-
-/* SETUP STEPS */
-.setup-step{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--g100)}
+/* ── SETUP STEPS ── */
+.setup-step{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--g100)}
 .setup-step:last-child{border-bottom:none}
-.s-num{width:22px;height:22px;border-radius:50%;background:var(--blk);color:var(--w);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;font-family:var(--mono);flex-shrink:0;margin-top:1px}
-.s-text{font-size:12px;color:var(--g600);line-height:1.7}
+.s-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:1px}
+.s-text{font-size:12.5px;color:var(--g600);line-height:1.7}
 .s-text strong{color:var(--g900)}
-.s-text code{background:var(--g100);padding:1px 5px;border-radius:3px;font-family:var(--mono);font-size:11px}
+.s-text code{background:var(--accent-light);padding:1px 6px;border-radius:4px;font-family:var(--mono);font-size:11px;color:var(--accent)}
+.s-text a{color:var(--accent)}
 
-.note{font-size:11px;color:var(--g400);margin-top:4px}
-.divider{height:1px;background:var(--g100);margin:14px 0}
+/* ── EMPTY ── */
+.empty{text-align:center;padding:60px 24px;color:var(--g400)}
+.empty-icon{font-size:32px;margin-bottom:12px;filter:grayscale(1);opacity:.3}
+.empty-title{font-size:14px;font-weight:500;color:var(--g600);margin-bottom:6px}
+.empty p{font-size:13px}
+
+/* ── INFO BOXES ── */
+.info-box{padding:12px 14px;border-radius:var(--r);font-size:12.5px;margin-bottom:14px;line-height:1.6}
+.i-green{background:var(--green-bg);border:1px solid var(--green-b);color:#065F46}
+.i-amber{background:var(--amber-bg);border:1px solid var(--amber-b);color:#92400E}
+.i-blue{background:var(--blue-bg);border:1px solid var(--blue-b);color:#1E40AF}
+.i-gray{background:var(--g50);border:1px solid var(--g100);color:var(--g600)}
+.i-accent{background:var(--accent-light);border:1px solid var(--accent-mid);color:#4338CA}
+
+/* ── LOGS ── */
+.log-entry{display:flex;gap:14px;padding:8px 0;border-bottom:1px solid var(--g50);font-size:12px;font-family:var(--mono)}
+.log-entry:last-child{border-bottom:none}
+.log-time{color:var(--g300);flex-shrink:0}
+.log-ok{color:var(--green)}.log-err{color:var(--red)}.log-warn{color:var(--amber)}.log-info{color:var(--g700)}
+
+/* ── MISC ── */
+.note{font-size:11.5px;color:var(--g400);margin-top:5px}
+.trigger-block{background:var(--g50);border:1px solid var(--g100);border-radius:var(--r);padding:14px 16px;margin-bottom:12px}
+.trigger-title{font-size:11px;font-weight:600;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.trigger-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.trigger-row:last-child{margin-bottom:0}
+.trigger-label{font-size:12.5px;color:var(--g600);flex-shrink:0}
+.cond-select{height:30px;padding:0 10px;font-size:12px;background:var(--w);border:1.5px solid var(--g200);border-radius:var(--r);color:var(--g900);font-family:var(--sans);cursor:pointer;outline:none;transition:border-color .15s}
+.cond-select:focus{border-color:var(--accent)}
+.cond-num{height:30px;padding:0 8px;font-size:12px;font-family:var(--mono);background:var(--w);border:1.5px solid var(--g200);border-radius:var(--r);color:var(--g900);outline:none;width:56px;text-align:center;transition:border-color .15s}
+.cond-num:focus{border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -252,10 +288,15 @@ tr:hover td{background:var(--g50)}
   <aside class="sb">
     <div class="logo">
       <div class="logo-mark">
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="white"><rect x="0" y="0" width="4" height="4" rx="1"/><rect x="6" y="0" width="4" height="4" rx="1"/><rect x="0" y="6" width="4" height="4" rx="1"/><rect x="6" y="6" width="4" height="4" rx="1"/></svg>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M1 3.5L7 8L13 3.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          <rect x="1" y="2" width="12" height="10" rx="2" stroke="white" stroke-width="1.5"/>
+        </svg>
       </div>
-      <div class="logo-name">mailseq</div>
-      <span class="logo-ver">v3</span>
+      <div class="logo-text">
+        <div class="logo-name">MailSeq</div>
+        <div class="logo-ver">v3 · prospection</div>
+      </div>
     </div>
 
     <div class="conn-block" onclick="ouvrirConnexion()">
@@ -368,12 +409,29 @@ tr:hover td{background:var(--g50)}
               <div id="aperçuFichier"></div>
             </div>
             <div id="imp-manuel" style="display:none">
-              <div class="form-label">Coller les emails — séparés par ; ou virgule</div>
-              <div class="tag-area" onclick="document.getElementById('tagInput').focus()">
-                <div id="tagList" style="display:contents"></div>
-                <input id="tagInput" placeholder="nom@entreprise.com" onkeydown="gererTouche(event)" onpaste="gererColler(event)">
+              <div style="background:var(--g50);border:1px solid var(--g200);border-radius:var(--rm);padding:14px;margin-bottom:12px">
+                <div class="form-label" style="margin-bottom:10px">Ajouter un prospect</div>
+                <div class="grid-2" style="margin-bottom:8px">
+                  <div class="form-group" style="margin-bottom:0"><label class="form-label">Email *</label><input class="form-input form-mono" id="manEmail" placeholder="nom@entreprise.com"></div>
+                  <div class="form-group" style="margin-bottom:0"><label class="form-label">Prénom</label><input class="form-input" id="manPrenom" placeholder="Jean"></div>
+                </div>
+                <div class="grid-2" style="margin-bottom:8px">
+                  <div class="form-group" style="margin-bottom:0"><label class="form-label">Nom</label><input class="form-input" id="manNom" placeholder="Dupont"></div>
+                  <div class="form-group" style="margin-bottom:0"><label class="form-label">Société</label><input class="form-input" id="manSociete" placeholder="Acme Corp"></div>
+                </div>
+                <div class="grid-2" style="margin-bottom:10px">
+                  <div class="form-group" style="margin-bottom:0"><label class="form-label">Poste</label><input class="form-input" id="manPoste" placeholder="Directeur Commercial"></div>
+                  <div></div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <button class="btn btn-primary btn-sm" onclick="ajouterProspectManuel()">+ Ajouter</button>
+                  <span style="font-size:11px;color:var(--g400)">ou coller plusieurs emails :</span>
+                  <input id="tagInput" placeholder="email1@co.com; email2@co.com" style="flex:1;height:26px;padding:0 8px;border:1px solid var(--g200);border-radius:var(--r);font-size:12px;outline:none;font-family:var(--sans)" onkeydown="gererTouche(event)" onpaste="gererColler(event)">
+                  <button class="btn btn-ghost btn-sm" onclick="validerTagInput()">Valider</button>
+                </div>
               </div>
-              <div class="note" id="tagCount">0 email</div>
+              <div id="manProspectsList"></div>
+              <div class="note" id="tagCount">0 prospect ajouté</div>
             </div>
           </div>
           <div class="card">
@@ -476,25 +534,37 @@ tr:hover td{background:var(--g50)}
 
 <!-- ═══ MODAL SÉQUENCE ═══ -->
 <div class="overlay" id="modalSeq" style="display:none">
-  <div class="modal modal-wide">
-    <div class="modal-title" id="titreModalSeq">nouvelle séquence</div>
-    <div class="modal-sub">définissez vos emails et les conditions de déclenchement des relances</div>
-    <div class="form-group"><label class="form-label">Nom de la séquence</label><input class="form-input form-mono" id="nomSeq" placeholder="saas-b2b-3-relances"></div>
-    <div style="margin-bottom:14px">
-      <div class="form-label" style="margin-bottom:5px">variables — cliquer dans un champ texte puis sur la variable</div>
+  <div class="modal modal-full">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+      <div class="modal-title" id="titreModalSeq">nouvelle séquence</div>
+      <button class="close-panel" onclick="fermerModal('modalSeq')">×</button>
+    </div>
+    <div class="modal-sub">Construisez votre flow d'emails — cliquez sur un email pour l'éditer, ajoutez des branches par condition</div>
+    <div class="grid-2" style="gap:16px;margin-bottom:16px">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Nom de la séquence</label>
+        <input class="form-input form-mono" id="nomSeq" placeholder="saas-b2b-3-relances">
+      </div>
       <div>
-        <span class="var-pill" onclick="insererVar('{{prenom}}')">{{prenom}}</span>
-        <span class="var-pill" onclick="insererVar('{{nom}}')">{{nom}}</span>
-        <span class="var-pill" onclick="insererVar('{{societe}}')">{{societe}}</span>
-        <span class="var-pill" onclick="insererVar('{{poste}}')">{{poste}}</span>
-        <span class="var-pill" onclick="insererVar('{{email}}')">{{email}}</span>
+        <div class="form-label" style="margin-bottom:6px">Variables — cliquer dans le corps puis sur la variable</div>
+        <div>
+          <span class="var-pill" onclick="insererVar('{{prenom}}')">{{prenom}}</span>
+          <span class="var-pill" onclick="insererVar('{{nom}}')">{{nom}}</span>
+          <span class="var-pill" onclick="insererVar('{{societe}}')">{{societe}}</span>
+          <span class="var-pill" onclick="insererVar('{{poste}}')">{{poste}}</span>
+          <span class="var-pill" onclick="insererVar('{{email}}')">{{email}}</span>
+        </div>
       </div>
     </div>
-    <div class="seq-wrap" id="etapesSeq"></div>
-    <button class="btn btn-ghost" style="width:100%;margin-top:8px" onclick="ajouterEtape()">+ ajouter un email</button>
+    <!-- FLOW CANVAS -->
+    <div style="background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--rm);padding:20px">
+      <div class="flow-canvas" id="flowCanvas"></div>
+    </div>
+    <!-- EDITOR PANEL (s'affiche quand on clique un node) -->
+    <div id="editorPanel" style="display:none"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="fermerModal('modalSeq')">annuler</button>
-      <button class="btn btn-primary" onclick="sauvegarderSeq()">enregistrer la séquence</button>
+      <button class="btn btn-primary" onclick="sauvegarderSeq()">✓ enregistrer la séquence</button>
     </div>
   </div>
 </div>
@@ -586,6 +656,15 @@ function ouvrirConnexion() {
 
 function fermerModal(id) { document.getElementById(id).style.display='none' }
 
+// PKCE helpers
+async function genPKCE() {
+  const verifier = Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b=>b.toString(16).padStart(2,'0')).join('')
+  const data = new TextEncoder().encode(verifier)
+  const hash = await crypto.subtle.digest('SHA-256', data)
+  const challenge = btoa(String.fromCharCode(...new Uint8Array(hash))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')
+  return { verifier, challenge }
+}
+
 async function connecter() {
   const cid=document.getElementById('clientIdInput').value.trim()
   const tid=document.getElementById('tenantIdInput').value.trim()||'common'
@@ -596,23 +675,83 @@ async function connecter() {
   document.getElementById('btnConnecter').disabled=true
   const barre=document.getElementById('barreAuth')
   let prog=0; const pi=setInterval(()=>{ prog=Math.min(prog+4,88); barre.style.width=prog+'%' },200)
+
+  const { verifier, challenge } = await genPKCE()
+  sessionStorage.setItem('pkce_verifier', verifier)
+  sessionStorage.setItem('msp_cid', cid)
+  sessionStorage.setItem('msp_tid', tid)
+
   const redir=encodeURIComponent(window.location.href.split('?')[0].split('#')[0])
   const scopes=encodeURIComponent('openid profile email Mail.Send Mail.Read User.Read offline_access')
-  const url=`https://login.microsoftonline.com/${tid}/oauth2/v2.0/authorize?client_id=${cid}&response_type=token&redirect_uri=${redir}&scope=${scopes}&response_mode=fragment&nonce=${uid()}&prompt=select_account`
-  const popup=window.open(url,'msp_auth','width=520,height=660,menubar=no,toolbar=no')
-  const poll=setInterval(()=>{
-    try {
-      if(popup&&!popup.closed&&popup.location&&popup.location.hash){
-        const hash=popup.location.hash; popup.close()
-        clearInterval(poll);clearInterval(pi)
-        const params=new URLSearchParams(hash.substring(1))
-        const token=params.get('access_token')
-        if(token){barre.style.width='100%';recupererProfil(token)}
-        else{echec(params.get('error_description')||'annulé')}
-      }
-    } catch(e){}
-    if(popup&&popup.closed){clearInterval(poll);clearInterval(pi);echec('Fenêtre fermée')}
-  },400)
+  const state=uid()
+  sessionStorage.setItem('pkce_state', state)
+
+  // Essayer d'abord PKCE (code flow), fallback sur implicit si bloqué
+  const urlPKCE=`https://login.microsoftonline.com/${tid}/oauth2/v2.0/authorize?client_id=${cid}&response_type=code&redirect_uri=${redir}&scope=${scopes}&response_mode=query&code_challenge=${challenge}&code_challenge_method=S256&state=${state}&prompt=select_account`
+
+  clearInterval(pi)
+  barre.style.width='40%'
+
+  // Ouvrir dans la même page (redirect flow) — pas de popup pour PKCE
+  fermerModal('modalConnexion')
+  ajouterJournal('Redirection vers Microsoft pour authentification…','info')
+  window.location.href = urlPKCE
+}
+
+// Gérer le retour OAuth après redirection
+async function gererRetourOAuth() {
+  const params = new URLSearchParams(window.location.search)
+  const code = params.get('code')
+  const state = params.get('state')
+  const erreur = params.get('error')
+
+  if(erreur) {
+    ajouterJournal('Erreur auth : '+params.get('error_description'),'err')
+    // Nettoyer l'URL
+    window.history.replaceState({}, '', window.location.pathname)
+    return
+  }
+
+  if(!code) return
+
+  // Nettoyer l'URL immédiatement
+  window.history.replaceState({}, '', window.location.pathname)
+
+  const verifier = sessionStorage.getItem('pkce_verifier')
+  const cid = sessionStorage.getItem('msp_cid') || S.clientId
+  const tid = sessionStorage.getItem('msp_tid') || S.tenantId || 'common'
+
+  if(!verifier || !cid) { ajouterJournal('Erreur PKCE : données manquantes','err'); return }
+
+  ajouterJournal('Code reçu, échange du jeton…','info')
+
+  const redir = window.location.href.split('?')[0].split('#')[0]
+  try {
+    const r = await fetch(`https://login.microsoftonline.com/${tid}/oauth2/v2.0/token`, {
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: new URLSearchParams({
+        client_id: cid,
+        code,
+        redirect_uri: redir,
+        grant_type: 'authorization_code',
+        code_verifier: verifier,
+        scope: 'openid profile email Mail.Send Mail.Read User.Read offline_access'
+      })
+    })
+    const data = await r.json()
+    if(data.access_token) {
+      sessionStorage.removeItem('pkce_verifier')
+      sessionStorage.removeItem('pkce_state')
+      sessionStorage.removeItem('msp_cid')
+      sessionStorage.removeItem('msp_tid')
+      await recupererProfil(data.access_token)
+    } else {
+      ajouterJournal('Erreur token : '+(data.error_description||data.error),'err')
+    }
+  } catch(e) {
+    ajouterJournal('Erreur échange token : '+e.message,'err')
+  }
 }
 
 async function recupererProfil(token) {
@@ -688,172 +827,385 @@ function sauvegarderSig(){S.signature=document.getElementById('sig-body')?.inner
 // STRUCTURE D'UNE ÉTAPE v3 :
 // { sujet, corps, condition: 'pas_de_reponse'|'non_lu'|'lu'|'delai', delaiJours, heureEnvoi, tagSiNonLu, tagSiLu }
 
-let seqIdEnEdition=null, etapesEnCours=[]
-let dernierEditeurFocus=null
+// ═══ FLOW BUILDER — SÉQUENCES BRANCHÉES ═══
+// Structure : arbre de nodes, chaque node peut avoir N branches enfants
+// node = { id, sujet, corps, condition, delaiJours, heureEnvoi, tagSiNonLu, tagSiLu, branches: [node,...] }
+
+let seqIdEnEdition = null
+let flowRoot = null        // node racine
+let selectedNodeId = null  // node en cours d'édition
+let dernierEditeurFocus = null
+
+const COND = {
+  pas_de_reponse: { label:'↩ Pas de réponse', short:'pas de réponse', cls:'cond-nr-style', arrow:'arrow-nr', head:'head-nr' },
+  lu:             { label:'👁 Lu sans réponse', short:'lu sans réponse', cls:'cond-lu-style', arrow:'arrow-lu', head:'head-lu' },
+  non_lu:         { label:'✗ Non lu',           short:'non lu',          cls:'cond-nlu-style',arrow:'arrow-nlu',head:'head-nlu' },
+  delai:          { label:'⏱ Délai fixe',       short:'délai fixe',      cls:'cond-del-style',arrow:'arrow-del',head:'head-del' }
+}
+
+function creerNode(condition='pas_de_reponse', delaiJours=3) {
+  return { id:uid(), sujet:'', corps:'', condition, delaiJours, heureEnvoi:'09:00', tagSiNonLu:false, tagSiLu:false, branches:[] }
+}
+
+function trouverNode(node, id) {
+  if(node.id===id) return node
+  for(const b of node.branches||[]) { const f=trouverNode(b,id); if(f) return f }
+  return null
+}
+
+function supprimerNodeDansParent(parent, id) {
+  parent.branches = (parent.branches||[]).filter(b=>b.id!==id)
+  parent.branches.forEach(b=>supprimerNodeDansParent(b,id))
+}
 
 function ouvrirModalSeq(seqId) {
-  seqIdEnEdition=seqId
-  const seq=seqId?S.sequences.find(s=>s.id===seqId):null
-  document.getElementById('titreModalSeq').textContent=seq?'modifier la séquence':'nouvelle séquence'
-  document.getElementById('nomSeq').value=seq?.nom||''
-  etapesEnCours=seq?JSON.parse(JSON.stringify(seq.etapes)):[{sujet:'',corps:'',condition:'pas_de_reponse',delaiJours:2,heureEnvoi:'09:00',tagSiNonLu:false,tagSiLu:false}]
-  rendreEtapes()
+  seqIdEnEdition = seqId
+  const seq = seqId ? S.sequences.find(s=>s.id===seqId) : null
+  document.getElementById('titreModalSeq').textContent = seq ? 'modifier la séquence' : 'nouvelle séquence'
+  document.getElementById('nomSeq').value = seq?.nom || ''
+  // Migrer ancien format (tableau) → nouveau format (arbre)
+  if(seq?.etapes && Array.isArray(seq.etapes)) {
+    flowRoot = creerNode('pas_de_reponse', 0)
+    flowRoot.sujet = seq.etapes[0]?.sujet || ''
+    flowRoot.corps = seq.etapes[0]?.corps || ''
+    let cur = flowRoot
+    for(let i=1;i<seq.etapes.length;i++){
+      const n=creerNode(seq.etapes[i].condition||'pas_de_reponse', seq.etapes[i].delaiJours||3)
+      n.sujet=seq.etapes[i].sujet||''; n.corps=seq.etapes[i].corps||''
+      cur.branches=[n]; cur=n
+    }
+  } else if(seq?.flowRoot) {
+    flowRoot = JSON.parse(JSON.stringify(seq.flowRoot))
+  } else {
+    flowRoot = creerNode('pas_de_reponse', 0)
+  }
+  selectedNodeId = null
+  document.getElementById('editorPanel').style.display='none'
+  rendreFlow()
   document.getElementById('modalSeq').style.display='flex'
 }
 
-function insererVar(v) {
-  if(!dernierEditeurFocus) return
-  const el=document.getElementById(dernierEditeurFocus)
-  if(!el) return
-  if(el.tagName==='INPUT'){
-    const pos=el.selectionStart, cur=el.value
-    const idx=dernierEditeurFocus.split('-')[1]
-    el.value=cur.slice(0,pos)+v+cur.slice(el.selectionEnd)
-    etapesEnCours[+idx].sujet=el.value
-    el.focus();el.setSelectionRange(pos+v.length,pos+v.length)
-  } else {
-    el.focus();document.execCommand('insertText',false,v)
+// ── RENDU DU FLOW (colonnes) ──
+function rendreFlow() {
+  const canvas = document.getElementById('flowCanvas')
+  // Collecter les colonnes = profondeur max de l'arbre
+  // On fait un BFS par niveau
+  const levels = []
+  function collectLevels(node, depth) {
+    if(!levels[depth]) levels[depth] = []
+    levels[depth].push(node)
+    for(const b of node.branches||[]) collectLevels(b, depth+1)
   }
+  collectLevels(flowRoot, 0)
+
+  // Construire le HTML du flow
+  let html = '<div class="flow-row">'
+
+  // Colonne 0 : root
+  html += renderColumn([flowRoot], true)
+
+  // Colonnes suivantes (récursion aplatie par niveau n'est pas idéale — on fait un rendu récursif)
+  html += renderChildColumns(flowRoot)
+
+  html += '</div>'
+  canvas.innerHTML = html
 }
 
-function ajouterEtape() {
-  etapesEnCours.push({sujet:'',corps:'',condition:'pas_de_reponse',delaiJours:3,heureEnvoi:'09:00',tagSiNonLu:false,tagSiLu:false})
-  rendreEtapes()
-}
-
-function supprimerEtape(i){etapesEnCours.splice(i,1);rendreEtapes()}
-
-const LABELS_COND = {
-  pas_de_reponse: 'Si pas de réponse',
-  non_lu: 'Si email non lu',
-  lu: 'Si email lu',
-  delai: 'Délai fixe'
-}
-
-function condSummary(etape) {
-  const c = LABELS_COND[etape.condition]||''
-  return `${c} · après ${etape.delaiJours}j · envoi à ${etape.heureEnvoi}`
-}
-
-function rendreEtapes() {
-  const el=document.getElementById('etapesSeq')
-  el.innerHTML=etapesEnCours.map((e,i)=>`
-    ${i>0?`
-    <div class="connector-row">
-      <div class="conn-line"></div>
-      <div class="conn-summary">${condSummary(e)}</div>
-      <div class="conn-line"></div>
-    </div>`:''}
-    <div class="email-step">
-      <div class="step-head">
-        <div class="step-num">${i+1}</div>
-        <div class="step-lbl">${i===0?'email_initial':`relance_${i}`}</div>
-        ${i>0?`<button class="btn btn-danger btn-sm" onclick="supprimerEtape(${i})">supprimer</button>`:''}
+function renderColumn(nodes, isRoot=false) {
+  let html = '<div class="flow-col">'
+  for(const node of nodes) {
+    const isSelected = node.id === selectedNodeId
+    html += `<div class="email-node ${isRoot?'initial':''} ${isSelected?'selected':''}" onclick="selectionnerNode('${node.id}')" id="node-${node.id}">
+      <div class="node-num">${isRoot?'Email 1':'Relance'}</div>
+      <div class="node-label">${node.sujet ? (node.sujet.replace(/<[^>]*>/g,'').slice(0,22)||(node.sujet.replace(/<[^>]*>/g,'').length>22?'…':'')) : '<span style="color:var(--g300)">Sans objet</span>'}</div>
+      <div class="node-subject">${node.corps ? node.corps.replace(/<[^>]*>/g,'').slice(0,50)+'…' : '<span style="color:var(--g300)">Cliquer pour rédiger</span>'}</div>
+      ${node.tagSiNonLu||node.tagSiLu?`<div class="node-tags">
+        ${node.tagSiNonLu?'<span class="badge bg-amber" style="font-size:10px">non lu</span>':''}
+        ${node.tagSiLu?'<span class="badge bg-blue" style="font-size:10px">lu</span>':''}
+      </div>`:''}
+      <div class="node-actions">
+        <button class="btn btn-xs btn-ghost" onclick="event.stopPropagation();selectionnerNode('${node.id}')">✏ éditer</button>
+        ${!isRoot?`<button class="btn btn-xs btn-danger" onclick="event.stopPropagation();supprimerBranche('${node.id}')">✕</button>`:''}
       </div>
+    </div>`
+  }
+  // Bouton ajouter branche sur le dernier node du col
+  if(nodes.length > 0) {
+    const lastNode = nodes[nodes.length-1]
+    html += `<div class="add-node-btn" onclick="ajouterBranche('${lastNode.id}','pas_de_reponse')">+ ajouter une relance</div>`
+  }
+  html += '</div>'
+  return html
+}
 
-      ${i>0?`
-      <!-- BLOC CONDITIONS v3 -->
-      <div class="trigger-block">
+function renderChildColumns(node) {
+  if(!node.branches || !node.branches.length) return ''
+  let html = ''
+  // Connecteur + colonne enfants
+  html += '<div class="flow-connector">'
+  for(const branch of node.branches) {
+    const cond = COND[branch.condition] || COND.pas_de_reponse
+    html += `<div class="flow-arrow" onclick="selectionnerNode('${branch.id}')">
+      <div style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;flex:1">
+        <div class="flow-cond-pill ${cond.cls}" onclick="event.stopPropagation();editerCondition('${branch.id}')">
+          ${cond.label} · J+${branch.delaiJours}
+        </div>
+        <div style="display:flex;align-items:center;width:100%">
+          <div class="flow-arrow-line ${cond.arrow}" style="flex:1;height:2px"></div>
+          <div class="flow-arrow-head ${cond.head}" style="border-left:8px solid;border-top:5px solid transparent;border-bottom:5px solid transparent"></div>
+        </div>
+      </div>
+    </div>`
+    if(node.branches.indexOf(branch) < node.branches.length-1) {
+      html += `<div style="height:10px"></div>`
+    }
+  }
+  html += '</div>'
+  // Colonne des branches
+  html += '<div class="flow-col">'
+  for(const branch of node.branches) {
+    const isSelected = branch.id === selectedNodeId
+    const cond = COND[branch.condition] || COND.pas_de_reponse
+    html += `<div class="email-node ${isSelected?'selected':''}" onclick="selectionnerNode('${branch.id}')" id="node-${branch.id}" style="border-left:3px solid ${condColor(branch.condition)}">
+      <div class="node-num" style="color:${condColor(branch.condition)}">${cond.short} · J+${branch.delaiJours}</div>
+      <div class="node-label">${branch.sujet ? branch.sujet.replace(/<[^>]*>/g,'').slice(0,22) : '<span style="color:var(--g300)">Sans objet</span>'}</div>
+      <div class="node-subject">${branch.corps ? branch.corps.replace(/<[^>]*>/g,'').slice(0,50)+'…' : '<span style="color:var(--g300)">Cliquer pour rédiger</span>'}</div>
+      ${branch.tagSiNonLu||branch.tagSiLu?`<div class="node-tags">
+        ${branch.tagSiNonLu?'<span class="badge bg-amber" style="font-size:10px">non lu</span>':''}
+        ${branch.tagSiLu?'<span class="badge bg-blue" style="font-size:10px">lu</span>':''}
+      </div>`:''}
+      <div class="node-actions">
+        <button class="btn btn-xs btn-ghost" onclick="event.stopPropagation();selectionnerNode('${branch.id}')">✏ éditer</button>
+        <button class="btn btn-xs btn-danger" onclick="event.stopPropagation();supprimerBranche('${branch.id}')">✕</button>
+      </div>
+    </div>`
+    // Spacer entre branches
+    if(node.branches.indexOf(branch) < node.branches.length-1) html += '<div style="height:10px"></div>'
+  }
+  // Boutons ajouter branche pour chaque node enfant
+  html += `<div class="add-node-btn" onclick="ajouterBrancheMulti('${node.id}')">+ ajouter une branche conditionnelle</div>`
+  html += '</div>'
+  // Récurser sur chaque branche
+  for(const branch of node.branches) {
+    if(branch.branches && branch.branches.length) {
+      html += renderChildColumns(branch)
+    }
+  }
+  return html
+}
+
+function condColor(cond) {
+  const map = { pas_de_reponse:'#10B981', lu:'#3B82F6', non_lu:'#F59E0B', delai:'#8C95A8' }
+  return map[cond] || '#8C95A8'
+}
+
+// ── SÉLECTION & ÉDITION NODE ──
+function selectionnerNode(nodeId) {
+  selectedNodeId = nodeId
+  rendreFlow()
+  afficherPanelEditeur(nodeId)
+}
+
+function afficherPanelEditeur(nodeId) {
+  const node = trouverNode(flowRoot, nodeId)
+  if(!node) return
+  const isRoot = node.id === flowRoot.id
+  const panel = document.getElementById('editorPanel')
+  panel.style.display = 'block'
+  panel.innerHTML = `
+    <div class="editor-panel">
+      <div class="editor-panel-header">
+        <div class="editor-panel-title">${isRoot ? '✉ Email initial' : '↩ Relance — édition'}</div>
+        <button class="close-panel" onclick="fermerPanel()">×</button>
+      </div>
+      ${!isRoot ? `<div class="trigger-block" style="margin-bottom:14px">
         <div class="trigger-title">condition de déclenchement</div>
         <div class="trigger-row">
-          <span class="trigger-label">Envoyer</span>
-          <select class="cond-select" onchange="etapesEnCours[${i}].condition=this.value;rendreEtapes()">
-            <option value="pas_de_reponse" ${e.condition==='pas_de_reponse'?'selected':''}>Si pas de réponse</option>
-            <option value="non_lu" ${e.condition==='non_lu'?'selected':''}>Si email non lu</option>
-            <option value="lu" ${e.condition==='lu'?'selected':''}>Si email lu (sans réponse)</option>
-            <option value="delai" ${e.condition==='delai'?'selected':''}>Délai fixe (toujours)</option>
+          <span class="trigger-label">Déclencher</span>
+          <select class="cond-select" id="ep-cond" onchange="mettreAJourNode('${nodeId}','condition',this.value)">
+            <option value="pas_de_reponse" ${node.condition==='pas_de_reponse'?'selected':''}>Si pas de réponse</option>
+            <option value="non_lu" ${node.condition==='non_lu'?'selected':''}>Si email non lu</option>
+            <option value="lu" ${node.condition==='lu'?'selected':''}>Si email lu (sans réponse)</option>
+            <option value="delai" ${node.condition==='delai'?'selected':''}>Délai fixe (toujours)</option>
           </select>
           <span class="trigger-label">après</span>
-          <input type="number" class="cond-num" min="1" max="90" value="${e.delaiJours}" onchange="etapesEnCours[${i}].delaiJours=+this.value;rendreEtapes()">
-          <span class="trigger-label">jour${e.delaiJours>1?'s':''}</span>
-        </div>
-        <div class="trigger-row">
-          <span class="trigger-label">Heure d'envoi</span>
-          <input type="time" class="cond-select" style="width:100px" value="${e.heureEnvoi}" onchange="etapesEnCours[${i}].heureEnvoi=this.value">
+          <input type="number" class="cond-num" id="ep-delai" min="1" max="90" value="${node.delaiJours}" onchange="mettreAJourNode('${nodeId}','delaiJours',+this.value)">
+          <span class="trigger-label">jours</span>
+          <span class="trigger-label" style="margin-left:8px">à</span>
+          <input type="time" class="cond-select" style="width:100px" id="ep-heure" value="${node.heureEnvoi}" onchange="mettreAJourNode('${nodeId}','heureEnvoi',this.value)">
         </div>
         <div class="trigger-row" style="gap:16px">
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--g600)">
-            <input type="checkbox" ${e.tagSiNonLu?'checked':''} onchange="etapesEnCours[${i}].tagSiNonLu=this.checked">
-            Taguer <span class="badge bg-amber" style="font-size:10px">non lu</span> si pas d'ouverture détectée
+            <input type="checkbox" id="ep-nlu" ${node.tagSiNonLu?'checked':''} onchange="mettreAJourNode('${nodeId}','tagSiNonLu',this.checked)">
+            Taguer <span class="badge bg-amber">non lu</span>
           </label>
           <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--g600)">
-            <input type="checkbox" ${e.tagSiLu?'checked':''} onchange="etapesEnCours[${i}].tagSiLu=this.checked">
-            Taguer <span class="badge bg-blue" style="font-size:10px">lu</span> si ouverture sans réponse
+            <input type="checkbox" id="ep-lu" ${node.tagSiLu?'checked':''} onchange="mettreAJourNode('${nodeId}','tagSiLu',this.checked)">
+            Taguer <span class="badge bg-blue">lu</span>
           </label>
         </div>
-        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--g100);font-size:11px;color:var(--g400)">
-          ${e.condition==='pas_de_reponse'?'→ Déclenché si aucune réponse reçue dans le délai imparti':
-            e.condition==='non_lu'?'→ Déclenché uniquement si l\'email précédent n\'a pas été ouvert (détection via Graph API)':
-            e.condition==='lu'?'→ Déclenché si l\'email précédent a été ouvert mais sans réponse':
-            '→ Envoi systématique après le délai, quels que soient les comportements précédents'}
-        </div>
-      </div>`:''}
-
+      </div>` : ''}
       <div class="form-group">
-        <label class="form-label">Objet</label>
-        <input class="form-input" id="sf-${i}-sujet" value="${(e.sujet||'').replace(/"/g,'&quot;')}"
+        <label class="form-label">Objet de l'email</label>
+        <input class="form-input" id="ep-sujet" value="${(node.sujet||'').replace(/"/g,'&quot;')}"
           placeholder="Question rapide, {{prenom}}"
-          oninput="etapesEnCours[${i}].sujet=this.value"
-          onfocus="dernierEditeurFocus='sf-${i}-sujet'">
+          oninput="mettreAJourNode('${nodeId}','sujet',this.value)"
+          onfocus="dernierEditeurFocus='ep-sujet'">
       </div>
       <div class="form-group" style="margin-bottom:0">
         <label class="form-label">Corps du message</label>
         <div class="editor-wrap">
-          <div class="editor-toolbar">${outilsEditeur('se-'+i)}</div>
-          <div id="se-${i}" class="editor-body" contenteditable="true"
+          <div class="editor-toolbar">${outilsEditeur('ep-corps')}</div>
+          <div id="ep-corps" class="editor-body" contenteditable="true"
             data-placeholder="Bonjour {{prenom}},&#10;&#10;..."
-            onfocus="dernierEditeurFocus='se-${i}'"
-            oninput="etapesEnCours[${i}].corps=this.innerHTML">${e.corps||''}</div>
-          <div class="editor-footer"><span class="char-count">rich text · html supporté</span></div>
+            onfocus="dernierEditeurFocus='ep-corps'"
+            oninput="mettreAJourNode('${nodeId}','corps',this.innerHTML)">${node.corps||''}</div>
+          <div class="editor-footer"><span class="char-count">Rich text · HTML supporté · variables disponibles ci-dessus</span></div>
         </div>
       </div>
-    </div>`).join('')
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn btn-primary btn-sm" onclick="ajouterBranche('${nodeId}','pas_de_reponse')">+ Branche "pas de réponse"</button>
+        <button class="btn btn-ghost btn-sm" onclick="ajouterBranche('${nodeId}','lu')">+ Branche "lu"</button>
+        <button class="btn btn-ghost btn-sm" onclick="ajouterBranche('${nodeId}','non_lu')">+ Branche "non lu"</button>
+      </div>
+    </div>`
+}
+
+function fermerPanel() {
+  document.getElementById('editorPanel').style.display='none'
+  selectedNodeId = null
+  rendreFlow()
+}
+
+function mettreAJourNode(nodeId, champ, valeur) {
+  const node = trouverNode(flowRoot, nodeId)
+  if(node) {
+    node[champ] = valeur
+    // Re-render flow sans perdre le focus de l'éditeur
+    if(champ !== 'sujet' && champ !== 'corps') rendreFlow()
+  }
+}
+
+function ajouterBranche(parentId, condition='pas_de_reponse') {
+  const parent = trouverNode(flowRoot, parentId)
+  if(!parent) return
+  const nouveau = creerNode(condition, 3)
+  parent.branches = parent.branches || []
+  parent.branches.push(nouveau)
+  selectedNodeId = nouveau.id
+  rendreFlow()
+  afficherPanelEditeur(nouveau.id)
+}
+
+function ajouterBrancheMulti(parentId) {
+  // Ouvre un mini-choix
+  const conds = ['pas_de_reponse','lu','non_lu','delai']
+  const choix = prompt('Type de branche :\n1. Pas de réponse\n2. Lu sans réponse\n3. Non lu\n4. Délai fixe\n\nEntrez 1, 2, 3 ou 4 :')
+  const idx = parseInt(choix) - 1
+  if(idx >= 0 && idx < conds.length) ajouterBranche(parentId, conds[idx])
+}
+
+function editerCondition(nodeId) { selectionnerNode(nodeId) }
+
+function supprimerBranche(nodeId) {
+  if(!confirm('Supprimer ce nœud et toutes ses branches enfants ?')) return
+  supprimerNodeDansParent(flowRoot, nodeId)
+  if(selectedNodeId === nodeId) {
+    selectedNodeId = null
+    document.getElementById('editorPanel').style.display='none'
+  }
+  rendreFlow()
+}
+
+function insererVar(v) {
+  if(!dernierEditeurFocus) return
+  const el = document.getElementById(dernierEditeurFocus)
+  if(!el) return
+  if(el.tagName === 'INPUT') {
+    const pos = el.selectionStart, cur = el.value
+    el.value = cur.slice(0,pos) + v + cur.slice(el.selectionEnd)
+    if(selectedNodeId) mettreAJourNode(selectedNodeId, 'sujet', el.value)
+    el.focus(); el.setSelectionRange(pos+v.length, pos+v.length)
+  } else {
+    el.focus(); document.execCommand('insertText', false, v)
+    if(selectedNodeId) mettreAJourNode(selectedNodeId, 'corps', el.innerHTML)
+  }
+}
+
+// Convertir l'arbre en tableau plat pour l'envoi
+function aplatiArbre(node, result=[]) {
+  result.push({ sujet:node.sujet, corps:node.corps, condition:node.condition, delaiJours:node.delaiJours, heureEnvoi:node.heureEnvoi, tagSiNonLu:node.tagSiNonLu, tagSiLu:node.tagSiLu })
+  for(const b of node.branches||[]) aplatiArbre(b, result)
+  return result
 }
 
 function sauvegarderSeq() {
-  const nom=document.getElementById('nomSeq').value.trim()
+  const nom = document.getElementById('nomSeq').value.trim()
   if(!nom) { alert('Nommez la séquence'); return }
-  etapesEnCours.forEach((e,i)=>{ const ed=document.getElementById('se-'+i); if(ed) e.corps=ed.innerHTML })
-  if(etapesEnCours.some(e=>!e.sujet.trim()||!e.corps.replace(/<[^>]*>/g,'').trim())) { alert('Complétez tous les objets et corps des emails'); return }
-  if(seqIdEnEdition){
-    const s=S.sequences.find(x=>x.id===seqIdEnEdition); s.nom=nom; s.etapes=JSON.parse(JSON.stringify(etapesEnCours))
+  if(!flowRoot.sujet.trim()) { alert('Rédigez au moins l\'email initial'); return }
+  const seq = { id: seqIdEnEdition||uid(), nom, flowRoot: JSON.parse(JSON.stringify(flowRoot)), etapes: aplatiArbre(flowRoot), creee: isoMaint() }
+  if(seqIdEnEdition) {
+    const idx = S.sequences.findIndex(s=>s.id===seqIdEnEdition)
+    if(idx>=0) S.sequences[idx] = seq
   } else {
-    S.sequences.push({id:uid(),nom,etapes:JSON.parse(JSON.stringify(etapesEnCours)),creee:isoMaint()})
+    S.sequences.push(seq)
   }
   sauver(); fermerModal('modalSeq'); afficherSequences()
   ajouterJournal(`Séquence enregistrée : ${nom}`,'ok')
 }
 
 function afficherSequences() {
-  const el=document.getElementById('contenu-sequences')
-  if(!S.sequences.length){el.innerHTML=`<div class="empty"><div class="empty-icon">🔗</div><div class="empty-title">aucune séquence</div><p>Créez une séquence avec des relances automatiques conditionnelles</p></div>`;return}
-  el.innerHTML=S.sequences.map(s=>`
-    <div class="card">
+  const el = document.getElementById('contenu-sequences')
+  if(!S.sequences.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🔗</div><div class="empty-title">aucune séquence</div><p>Créez votre première séquence de prospection</p></div>`
+    return
+  }
+  el.innerHTML = S.sequences.map(s => {
+    const etapes = s.etapes || aplatiArbre(s.flowRoot||creerNode())
+    const branches = compterBranches(s.flowRoot)
+    return `<div class="card">
       <div class="card-header">
-        <div><div class="card-title">${s.nom}</div><div class="card-sub">${s.etapes.length} email${s.etapes.length>1?'s':''} · ${fmtD(s.creee)}</div></div>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-ghost btn-sm" onclick="ouvrirModalSeq('${s.id}')">modifier</button>
+        <div>
+          <div class="card-title">${s.nom}</div>
+          <div class="card-sub">${etapes.length} email${etapes.length>1?'s':''} · ${branches>1?branches+' branches · ':''} créée ${fmtD(s.creee)}</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="ouvrirModalSeq('${s.id}')">✏ modifier</button>
           <button class="btn btn-danger btn-sm" onclick="supprimerSeq('${s.id}')">supprimer</button>
         </div>
       </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-        ${s.etapes.map((et,i)=>`
-          <span style="display:flex;align-items:center;gap:5px">
-            ${i>0?`<span style="font-size:10px;color:var(--g400);font-family:var(--mono)">→ ${LABELS_COND[et.condition]||''} J+${et.delaiJours}</span>`:''}
-            <span style="background:var(--g50);border:1px solid var(--g200);border-radius:4px;padding:5px 10px">
-              <div style="font-family:var(--mono);font-size:11px;font-weight:500">${i===0?'initial':`relance_${i}`}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        ${etapes.slice(0,6).map((et,i)=>`
+          <span style="display:flex;align-items:center;gap:6px">
+            ${i>0?`<span style="font-size:11px;color:${condColor(et.condition)};font-weight:500">→ ${(COND[et.condition]||COND.pas_de_reponse).short} J+${et.delaiJours}</span>`:''}
+            <span style="background:var(--g50);border:1px solid var(--g100);border-radius:var(--r);padding:6px 10px;border-left:3px solid ${i===0?'var(--accent)':condColor(et.condition)}">
+              <div style="font-size:11px;font-weight:600;color:var(--g700)">${i===0?'Initial':`Relance ${i}`}</div>
               <div style="font-size:11px;color:var(--g400)">${(et.sujet||'').slice(0,28)}${et.sujet?.length>28?'…':''}</div>
-              ${i>0&&(et.tagSiNonLu||et.tagSiLu)?`<div style="display:flex;gap:3px;margin-top:3px">
-                ${et.tagSiNonLu?badge('non lu','amber'):''}
-                ${et.tagSiLu?badge('lu','blue'):''}
-              </div>`:''}
             </span>
           </span>`).join('')}
+        ${etapes.length>6?`<span style="font-size:11px;color:var(--g400)">+${etapes.length-6} autres</span>`:''}
       </div>
-    </div>`).join('')
+    </div>`
+  }).join('')
 }
 
-function supprimerSeq(id){if(!confirm('Supprimer cette séquence ?'))return;S.sequences=S.sequences.filter(s=>s.id!==id);sauver();afficherSequences()}
+function compterBranches(node) {
+  if(!node) return 0
+  return 1 + (node.branches||[]).reduce((s,b)=>s+compterBranches(b),0)
+}
+
+function supprimerSeq(id){
+  if(!confirm('Supprimer cette séquence ?'))return
+  S.sequences=S.sequences.filter(s=>s.id!==id);sauver();afficherSequences()
+}
+
+// Ancien format compat : si la séquence a etapes[], les utiliser pour envoyer
+function getEtapesSeq(seq) {
+  if(seq.flowRoot) return aplatiArbre(seq.flowRoot)
+  return seq.etapes || []
+}
+
+
 
 // ═══ IMPORT ═══
 let prospectsImportes=[], tagsManuel=[]
@@ -883,15 +1235,71 @@ function traiterFichier(file){
   r.readAsArrayBuffer(file)
 }
 
-function gererTouche(e){if([',',';','Entrée','Enter'].includes(e.key)){e.preventDefault();ajouterTag(document.getElementById('tagInput').value);document.getElementById('tagInput').value=''}}
-function gererColler(e){e.preventDefault();e.clipboardData.getData('text').split(/[;,\n\r\s]+/).forEach(ajouterTag)}
-function ajouterTag(email){const e=(email||'').trim().toLowerCase();if(!e.includes('@')||tagsManuel.includes(e))return;tagsManuel.push(e);afficherTags()}
-function supprimerTag(email){tagsManuel=tagsManuel.filter(x=>x!==email);afficherTags()}
+function ajouterProspectManuel() {
+  const email = document.getElementById('manEmail').value.trim().toLowerCase()
+  if(!email || !email.includes('@')) { alert('Email invalide'); return }
+  if(tagsManuel.find(p=>p.email===email)) { alert('Cet email est déjà dans la liste'); return }
+  tagsManuel.push({
+    email,
+    prenom: document.getElementById('manPrenom').value.trim(),
+    nom: document.getElementById('manNom').value.trim(),
+    societe: document.getElementById('manSociete').value.trim(),
+    poste: document.getElementById('manPoste').value.trim()
+  })
+  // Réinitialiser le formulaire
+  ['manEmail','manPrenom','manNom','manSociete','manPoste'].forEach(id => document.getElementById(id).value='')
+  document.getElementById('manEmail').focus()
+  afficherTags()
+}
+
+function validerTagInput() {
+  const val = document.getElementById('tagInput').value
+  val.split(/[;,\n\r\s]+/).forEach(e => {
+    const email = e.trim().toLowerCase()
+    if(email.includes('@') && !tagsManuel.find(p=>p.email===email))
+      tagsManuel.push({email, prenom:'', nom:'', societe:'', poste:''})
+  })
+  document.getElementById('tagInput').value=''
+  afficherTags()
+}
+
+function gererTouche(e){if([',',';','Entrée','Enter'].includes(e.key)){e.preventDefault();validerTagInput()}}
+function gererColler(e){
+  e.preventDefault()
+  const texte = e.clipboardData.getData('text')
+  texte.split(/[;,\n\r]+/).forEach(e => {
+    const email = e.trim().toLowerCase()
+    if(email.includes('@') && !tagsManuel.find(p=>p.email===email))
+      tagsManuel.push({email, prenom:'', nom:'', societe:'', poste:''})
+  })
+  afficherTags()
+}
+
+function supprimerProspectManuel(email){tagsManuel=tagsManuel.filter(x=>x.email!==email);afficherTags()}
+
 function afficherTags(){
-  document.getElementById('tagList').innerHTML=tagsManuel.map(t=>`
-    <div class="prospect-tag"><div class="tag-av">${t[0].toUpperCase()}</div>${t}
-    <button class="tag-rm" onclick="supprimerTag('${t}')">×</button></div>`).join('')
-  document.getElementById('tagCount').textContent=tagsManuel.length+' email'+(tagsManuel.length>1?'s':'')
+  const el = document.getElementById('manProspectsList')
+  if(!el) return
+  if(!tagsManuel.length) { el.innerHTML=''; document.getElementById('tagCount').textContent='0 prospect ajouté'; return }
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-size:12px">
+    <thead><tr>
+      <th style="text-align:left;padding:6px 10px;background:var(--g50);border-bottom:1px solid var(--g200);font-size:10px;font-family:var(--mono);color:var(--g400);text-transform:uppercase;letter-spacing:.5px">Email</th>
+      <th style="text-align:left;padding:6px 10px;background:var(--g50);border-bottom:1px solid var(--g200);font-size:10px;font-family:var(--mono);color:var(--g400);text-transform:uppercase;letter-spacing:.5px">Prénom</th>
+      <th style="text-align:left;padding:6px 10px;background:var(--g50);border-bottom:1px solid var(--g200);font-size:10px;font-family:var(--mono);color:var(--g400);text-transform:uppercase;letter-spacing:.5px">Nom</th>
+      <th style="text-align:left;padding:6px 10px;background:var(--g50);border-bottom:1px solid var(--g200);font-size:10px;font-family:var(--mono);color:var(--g400);text-transform:uppercase;letter-spacing:.5px">Société</th>
+      <th style="text-align:left;padding:6px 10px;background:var(--g50);border-bottom:1px solid var(--g200);font-size:10px;font-family:var(--mono);color:var(--g400);text-transform:uppercase;letter-spacing:.5px">Poste</th>
+      <th style="padding:6px 10px;background:var(--g50);border-bottom:1px solid var(--g200)"></th>
+    </tr></thead>
+    <tbody>${tagsManuel.map(p=>`<tr>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--g100);font-family:var(--mono);font-size:11px">${p.email}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--g100)">${p.prenom||'—'}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--g100)">${p.nom||'—'}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--g100)">${p.societe||'—'}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--g100)">${p.poste||'—'}</td>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--g100)"><button class="btn btn-danger btn-xs" onclick="supprimerProspectManuel('${p.email}')">✕</button></td>
+    </tr>`).join('')}</tbody>
+  </table>`
+  document.getElementById('tagCount').textContent=tagsManuel.length+' prospect'+(tagsManuel.length>1?'s':'')+' ajouté'+(tagsManuel.length>1?'s':'')
 }
 
 // ═══ CAMPAGNES ═══
@@ -906,9 +1314,10 @@ function aperçuSeq(){
   const seq=S.sequences.find(s=>s.id===sid)
   const el=document.getElementById('aperçuSeqRow')
   if(!seq){el.innerHTML='';return}
-  el.innerHTML=seq.etapes.map((et,i)=>`
+  const etapes=getEtapesSeq(seq)
+  el.innerHTML=etapes.map((et,i)=>`
     <span style="display:flex;align-items:center;gap:4px">
-      ${i>0?`<span style="font-size:10px;color:var(--g400);font-family:var(--mono)">→ J+${et.delaiJours}</span>`:''}
+      ${i>0?`<span style="font-size:10px;color:${condColor(et.condition)};font-weight:500">→ J+${et.delaiJours}</span>`:''}
       <span class="badge bg-gray">${i===0?'initial':`relance_${i}`}</span>
       ${i>0&&et.tagSiNonLu?badge('non lu','amber'):''}
       ${i>0&&et.tagSiLu?badge('lu','blue'):''}
@@ -919,7 +1328,7 @@ async function lancerCampagne(){
   const nom=document.getElementById('campNom').value.trim()
   const seqId=document.getElementById('campSeq').value
   const estFichier=document.getElementById('imp-fichier').style.display!=='none'
-  const tousP=estFichier?prospectsImportes:tagsManuel.map(e=>({email:e,prenom:'',nom:'',societe:'',poste:''}))
+  const tousP=estFichier?prospectsImportes:tagsManuel
   if(!nom) return alert('Nommez la campagne')
   if(!seqId) return alert('Sélectionnez une séquence')
   if(!tousP.length) return alert('Ajoutez des prospects')
@@ -946,6 +1355,7 @@ async function lancerCampagne(){
 
   sauver(); ajouterJournal(`Campagne "${nom}" lancée — ${tousP.length} prospects`,'ok')
   const seq=S.sequences.find(s=>s.id===seqId)
+  if(seq) seq._etapesFlat = getEtapesSeq(seq)
   envoyerLot(campId,seq,delai)
   reinitialiserFormCamp(); afficherOngletCamp('liste'); afficherTableau()
 }
@@ -955,7 +1365,7 @@ function reinitialiserFormCamp(){
   document.getElementById('campSeq').value=''
   document.getElementById('aperçuSeqRow').innerHTML=''
   document.getElementById('aperçuFichier').innerHTML=''
-  prospectsImportes=[]; tagsManuel=[]; afficherTags()
+  prospectsImportes=[]; tagsManuel=[]; afficherTags(); const ml=document.getElementById('manProspectsList'); if(ml)ml.innerHTML=''
 }
 
 // ═══ ENVOI ═══
@@ -991,10 +1401,11 @@ async function envoyerLot(campId, seq, delaiMs) {
   const enAttente=S.prospects.filter(p=>p.campagneId===campId&&!p.termine&&!p.repandu&&p.prochainEnvoi&&new Date(p.prochainEnvoi)<=maint)
 
   for(const p of enAttente){
-    if(p.etapeCourante>=seq.etapes.length){p.termine=true;continue}
+    const etapesFlat = seq._etapesFlat || getEtapesSeq(seq)
+    if(p.etapeCourante>=etapesFlat.length){p.termine=true;continue}
 
     // Vérifier condition avant d'envoyer
-    const etapeActuelle=seq.etapes[p.etapeCourante]
+    const etapeActuelle=etapesFlat[p.etapeCourante]
     if(p.etapeCourante>0){
       const cond=etapeActuelle.condition
       if(cond==='non_lu'&&p.ouvertures>0){
@@ -1013,14 +1424,14 @@ async function envoyerLot(campId, seq, delaiMs) {
       }
     }
 
-    const etape=seq.etapes[p.etapeCourante]
+    const etape=etapesFlat[p.etapeCourante]
     const ok=await envoyerUn(p,etape.sujet,etape.corps)
     if(ok){
       p.historique=p.historique||[]
       p.historique.push({etape:p.etapeCourante,envoyeA:isoMaint(),condition:etape.condition})
       p.etapeCourante++
-      if(p.etapeCourante<seq.etapes.length){
-        const prochaineEtape=seq.etapes[p.etapeCourante]
+      if(p.etapeCourante<etapesFlat.length){
+        const prochaineEtape=etapesFlat[p.etapeCourante]
         const nd=new Date()
         nd.setDate(nd.getDate()+(prochaineEtape.delaiJours||2))
         const camp=S.campagnes.find(c=>c.id===campId)
@@ -1031,7 +1442,7 @@ async function envoyerLot(campId, seq, delaiMs) {
         p.prochainEnvoi=nd.toISOString()
       }else{p.termine=true;p.prochainEnvoi=null}
     }
-    sauver()
+    sauver(); seq._etapesFlat = getEtapesSeq(seq)
     if(enAttente.indexOf(p)<enAttente.length-1)await new Promise(r=>setTimeout(r,delaiMs*1000))
   }
   envoyant=false; mettreAJourBadges()
@@ -1124,10 +1535,11 @@ function rendreFunnel(campId) {
   const seq=camp?S.sequences.find(s=>s.id===camp.seqId):null
   const ps=S.prospects.filter(p=>p.campagneId===campId)
   if(!camp||!seq||!ps.length) return ''
+  const etapesSeq=getEtapesSeq(seq)
 
-  const etapesStats=seq.etapes.map((et,i)=>{
+  const etapesStats=etapesSeq.map((et,i)=>{
     const envoyes=ps.filter(p=>p.etapeCourante>i||p.termine).length
-    return {label:i===0?'initial':`relance_${i}`, sujet:et.sujet, envoyes, condition:et.condition, delaiJours:et.delaiJours}
+    return {label:i===0?'initial':`relance_${i}`, sujet:et.sujet||'', envoyes, condition:et.condition||'pas_de_reponse', delaiJours:et.delaiJours||0}
   })
   const max=etapesStats[0]?.envoyes||1
   const repandus=ps.filter(p=>p.repandu).length
@@ -1143,7 +1555,7 @@ function rendreFunnel(campId) {
       ${etapesStats.map((et,i)=>`
         ${i>0?`<div class="funnel-conn">
           <div class="funnel-conn-line"></div>
-          <div class="funnel-conn-pill">${LABELS_COND[et.condition]||''} · J+${et.delaiJours} · ${max-et.envoyes} sortis</div>
+          <div class="funnel-conn-pill">${(COND[et.condition]||COND.pas_de_reponse).short} · J+${et.delaiJours} · ${max-et.envoyes} sortis</div>
           <div class="funnel-conn-line"></div>
         </div>`:''}
         <div class="funnel-step-row">
@@ -1367,6 +1779,10 @@ function afficherJournaux(){
 // ═══ INIT ═══
 mettreAJourBadges()
 afficherTableau()
+// Gérer le retour après redirection OAuth PKCE
+if(window.location.search.includes('code=') || window.location.search.includes('error=')) {
+  gererRetourOAuth()
+}
 </script>
 </body>
 </html>
