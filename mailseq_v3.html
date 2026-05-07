@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>mailseq v3</title>
+<title>mailseq v3 — 20260507_133043</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -1317,7 +1317,7 @@ function aplatiArbre(node, result=[]) {
 function sauvegarderSeq() {
   const nom = document.getElementById('nomSeq').value.trim()
   if(!nom) { alert('Nommez la séquence'); return }
-  if(!flowRoot.sujet.trim()) { alert('Rédigez au moins l\'email initial'); return }
+  if(!flowRoot.sujet.trim()) { alert("Complétez l'email initial"); return }
   const seq = { id: seqIdEnEdition||uid(), nom, flowRoot: JSON.parse(JSON.stringify(flowRoot)), etapes: aplatiArbre(flowRoot), creee: isoMaint() }
   if(seqIdEnEdition) {
     const idx = S.sequences.findIndex(s=>s.id===seqIdEnEdition)
@@ -1352,13 +1352,13 @@ function remplirSelectListeSeq() {
 async function sauvegarderEtLancer() {
   const nom = document.getElementById('nomSeq').value.trim()
   if(!nom) { alert('Nommez la séquence'); return }
-  if(!flowRoot.sujet.trim()) { alert('Rédigez au moins l'email initial'); return }
+  if(!flowRoot.sujet.trim()) { alert("Complétez l'email initial"); return }
 
   const lid = document.getElementById('seqListeSel')?.value
   if(!lid) { alert('Sélectionnez une liste de prospects'); return }
   const liste = S.listes.find(l=>l.id===lid)
   if(!liste || !liste.contacts.length) { alert('La liste sélectionnée est vide'); return }
-  if(!S.accessToken && !confirm('Outlook non connecté. Lancer en mode démonstration ?')) return
+  if(!S.accessToken && !confirm("Outlook non connecté. Mode démonstration ?")) return
 
   // 1. Sauvegarder la séquence
   const seq = { id: seqIdEnEdition||uid(), nom, flowRoot: JSON.parse(JSON.stringify(flowRoot)), etapes: aplatiArbre(flowRoot), creee: isoMaint() }
