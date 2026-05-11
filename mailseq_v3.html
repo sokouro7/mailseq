@@ -30,6 +30,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--sans);background:var(--b
 
 /* ── APP LAYOUT ── */
 .app{display:flex;height:100vh}
+.page{flex:1;display:flex;flex-direction:column;overflow:hidden}
 
 /* ══════════════════════════════════════════
    SIDEBAR — Raycast style
@@ -502,7 +503,7 @@ tr:hover td{background:var(--g50)}
   </div>
 
   <!-- TABLEAU DE BORD -->
-  <div id="page-tableau" class="page" style="flex-direction:column">
+  <div id="page-tableau" class="page" style="display:flex;flex-direction:column">
     <div class="topbar">
       <div class="topbar-title">Tableau de bord</div>
       <button class="btn btn-ghost btn-sm" onclick="lancerDeclencheurs();verifierReponses()">↻ synchroniser</button>
