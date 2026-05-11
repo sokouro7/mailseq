@@ -554,12 +554,12 @@ tr:hover td{background:var(--g50)}
       <div><div class="modal-title">Connexion Outlook</div><div class="modal-sub">Microsoft Graph API — vos emails partent depuis votre vrai compte</div></div>
       <button class="close-btn" onclick="fermerModal('modalConnexion')">×</button>
     </div>
-    <div id="conn-e1">
+    <div id="conn-etape1">
       <div class="form-group"><label class="label">ID client (Azure)</label><input class="input mono" id="clientIdInput" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>
       <div class="form-group"><label class="label">ID de locataire</label><input class="input mono" id="tenantIdInput" placeholder="common" value="common"></div>
       <div class="info-box i-gray" style="font-size:11.5px">URI de redirection à enregistrer dans Azure :<br><strong id="uriRedir" style="font-family:var(--mono);font-size:11px"></strong></div>
     </div>
-    <div id="conn-e2" style="display:none;text-align:center;padding:20px 0">
+    <div id="conn-etape2" style="display:none;text-align:center;padding:20px 0">
       <div style="font-size:24px;margin-bottom:10px">🔐</div>
       <div style="font-size:13px;font-weight:500">Authentification en cours…</div>
       <div class="progress" style="margin-top:14px"><div class="progress-fill" id="barreAuth" style="width:0%"></div></div>
@@ -2033,19 +2033,13 @@ function afficherTableau(){
         <div style="font-size:11px;color:var(--g400);margin-top:6px">${S.campagnes.filter(c=>c.statut==='brouillon').length} en brouillon</div>
       </div>
     </div>
-    ${att>0?`<div style="background:var(--green-bg);border:1px solid var(--green-b);border-radius:var(--r);padding:10px 14px;font-size:12.5px;color:#15803D;margin-bottom:16px">
-      ✓ <strong>${att}</strong> envoi${att>1?'s':''} planifié${att>1?'s':''} — partira automatiquement à la prochaine ouverture de l'onglet
-    </div>`:''}
+    ${att>0?`<div style="background:var(--green-bg);border:1px solid var(--green-b);border-radius:var(--r);padding:10px 14px;font-size:12.5px;color:#065F46;margin-bottom:16px">✓ <strong>${att}</strong> envoi${att>1?'s':''} planifié${att>1?'s':''} — partira automatiquement</div>`:''}
     <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);overflow:hidden;box-shadow:var(--shadow)">
-      <div style="padding:16px 18px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between">
         <div style="font-size:13px;font-weight:600;color:var(--g900)">Campagnes récentes</div>
         <button class="btn btn-ghost btn-sm" onclick="aller('sequences',document.getElementById('nav-sequences'))">voir tout →</button>
       </div>
-      ${!S.campagnes.length?`<div style="text-align:center;padding:40px 24px;color:var(--g400)">
-        <div style="font-size:24px;margin-bottom:8px;opacity:.3">📭</div>
-        <div style="font-size:13px;font-weight:500;color:var(--g500);margin-bottom:4px">Aucune campagne</div>
-        <p style="font-size:12px">Créez une séquence et publiez-la</p>
-      </div>`:`<table><thead><tr><th>Nom</th><th>Envoyés</th><th>Réponses</th><th>Taux</th><th>Statut</th></tr></thead><tbody>
+      ${!S.campagnes.length?`<div style="text-align:center;padding:36px;color:var(--g400)"><div style="font-size:22px;margin-bottom:8px;opacity:.3">📭</div><div style="font-size:13px;font-weight:500;color:var(--g500);margin-bottom:4px">Aucune campagne</div><p style="font-size:12px">Créez une séquence et publiez-la</p></div>`:`<table><thead><tr><th>Nom</th><th>Envoyés</th><th>Réponses</th><th>Taux</th><th>Statut</th></tr></thead><tbody>
         ${S.campagnes.slice(0,6).map(c=>{
           const ps=S.prospects.filter(p=>p.campagneId===c.id)
           const sent=ps.filter(p=>p.etapeCourante>0).length
@@ -2062,1412 +2056,770 @@ function afficherTableau(){
     </div>`
 }
 
-
-function afficherJournaux(){
-  const el=document.getElementById('contenu-journaux')
+// ═══ ANALYTIQUES ═══
+function afficherAnalytiques(){
+  const el=document.getElementById('contenu-analytiques')
   if(!el) return
-  const BRUIT=['Aucun prospect à surveiller','Synchronisation boîte mail','Aucun déclenchement en attente','Synchronisation OK — aucun événement','Aucun prospect à surveiller — aucun email envoyé']
-  const showAll = el.dataset.showAll==='true'
-  const liste = showAll ? S.journaux : S.journaux.filter(l=>!BRUIT.some(b=>l.msg.startsWith(b)))
-  if(!S.journaux.length){
-    el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">aucun journal</div></div>`
-    return
-  }
-  const important = S.journaux.filter(l=>!BRUIT.some(b=>l.msg.startsWith(b))).length
-  el.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--g100)">
-    <div style="font-size:12px;color:var(--g400)">${important} événements importants · ${S.journaux.length} total</div>
-    <button class="btn btn-ghost btn-sm" onclick="const e=document.getElementById('contenu-journaux');e.dataset.showAll=e.dataset.showAll==='true'?'false':'true';afficherJournaux()">
-      ${showAll?'Masquer le bruit':'Tout afficher'}
-    </button>
-  </div>
-  ${liste.map(l=>`<div class="log-entry">
-    <span class="log-time">${l.heure}</span>
-    <span class="log-${l.type==='ok'?'ok':l.type==='err'?'err':l.type==='warn'?'warn':'info'}">${l.type==='ok'?'✓':l.type==='err'?'✗':l.type==='warn'?'↩':'·'}</span>
-    <span style="flex:1;color:var(--g${l.type==='info'?'500':'700'})">${l.msg}</span>
-  </div>`).join('')}`
+  if(!S.campagnes.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">aucune donnée</div><p>Lancez une campagne pour voir les analytiques</p></div>`;return}
+  const envTotal=S.prospects.filter(p=>p.etapeCourante>0).length
+  const repTotal=S.prospects.filter(p=>p.repandu).length
+  const txRep=pct(repTotal,envTotal)
+  const statsSeq=S.sequences.map(seq=>{
+    const camps=S.campagnes.filter(c=>c.seqId===seq.id)
+    const ps=S.prospects.filter(p=>camps.some(c=>c.id===p.campagneId))
+    const env=ps.filter(p=>p.etapeCourante>0).length
+    const rep=ps.filter(p=>p.repandu).length
+    return {nom:seq.nom,env,rep,tx:pct(rep,env)}
+  }).sort((a,b)=>b.tx-a.tx)
+  el.innerHTML=`
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">taux de réponse</div><div class="stat-value ${txRep>15?'c-ok':txRep>5?'c-warn':'c-err'}">${txRep}%</div><div class="stat-sub">${repTotal}/${envTotal} envoyés</div></div>
+
+      <div class="stat-card"><div class="stat-label">blacklistés</div><div class="stat-value">${(S.blacklist||[]).length}</div><div class="stat-sub">jamais contactés</div></div>
+
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">taux de réponse par séquence</div></div>
+      <div class="chart-bar-wrap">
+        ${statsSeq.map(s=>`<div class="chart-bar-row">
+          <div class="chart-bar-label" title="${s.nom}">${s.nom}</div>
+          <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${s.tx}%;background:${s.tx>15?'var(--green)':s.tx>5?'var(--amber)':'var(--err)'}"></div></div>
+          <div class="chart-bar-val">${s.tx}%</div>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">performance par campagne</div></div>
+      <table><thead><tr><th>campagne</th><th>envoyés</th><th>réponses</th><th>taux</th></tr></thead><tbody>
+        ${S.campagnes.map(c=>{
+          const ps=S.prospects.filter(p=>p.campagneId===c.id)
+          const env=ps.filter(p=>p.etapeCourante>0).length
+          const ouv=0
+          const rep=ps.filter(p=>p.repandu).length
+          const tx=pct(rep,env)
+          return `<tr><td style="font-family:var(--mono);font-size:12px">${c.nom}</td><td>${env}</td><td>${rep}</td><td><span class="badge ${tx>15?'bg-green':tx>5?'bg-amber':'bg-gray'}">${tx}%</span></td></tr>`
+        }).join('')}
+      </tbody></table>
+    </div>`
 }
 
-
-function sauver() {
-  try { localStorage.setItem('msp_v3', JSON.stringify(S)) } catch {}
-  mettreAJourBadges()
-}
-
-const uid = () => Math.random().toString(36).slice(2)+Date.now().toString(36)
-const isoMaint = () => new Date().toISOString()
-const fmt = d => d ? new Date(d).toLocaleString('fr-FR') : '—'
-const fmtProchainEnvoi = d => {
-  if(!d) return '—'
-  const date = new Date(d)
-  const maint = new Date()
-  const diff = Math.round((date - maint) / 3600000)
-  const jours = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi']
-  const mois = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc']
-  if(diff < 0) return '⚡ dû maintenant'
-  if(diff < 1) return `dans moins d'1h`
-  if(diff < 24) return `aujourd'hui à ${date.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`
-  if(diff < 48) return `demain à ${date.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`
-  return `${jours[date.getDay()]} ${date.getDate()} ${mois[date.getMonth()]} à ${date.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`
-}
-const fmtD = d => d ? new Date(d).toLocaleDateString('fr-FR') : '—'
-const pct = (n,d) => d ? Math.round(n/d*100) : 0
-
-function interp(texte, p) {
-  return (texte||'')
-    .replace(/\{\{prenom\}\}/gi, p.prenom||'')
-    .replace(/\{\{nom\}\}/gi, p.nom||'')
-    .replace(/\{\{societe\}\}/gi, p.societe||'')
-    .replace(/\{\{poste\}\}/gi, p.poste||'')
-    .replace(/\{\{email\}\}/gi, p.email||'')
-}
-
-function ajouterJournal(msg, type='info') {
-  S.journaux.unshift({ id:uid(), heure:new Date().toLocaleTimeString('fr-FR'), msg, type })
-  if(S.journaux.length>300) S.journaux.pop()
-  sauver()
-}
-
-function badge(libelle, cls, icone='') {
-  const map={green:'b-green',amber:'b-amber',red:'b-red',blue:'b-blue',gray:'b-gray',accent:'b-accent'}
-  return `<span class="badge ${map[cls]||'b-gray'}">${icone?icone+' ':''}${libelle}</span>`
-}
-
-// ═══ NAVIGATION ═══
-function aller(id, el) {
-  document.querySelectorAll('.page').forEach(p=>p.style.display='none')
-  document.querySelectorAll('.nav-item,.nav-item-sm').forEach(n=>n.classList.remove('active'))
-  const pg=document.getElementById('page-'+id)
-  if(pg){pg.style.display='flex';pg.style.flexDirection='column'}
-  if(el) el.classList.add('active')
-  const navEl=document.getElementById('nav-'+id); if(navEl) navEl.classList.add('active')
-  if(id==='tableau') afficherTableau()
-  if(id==='analytiques') afficherAnalytiques()
-  if(id==='sequences') afficherSequences()
-  if(id==='campagnes') afficherCampagnes()
-  if(id==='signature') chargerSig()
-  if(id==='blacklist') afficherBlacklist()
-  if(id==='prospects') afficherProspects()
-  if(id==='journaux') afficherJournaux()
-}
-
-function mettreAJourBadges() {
-  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val}
-  set('seqBadge', S.sequences.length)
-  set('campBadge', S.campagnes.length)
-  set('blacklistBadge', (S.blacklist||[]).length)
-  set('prospBadge', S.listes.length)
-}
-
-function afficherOngletCamp(t) {
-  document.getElementById('ctab-nouvelle').classList.toggle('active', t==='nouvelle')
-  document.getElementById('ctab-liste').classList.toggle('active', t==='liste')
-  document.getElementById('panel-nouvelle-camp').style.display = t==='nouvelle'?'block':'none'
-  document.getElementById('panel-liste-camp').style.display = t==='liste'?'block':'none'
-  if(t==='liste') afficherListeCamp()
-}
-
-function afficherOngletImport(t) {
-  ;['liste','fichier','manuel'].forEach(tab => {
-    const btn = document.getElementById('itab-'+tab)
-    const panel = document.getElementById('imp-'+tab)
-    if(btn) btn.classList.toggle('active', t===tab)
-    if(panel) panel.style.display = t===tab ? 'block' : 'none'
-  })
-  if(t==='liste') remplirSelectListeCamp()
-}
-
-function remplirSelectListeCamp() {
-  const sel = document.getElementById('campListeSel')
-  if(!sel) return
-  sel.innerHTML = '<option value="">— choisir une liste —</option>' +
-    S.listes.map(l=>`<option value="${l.id}">${l.nom} (${l.contacts.length} contacts)</option>`).join('')
-  aperçuListeCamp()
-}
-
-function aperçuListeCamp() {
-  const lid = document.getElementById('campListeSel')?.value
-  const el = document.getElementById('campListeApercu')
+// ═══ CAMPAGNES LIST ═══
+function afficherListeCamp(){
+  const el=document.getElementById('contenu-liste-camp')
   if(!el) return
-  if(!lid) { el.innerHTML=''; return }
-  const liste = S.listes.find(l=>l.id===lid)
-  if(!liste) return
-  el.innerHTML = `<div class="info-box i-accent" style="margin-top:8px;margin-bottom:0">
-    ✓ <strong>${liste.contacts.length} contacts</strong> dans "${liste.nom}" —
-    aperçu : ${liste.contacts.slice(0,3).map(p=>p.prenom?p.prenom+' '+p.nom:p.email).join(', ')}${liste.contacts.length>3?' …':''}
-  </div>`
-}
-
-// ═══ CONNEXION OUTLOOK ═══
-function ouvrirConnexion() {
-  document.getElementById('uriRedir').textContent = window.location.href.split('?')[0].split('#')[0]
-  document.getElementById('clientIdInput').value = S.clientId||''
-  document.getElementById('tenantIdInput').value = S.tenantId||'common'
-  document.getElementById('conn-etape1').style.display='block'
-  document.getElementById('conn-etape2').style.display='none'
-  document.getElementById('btnConnecter').disabled=false
-  document.getElementById('modalConnexion').style.display='flex'
-}
-
-function fermerModal(id) { document.getElementById(id).style.display='none' }
-
-async function connecter() {
-  const cid=document.getElementById('clientIdInput').value.trim()
-  const tid=document.getElementById('tenantIdInput').value.trim()||'common'
-  if(!cid) { alert('Veuillez entrer votre ID client'); return }
-  S.clientId=cid; S.tenantId=tid; sauver()
-  document.getElementById('conn-etape1').style.display='none'
-  document.getElementById('conn-etape2').style.display='block'
-  document.getElementById('btnConnecter').disabled=true
-  const barre=document.getElementById('barreAuth')
-  let prog=0; const pi=setInterval(()=>{ prog=Math.min(prog+4,88); barre.style.width=prog+'%' },200)
-
-  const redir=encodeURIComponent(window.location.href.split('?')[0].split('#')[0])
-  const scopes=encodeURIComponent('openid profile email Mail.Send Mail.Read User.Read offline_access')
-  const url=`https://login.microsoftonline.com/${tid}/oauth2/v2.0/authorize?client_id=${cid}&response_type=token&redirect_uri=${redir}&scope=${scopes}&response_mode=fragment&nonce=${uid()}&prompt=select_account`
-
-  const popup=window.open(url,'msp_auth','width=520,height=660,menubar=no,toolbar=no')
-  const poll=setInterval(()=>{
-    try {
-      if(popup&&!popup.closed&&popup.location&&popup.location.hash){
-        const hash=popup.location.hash; popup.close()
-        clearInterval(poll); clearInterval(pi)
-        const params=new URLSearchParams(hash.substring(1))
-        const token=params.get('access_token')
-        if(token){ barre.style.width='100%'; recupererProfil(token) }
-        else{ echec(params.get('error_description')||'annulé') }
-      }
-    } catch(e){}
-    if(popup&&popup.closed){ clearInterval(poll); clearInterval(pi); echec('Fenêtre fermée') }
-  },400)
-}
-
-function gererRetourOAuth() {}
-
-async function recupererProfil(token) {
-  try {
-    const r=await fetch('https://graph.microsoft.com/v1.0/me',{headers:{Authorization:'Bearer '+token}})
-    if(!r.ok) throw new Error()
-    const u=await r.json()
-    S.accessToken=token; S.userEmail=u.mail||u.userPrincipalName; sauver()
-    document.getElementById('statusDot').classList.add('on')
-    document.getElementById('statusLabel').textContent='outlook · connecté'
-    document.getElementById('statusEmail').textContent=S.userEmail
-    document.getElementById('tokenBanner').style.display='none'
-    ajouterJournal(`Connecté : ${S.userEmail}`,'ok')
-    setTimeout(()=>fermerModal('modalConnexion'),800)
-    noterExpirationToken()
-    demarrerSynchroAuto()
-  } catch(e){echec(e.message)}
-}
-
-function echec(msg) {
-  document.getElementById('conn-etape1').style.display='block'
-  document.getElementById('conn-etape2').style.display='none'
-  document.getElementById('btnConnecter').disabled=false
-  ajouterJournal('Échec connexion : '+msg,'err')
-}
-
-if(S.accessToken&&S.userEmail){
-  document.getElementById('statusDot').classList.add('on')
-  document.getElementById('statusLabel').textContent='outlook · connecté'
-  document.getElementById('statusEmail').textContent=S.userEmail
-}
-
-// ═══ ÉDITEUR RICH TEXT ═══
-function cmd(c,v=null) { document.execCommand(c,false,v) }
-
-function outilsEditeur(id) {
-  return `
-    <button class="tb-btn" title="Gras" onclick="cmdSur('${id}','bold')"><b>G</b></button>
-    <button class="tb-btn" title="Italique" onclick="cmdSur('${id}','italic')"><i>I</i></button>
-    <button class="tb-btn" title="Souligné" onclick="cmdSur('${id}','underline')"><u>S</u></button>
-    <div class="tb-sep"></div>
-    <select class="tb-select" onchange="cmdSur('${id}','fontSize',this.value);this.value=''">
-      <option value="">Taille</option>
-      <option value="2">Petit</option>
-      <option value="3">Normal</option>
-      <option value="4">Grand</option>
-    </select>
-    <div class="tb-sep"></div>
-    <button class="tb-btn" onclick="couleurSur('${id}')">🎨</button>
-    <button class="tb-btn" onclick="ajouterLien('${id}')">🔗</button>
-    <button class="tb-btn" onclick="ajouterImage('${id}')">🖼</button>
-    <button class="tb-btn" onclick="ajouterTableau('${id}')">⊞</button>
-    <div class="tb-sep"></div>
-    <button class="tb-btn" onclick="cmdSur('${id}','insertUnorderedList')">≡</button>
-    <button class="tb-btn" onclick="cmdSur('${id}','justifyCenter')">↔</button>`
-}
-
-function cmdSur(id,c,v=null){ document.getElementById(id).focus(); document.execCommand(c,false,v) }
-function couleurSur(id){ const i=document.createElement('input');i.type='color';i.value='#2563eb';i.onchange=()=>{document.getElementById(id).focus();document.execCommand('foreColor',false,i.value)};i.click() }
-function ajouterLien(id){ const u=prompt('URL du lien :','https://');if(u){document.getElementById(id).focus();document.execCommand('createLink',false,u)} }
-function ajouterImage(id){ const u=prompt("URL de l'image :","https://");if(u){document.getElementById(id).focus();document.execCommand('insertImage',false,u)} }
-function ajouterTableau(id){
-  const c=parseInt(prompt('Colonnes :','3')||'3'), r=parseInt(prompt('Lignes :','2')||'2')
-  let h='<table style="border-collapse:collapse;width:100%">'
-  for(let i=0;i<r;i++){h+='<tr>';for(let j=0;j<c;j++)h+=`<td style="border:1px solid #e2e2e2;padding:6px 8px">${i===0?'Col '+(j+1):' '}</td>`;h+='</tr>'}
-  h+='</table><p></p>'
-  document.getElementById(id).focus(); document.execCommand('insertHTML',false,h)
-}
-
-// ═══ SIGNATURE ═══
-function chargerSig(){const el=document.getElementById('sig-body');if(el&&S.signature)el.innerHTML=S.signature}
-function sauvegarderSig(){S.signature=document.getElementById('sig-body')?.innerHTML||'';sauver();ajouterJournal('Signature enregistrée','ok');alert('Signature enregistrée ✓')}
-
-// ═══ SÉQUENCES ═══
-// STRUCTURE D'UNE ÉTAPE v3 :
-// { sujet, corps, condition: 'pas_de_reponse'|'non_lu'|'lu'|'delai', delaiJours, heureEnvoi}
-
-// ═══ FLOW BUILDER — SÉQUENCES BRANCHÉES ═══
-// Structure : arbre de nodes, chaque node peut avoir N branches enfants
-
-let seqIdEnEdition = null
-let flowRoot = null        // node racine
-let selectedNodeId = null  // node en cours d'édition
-let dernierEditeurFocus = null
-
-const COND = {
-  pas_de_reponse: { label:'↩ Pas de réponse', short:'pas de réponse', cls:'cond-nr-style', arrow:'arrow-nr', head:'head-nr' },
-  lu:             { label:'👁 Lu sans réponse', short:'lu sans réponse', cls:'cond-lu-style', arrow:'arrow-lu', head:'head-lu' },
-  non_lu:         { label:'✗ Non lu',           short:'non lu',          cls:'cond-nlu-style',arrow:'arrow-nlu',head:'head-nlu' },
-  delai:          { label:'⏱ Délai fixe',       short:'délai fixe',      cls:'cond-del-style',arrow:'arrow-del',head:'head-del' }
-}
-
-function creerNode(condition='pas_de_reponse', delaiJours=3) {
-  return { id:uid(), sujet:'', corps:'', condition, delaiJours, heureEnvoi:'09:00', branches:[] }
-}
-
-function trouverNode(node, id) {
-  if(node.id===id) return node
-  for(const b of node.branches||[]) { const f=trouverNode(b,id); if(f) return f }
-  return null
-}
-
-function supprimerNodeDansParent(parent, id) {
-  parent.branches = (parent.branches||[]).filter(b=>b.id!==id)
-  parent.branches.forEach(b=>supprimerNodeDansParent(b,id))
-}
-
-function ouvrirModalSeq(seqId) {
-  seqIdEnEdition = seqId
-  const seq = seqId ? S.sequences.find(s=>s.id===seqId) : null
-  document.getElementById('titreModalSeq').textContent = seq ? 'modifier la séquence' : 'nouvelle séquence'
-  document.getElementById('nomSeq').value = seq?.nom || ''
-  // Migrer ancien format (tableau) → nouveau format (arbre)
-  if(seq?.etapes && Array.isArray(seq.etapes)) {
-    flowRoot = creerNode('pas_de_reponse', 0)
-    flowRoot.sujet = seq.etapes[0]?.sujet || ''
-    flowRoot.corps = seq.etapes[0]?.corps || ''
-    let cur = flowRoot
-    for(let i=1;i<seq.etapes.length;i++){
-      const n=creerNode(seq.etapes[i].condition||'pas_de_reponse', seq.etapes[i].delaiJours||3)
-      n.sujet=seq.etapes[i].sujet||''; n.corps=seq.etapes[i].corps||''
-      cur.branches=[n]; cur=n
-    }
-  } else if(seq?.flowRoot) {
-    flowRoot = JSON.parse(JSON.stringify(seq.flowRoot))
-  } else {
-    flowRoot = creerNode('pas_de_reponse', 0)
-  }
-  selectedNodeId = null
-  modeBuilder = 'lineaire'
-  document.getElementById('editorPanel').style.display='none'
-  rendreBuilderActif()
-  remplirSelectListeSeq()
-  document.getElementById('modalSeq').style.display='flex'
-}
-
-// ── RENDU DU FLOW (colonnes) ──
-function rendreFlow() {
-  const canvas = document.getElementById('flowCanvas')
-  // Collecter les colonnes = profondeur max de l'arbre
-  // On fait un BFS par niveau
-  const levels = []
-  function collectLevels(node, depth) {
-    if(!levels[depth]) levels[depth] = []
-    levels[depth].push(node)
-    for(const b of node.branches||[]) collectLevels(b, depth+1)
-  }
-  collectLevels(flowRoot, 0)
-
-  // Construire le HTML du flow
-  let html = '<div class="flow-row">'
-
-  // Colonne 0 : root
-  html += renderColumn([flowRoot], true)
-
-  // Colonnes suivantes (récursion aplatie par niveau n'est pas idéale — on fait un rendu récursif)
-  html += renderChildColumns(flowRoot)
-
-  html += '</div>'
-  canvas.innerHTML = html
-}
-
-function renderColumn(nodes, isRoot=false) {
-  let html = '<div class="flow-col">'
-  for(const node of nodes) {
-    const isSelected = node.id === selectedNodeId
-    html += `<div class="email-node ${isRoot?'initial':''} ${isSelected?'selected':''}" onclick="selectionnerNode('${node.id}')" id="node-${node.id}">
-      <div class="node-num">${isRoot?'Email 1':'Relance'}</div>
-      <div class="node-label">${node.sujet ? (node.sujet.replace(/<[^>]*>/g,'').slice(0,22)||(node.sujet.replace(/<[^>]*>/g,'').length>22?'…':'')) : '<span style="color:var(--g300)">Sans objet</span>'}</div>
-      <div class="node-subject">${node.corps ? node.corps.replace(/<[^>]*>/g,'').slice(0,50)+'…' : '<span style="color:var(--g300)">Cliquer pour rédiger</span>'}</div>
-      
-      <div class="node-actions">
-        <button class="btn btn-xs btn-ghost" onclick="event.stopPropagation();selectionnerNode('${node.id}')">✏ éditer</button>
-        ${!isRoot?`<button class="btn btn-xs btn-danger" onclick="event.stopPropagation();supprimerBranche('${node.id}')">✕</button>`:''}
-      </div>
-    </div>`
-  }
-  // Bouton ajouter branche sur le dernier node du col
-  if(nodes.length > 0) {
-    const lastNode = nodes[nodes.length-1]
-    html += `<div class="add-node-btn" onclick="ajouterBranche('${lastNode.id}','pas_de_reponse')">+ ajouter une relance</div>`
-  }
-  html += '</div>'
-  return html
-}
-
-function renderChildColumns(node) {
-  if(!node.branches || !node.branches.length) return ''
-  let html = ''
-  // Connecteur + colonne enfants
-  html += '<div class="flow-connector">'
-  for(const branch of node.branches) {
-    const cond = COND[branch.condition] || COND.pas_de_reponse
-    html += `<div class="flow-arrow" onclick="selectionnerNode('${branch.id}')">
-      <div style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;flex:1">
-        <div class="flow-cond-pill ${cond.cls}" onclick="event.stopPropagation();editerCondition('${branch.id}')">
-          ${cond.label} · J+${branch.delaiJours}
-        </div>
-        <div style="display:flex;align-items:center;width:100%">
-          <div class="flow-arrow-line ${cond.arrow}" style="flex:1;height:2px"></div>
-          <div class="flow-arrow-head ${cond.head}" style="border-left:8px solid;border-top:5px solid transparent;border-bottom:5px solid transparent"></div>
-        </div>
-      </div>
-    </div>`
-    if(node.branches.indexOf(branch) < node.branches.length-1) {
-      html += `<div style="height:10px"></div>`
-    }
-  }
-  html += '</div>'
-  // Colonne des branches
-  html += '<div class="flow-col">'
-  for(const branch of node.branches) {
-    const isSelected = branch.id === selectedNodeId
-    const cond = COND[branch.condition] || COND.pas_de_reponse
-    html += `<div class="email-node ${isSelected?'selected':''}" onclick="selectionnerNode('${branch.id}')" id="node-${branch.id}" style="border-left:3px solid ${condColor(branch.condition)}">
-      <div class="node-num" style="color:${condColor(branch.condition)}">${cond.short} · J+${branch.delaiJours}</div>
-      <div class="node-label">${branch.sujet ? branch.sujet.replace(/<[^>]*>/g,'').slice(0,22) : '<span style="color:var(--g300)">Sans objet</span>'}</div>
-      <div class="node-subject">${branch.corps ? branch.corps.replace(/<[^>]*>/g,'').slice(0,50)+'…' : '<span style="color:var(--g300)">Cliquer pour rédiger</span>'}</div>
-            <div class="node-actions">
-        <button class="btn btn-xs btn-ghost" onclick="event.stopPropagation();selectionnerNode('${branch.id}')">✏ éditer</button>
-        <button class="btn btn-xs btn-danger" onclick="event.stopPropagation();supprimerBranche('${branch.id}')">✕</button>
-      </div>
-    </div>`
-    // Spacer entre branches
-    if(node.branches.indexOf(branch) < node.branches.length-1) html += '<div style="height:10px"></div>'
-  }
-  // Boutons ajouter branche pour chaque node enfant
-  html += `<div class="add-node-btn" onclick="ajouterBrancheMulti('${node.id}')">+ ajouter une branche conditionnelle</div>`
-  html += '</div>'
-  // Récurser sur chaque branche
-  for(const branch of node.branches) {
-    if(branch.branches && branch.branches.length) {
-      html += renderChildColumns(branch)
-    }
-  }
-  return html
-}
-
-function condColor(cond) {
-  const map = { pas_de_reponse:'#10B981', lu:'#3B82F6', non_lu:'#F59E0B', delai:'#8C95A8' }
-  return map[cond] || '#8C95A8'
-}
-
-// ── SÉLECTION & ÉDITION NODE ──
-function selectionnerNode(nodeId) {
-  selectedNodeId = nodeId
-  rendreFlow()
-  afficherPanelEditeur(nodeId)
-}
-
-function afficherPanelEditeur(nodeId) {
-  const node = trouverNode(flowRoot, nodeId)
-  if(!node) return
-  const isRoot = node.id === flowRoot.id
-  const panel = document.getElementById('editorPanel')
-  panel.style.display = 'block'
-  panel.innerHTML = `
-    <div class="editor-panel">
-      <div class="editor-panel-header">
-        <div class="editor-panel-title">${isRoot ? '✉ Email initial' : '↩ Relance — édition'}</div>
-        <button class="close-panel" onclick="fermerPanel()">×</button>
-      </div>
-      ${!isRoot ? `<div class="trigger-block" style="margin-bottom:14px">
-        <div class="trigger-title">condition de déclenchement</div>
-        <div class="trigger-row">
-          <span class="trigger-label">Déclencher</span>
-          <select class="cond-select" id="ep-cond" onchange="mettreAJourNode('${nodeId}','condition',this.value)">
-            <option value="pas_de_reponse" ${node.condition==='pas_de_reponse'?'selected':''}>Si pas de réponse</option>
-            <option value="non_lu" ${node.condition==='non_lu'?'selected':''}>Si email non lu</option>
-            <option value="lu" ${node.condition==='lu'?'selected':''}>Si email lu (sans réponse)</option>
-            <option value="delai" ${node.condition==='delai'?'selected':''}>Délai fixe (toujours)</option>
-          </select>
-          <span class="trigger-label">après</span>
-          <input type="number" class="cond-num" id="ep-delai" min="1" max="90" value="${node.delaiJours}" onchange="mettreAJourNode('${nodeId}','delaiJours',+this.value)">
-          <span class="trigger-label">jours</span>
-          <span class="trigger-label" style="margin-left:8px">à</span>
-          <input type="time" class="cond-select" style="width:100px" id="ep-heure" value="${node.heureEnvoi}" onchange="mettreAJourNode('${nodeId}','heureEnvoi',this.value)">
-        </div>
-
-      </div>` : ''}
-      <div class="form-group">
-        <label class="form-label">Objet de l'email</label>
-        <input class="form-input" id="ep-sujet" value="${(node.sujet||'').replace(/"/g,'&quot;')}"
-          placeholder="Question rapide, {{prenom}}"
-          oninput="mettreAJourNode('${nodeId}','sujet',this.value)"
-          onfocus="dernierEditeurFocus='ep-sujet'">
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">Corps du message</label>
-        <div class="editor-wrap">
-          <div class="editor-toolbar">${outilsEditeur('ep-corps')}</div>
-          <div id="ep-corps" class="editor-body" contenteditable="true"
-            data-placeholder="Bonjour {{prenom}},&#10;&#10;..."
-            onfocus="dernierEditeurFocus='ep-corps'"
-            oninput="mettreAJourNode('${nodeId}','corps',this.innerHTML)">${node.corps||''}</div>
-          <div class="editor-footer"><span class="char-count">Rich text · HTML supporté · variables disponibles ci-dessus</span></div>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:14px">
-        <button class="btn btn-primary btn-sm" onclick="ajouterBranche('${nodeId}','pas_de_reponse')">+ Branche "pas de réponse"</button>
-        <button class="btn btn-ghost btn-sm" onclick="ajouterBranche('${nodeId}','lu')">+ Branche "lu"</button>
-        <button class="btn btn-ghost btn-sm" onclick="ajouterBranche('${nodeId}','non_lu')">+ Branche "non lu"</button>
-      </div>
-    </div>`
-}
-
-function fermerPanel() {
-  document.getElementById('editorPanel').style.display='none'
-  selectedNodeId = null
-  rendreFlow()
-}
-
-function mettreAJourNode(nodeId, champ, valeur) {
-  const node = trouverNode(flowRoot, nodeId)
-  if(node) {
-    node[champ] = valeur
-    // Re-render flow sans perdre le focus de l'éditeur
-    if(champ !== 'sujet' && champ !== 'corps') rendreFlow()
-  }
-}
-
-function ajouterBranche(parentId, condition='pas_de_reponse') {
-  const parent = trouverNode(flowRoot, parentId)
-  if(!parent) return
-  const nouveau = creerNode(condition, 3)
-  parent.branches = parent.branches || []
-  parent.branches.push(nouveau)
-  selectedNodeId = nouveau.id
-  rendreFlow()
-  afficherPanelEditeur(nouveau.id)
-}
-
-function ajouterBrancheMulti(parentId) {
-  // Ouvre un mini-choix
-  const conds = ['pas_de_reponse','lu','non_lu','delai']
-  const choix = prompt('Type de branche :\n1. Pas de réponse\n2. Lu sans réponse\n3. Non lu\n4. Délai fixe\n\nEntrez 1, 2, 3 ou 4 :')
-  const idx = parseInt(choix) - 1
-  if(idx >= 0 && idx < conds.length) ajouterBranche(parentId, conds[idx])
-}
-
-function editerCondition(nodeId) { selectionnerNode(nodeId) }
-
-function supprimerBranche(nodeId) {
-  if(!confirm('Supprimer ce nœud et toutes ses branches enfants ?')) return
-  supprimerNodeDansParent(flowRoot, nodeId)
-  if(selectedNodeId === nodeId) {
-    selectedNodeId = null
-    document.getElementById('editorPanel').style.display='none'
-  }
-  rendreFlow()
-}
-
-function insererVar(v) {
-  if(!dernierEditeurFocus) return
-  const el = document.getElementById(dernierEditeurFocus)
-  if(!el) return
-  if(el.tagName === 'INPUT') {
-    const pos = el.selectionStart, cur = el.value
-    el.value = cur.slice(0,pos) + v + cur.slice(el.selectionEnd)
-    if(selectedNodeId) mettreAJourNode(selectedNodeId, 'sujet', el.value)
-    el.focus(); el.setSelectionRange(pos+v.length, pos+v.length)
-  } else {
-    el.focus(); document.execCommand('insertText', false, v)
-    if(selectedNodeId) mettreAJourNode(selectedNodeId, 'corps', el.innerHTML)
-  }
-}
-
-// Convertir l'arbre en tableau plat pour l'envoi
-function aplatiArbre(node, result=[]) {
-  result.push({ sujet:node.sujet, corps:node.corps, condition:node.condition, delaiJours:node.delaiJours, heureEnvoi:node.heureEnvoi })
-  for(const b of node.branches||[]) aplatiArbre(b, result)
-  return result
-}
-
-function sauvegarderSeq() {
-  const nom = document.getElementById('nomSeq').value.trim()
-  if(!nom) { alert('Nommez la séquence'); return }
-  // Sync contenu depuis le builder linéaire
-  aplatiArbre(flowRoot).forEach((et,i)=>{
-    const ce=document.getElementById(`lin-corps-${i}`)
-    const se=document.getElementById(`lin-sujet-${i}`)
-    const node=trouverNodeParIndex(flowRoot,i)
-    if(node){
-      if(ce) node.corps=ce.innerHTML
-      if(se) node.sujet=se.value
-    }
-  })
-  if(!flowRoot.sujet.trim()) { alert("Complétez l'email initial"); return }
-  const seq = { id: seqIdEnEdition||uid(), nom, flowRoot: JSON.parse(JSON.stringify(flowRoot)), etapes: aplatiArbre(flowRoot), creee: isoMaint() }
-  if(seqIdEnEdition) {
-    const idx = S.sequences.findIndex(s=>s.id===seqIdEnEdition)
-    if(idx>=0) S.sequences[idx] = seq
-  } else {
-    S.sequences.push(seq)
-  }
-  sauver(); fermerModal('modalSeq'); afficherSequences()
-  ajouterJournal(`Séquence enregistrée : ${nom}`,'ok')
-}
-
-function aperçuListeSeq() {
-  const lid = document.getElementById('seqListeSel')?.value
-  const el = document.getElementById('seqListeApercu')
-  if(!el) return
-  if(!lid) { el.innerHTML=''; return }
-  const liste = S.listes.find(l=>l.id===lid)
-  if(!liste) { el.innerHTML=''; return }
-  el.innerHTML = `<div class="info-box i-accent" style="margin-bottom:0;font-size:11.5px">
-    <strong>${liste.contacts.length} contacts</strong> — ${liste.contacts.slice(0,3).map(p=>p.prenom?p.prenom+' ('+p.societe+')':p.email).join(', ')}${liste.contacts.length>3?` +${liste.contacts.length-3} autres`:''}
-  </div>`
-}
-
-function remplirSelectListeSeq() {
-  const sel = document.getElementById('seqListeSel')
-  if(!sel) return
-  sel.innerHTML = '<option value="">— sélectionner une liste —</option>' +
-    S.listes.map(l=>`<option value="${l.id}">${l.nom} (${l.contacts.length} contacts)</option>`).join('')
-  aperçuListeSeq()
-}
-
-async function sauvegarderEtLancer(statut='active') {
-  const nom = document.getElementById('nomSeq').value.trim()
-  if(!nom) { alert('Nommez la séquence'); return }
-  // Sync contenu depuis le builder linéaire
-  aplatiArbre(flowRoot).forEach((et,i)=>{
-    const ce=document.getElementById(`lin-corps-${i}`)
-    const se=document.getElementById(`lin-sujet-${i}`)
-    const node=trouverNodeParIndex(flowRoot,i)
-    if(node){
-      if(ce) node.corps=ce.innerHTML
-      if(se) node.sujet=se.value
-    }
-  })
-  if(!flowRoot.sujet.trim()) { alert("Complétez l'email initial"); return }
-
-  const lid = document.getElementById('seqListeSel')?.value
-  if(!lid && statut==='active') { alert('Sélectionnez une liste de prospects pour publier'); return }
-  if(!lid && statut==='brouillon') {
-    // Brouillon sans liste : juste sauvegarder la séquence
-    sauvegarderSeq()
-    const status = document.getElementById('seqLancementStatus')
-    if(status) status.innerHTML = `<div class="info-box i-gray">💾 Séquence enregistrée en brouillon.</div>`
-    return
-  }
-  const liste = S.listes.find(l=>l.id===lid)
-  if(!liste || !liste.contacts.length) { alert('La liste sélectionnée est vide'); return }
-  if(statut==='active') {
-    const msg = `Vous allez envoyer des emails à ${liste.contacts.length} prospect${liste.contacts.length>1?'s':''} depuis ${S.userEmail||'votre compte Outlook'}.
-
-Confirmer le lancement ?`
-    if(!confirm(msg)) return
-
-  }
-
-  // 1. Sauvegarder la séquence
-  const seq = { id: seqIdEnEdition||uid(), nom, flowRoot: JSON.parse(JSON.stringify(flowRoot)), etapes: aplatiArbre(flowRoot), creee: isoMaint() }
-  if(seqIdEnEdition) {
-    const idx = S.sequences.findIndex(s=>s.id===seqIdEnEdition)
-    if(idx>=0) S.sequences[idx] = seq; else S.sequences.push(seq)
-  } else {
-    S.sequences.push(seq)
-  }
-
-  // 2. Créer la campagne automatiquement
-  const campId = uid()
-  const nomCamp = nom + ' — ' + liste.nom
-  S.campagnes.push({
-    id: campId, nom: nomCamp, seqId: seq.id, listeId: lid,
-    heureEnvoi: document.getElementById('seqHeure')?.value || '09:00',
-    fuseau: 'Europe/Paris',
-    delai: +(document.getElementById('seqDelai')?.value || 45),
-    joursOuvres: document.getElementById('seqJours')?.value === 'semaine',
-    statut: statut, creee: isoMaint()
-  })
-
-  // 3. Créer les prospects
-  // Email initial : immédiat ou planifié
-  const email0 = getEtapesSeq(seq)[0]
-  const prochainEnvoi0 = (email0?.envoisImmediat===false && email0?.dateEnvoi)
-    ? new Date(email0.dateEnvoi+'T'+(email0.heureEnvoi||'09:00')).toISOString()
-    : isoMaint()
-
-  liste.contacts.forEach(p => S.prospects.push({
-    id: uid(), campagneId: campId,
-    email: p.email, prenom: p.prenom||'', nom: p.nom||'', societe: p.societe||'', poste: p.poste||'',
-    etapeCourante: 0, prochainEnvoi: prochainEnvoi0,
-    repandu: false, termine: false, ouvertures: 0, tag: null, historique: []
-  }))
-
-  sauver()
-  const statusEl = document.getElementById('seqLancementStatus')
-
-  if(statut === 'active') {
-    ajouterJournal(`🚀 Campagne "${nomCamp}" publiée — ${liste.contacts.length} prospects`, 'ok')
-    if(statusEl) statusEl.innerHTML = `<div class="info-box i-green">🚀 Campagne publiée ! ${liste.contacts.length} prospects — les envois démarrent.</div>`
-    // Lancer les envois immédiatement
-    seq._etapesFlat = getEtapesSeq(seq)
-    envoyerLot(campId, seq, S.campagnes[S.campagnes.length-1].delai)
-    // Démarrer les triggers auto si pas encore actifs
-    demarrerSynchroAuto()
-  } else {
-    ajouterJournal(`💾 Campagne "${nomCamp}" enregistrée en brouillon`, 'ok')
-    if(statusEl) statusEl.innerHTML = `<div class="info-box i-gray">💾 Brouillon enregistré. Publiez depuis la page Campagnes quand vous êtes prêt.</div>`
-  }
-
-  // Fermer après 1.5s
-  setTimeout(() => {
-    fermerModal('modalSeq')
-    aller('tableau', document.querySelector('[onclick*=tableau]'))
-    afficherTableau()
-  }, 1500)
-}
-
-function afficherSequences() {
-  const el = document.getElementById('contenu-sequences')
-  if(!S.sequences.length){
-    el.innerHTML=`<div class="empty">
-      <div class="empty-icon">✉</div>
-      <div class="empty-title">Aucune séquence</div>
-      <p style="margin-bottom:16px;color:var(--g400)">Créez votre première séquence d'emails</p>
-      <button class="btn btn-primary" onclick="ouvrirModalSeq(null)">+ créer une séquence</button>
-    </div>`
-    return
-  }
-  el.innerHTML = S.sequences.map(s => {
-    const etapes = s.etapes || aplatiArbre(s.flowRoot||creerNode())
-    const camps = S.campagnes.filter(c=>c.seqId===s.id)
-    const ps = S.prospects.filter(p=>camps.some(c=>c.id===p.campagneId))
-    const sent = ps.filter(p=>p.etapeCourante>0).length
-    const rep = ps.filter(p=>p.repandu).length
-    const actives = camps.filter(c=>c.statut==='active').length
-    return `<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px;margin-bottom:10px;box-shadow:var(--shadow)">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
+  if(!S.campagnes.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📂</div><div class="empty-title">aucune campagne</div></div>`;return}
+  el.innerHTML=S.campagnes.map(c=>{
+    const ps=S.prospects.filter(p=>p.campagneId===c.id)
+    const done=ps.filter(p=>p.done||p.termine).length
+    const rep=ps.filter(p=>p.repandu).length
+    const sent=ps.filter(p=>p.etapeCourante>0).length
+    const p=pct(done,ps.length)
+    return `<div class="camp-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between">
         <div>
-          <div style="font-size:15px;font-weight:600;color:var(--g900);margin-bottom:4px">${s.nom}</div>
-          <div style="font-size:12px;color:var(--g400);display:flex;gap:10px;flex-wrap:wrap">
-            <span>${etapes.length} email${etapes.length>1?'s':''}</span>
-            ${actives>0?`<span style="color:var(--green)">● ${actives} campagne${actives>1?'s':''} active${actives>1?'s':''}</span>`:''}
-            <span>créée ${fmtD(s.creee)}</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="font-family:var(--mono);font-size:13px;font-weight:500" id="camp-nom-${c.id}">${c.nom}</div>
+            <button class="btn btn-xs btn-ghost" onclick="renommerCamp('${c.id}')" title="Renommer">✏</button>
+          </div>
+          <div class="camp-meta">
+            <span>${ps.length} prospects</span>
+            <span>envoyés <strong>${sent}</strong></span>
+            <span>réponses <strong style="color:var(--green)">${rep}</strong></span>
+            <span>${S.sequences.find(s=>s.id===c.seqId)?.nom||'—'}</span>
+            <span>${fmtD(c.creee)}</span>
           </div>
         </div>
-        <div style="display:flex;gap:6px">
-          ${sent>0?`<button class="btn btn-ghost btn-sm" onclick="ouvrirSuiviSeq('${s.id}')">📊 suivi</button>`:''}
-          <button class="btn btn-primary btn-sm" onclick="ouvrirModalSeq('${s.id}')">✏ modifier</button>
-          <button class="btn btn-ghost btn-sm" onclick="dupliquerSeq('${s.id}')">⎘ dupliquer</button>
-          <button class="btn btn-danger btn-sm" onclick="supprimerSeq('${s.id}')">✕</button>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="badge ${c.statut==='active'?'bg-green':c.statut==='pause'?'bg-amber':c.statut==='brouillon'?'bg-gray':'bg-gray'}">${c.statut==='brouillon'?'📝 brouillon':c.statut==='active'?'active':c.statut==='pause'?'pausée':'terminée'}</span>
+          ${c.statut==='brouillon'?`<button class="btn btn-primary btn-sm" onclick="publierCamp('${c.id}')">🚀 Publier</button>`:''}
+          ${c.statut==='active'?`<button class="btn btn-ghost btn-sm" onclick="statutCamp('${c.id}','pause')">⏸</button>`:''}
+          ${c.statut==='pause'?`<button class="btn btn-success btn-sm" onclick="statutCamp('${c.id}','active')">▶</button>`:''}
+          <button class="btn btn-ghost btn-sm" onclick="voirProspects('${c.id}')">prospects</button>
+          <button class="btn btn-danger btn-sm" onclick="supprimerCamp('${c.id}')">✕</button>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:0;overflow-x:auto;padding-bottom:4px">
-        ${etapes.map((et,i)=>`
-          <div style="display:flex;align-items:center;flex-shrink:0">
-            ${i>0?`<div style="display:flex;align-items:center;gap:6px;padding:0 10px">
-              <div style="width:20px;height:1.5px;background:var(--g200)"></div>
-              <span style="font-size:10px;color:var(--g400);white-space:nowrap;background:var(--g50);border:1px solid var(--g100);border-radius:20px;padding:2px 8px">J+${et.delaiJours}</span>
-              <div style="width:20px;height:1.5px;background:var(--g200)"></div>
-            </div>`:''}
-            <div style="background:var(--g50);border:1.5px solid ${i===0?'var(--accent)':'var(--g200)'};border-radius:var(--rm);padding:10px 14px;min-width:150px;max-width:200px;flex-shrink:0">
-              <div style="font-size:10px;font-weight:600;color:${i===0?'var(--accent)':'var(--g500)'};text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">${i===0?'Email initial':`Relance ${i}`}</div>
-              <div style="font-size:12px;font-weight:500;color:var(--g900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${et.sujet||''}">${et.sujet||'(sans objet)'}</div>
-              ${i>0?`<div style="font-size:10px;color:var(--g400);margin-top:3px">si pas de réponse</div>`:''}
-            </div>
-          </div>`).join('')}
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+        <div class="progress" style="flex:1"><div class="progress-fill" style="width:${p}%"></div></div>
+        <span style="font-size:10px;color:var(--g400);font-family:var(--mono)">${p}%</span>
       </div>
-      ${sent>0?`<div style="display:flex;gap:16px;margin-top:14px;padding-top:12px;border-top:1px solid var(--g50);font-size:12px;color:var(--g400)">
-        <span>📤 <strong style="color:var(--g700)">${sent}</strong> envoyés</span>
-        <span>↩ <strong style="color:var(--green)">${rep}</strong> réponses</span>
-        <span>📊 <strong style="color:var(--accent)">${pct(rep,sent)}%</strong> taux de réponse</span>
-      </div>`:''}
+      ${rendreFunnel(c.id)}
     </div>`
   }).join('')
 }
 
-function ouvrirSuiviSeq(seqId) {
-  const s = S.sequences.find(x=>x.id===seqId)
-  if(!s) return
-  const camps = S.campagnes.filter(c=>c.seqId===seqId)
-  const overlay = document.createElement('div')
-  overlay.className='overlay'
-  overlay.onclick=e=>{if(e.target===overlay)document.body.removeChild(overlay)}
+function statutCamp(id,s){
+  const c=S.campagnes.find(c=>c.id===id)
+  if(c){c.statut=s;sauver();afficherListeCamp();afficherTableau()}
+}
 
-  let campsHtml = ''
-  for(const c of camps){
-    const cps=S.prospects.filter(p=>p.campagneId===c.id)
-    const csent=cps.filter(p=>p.etapeCourante>0).length
-    const crep=cps.filter(p=>p.repandu).length
-    const ctx=pct(crep,csent)
-    const badgeCls=c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray'
-    const badgeTxt=c.statut==='active'?'active':c.statut==='pause'?'pausée':'brouillon'
-    const cid=c.id
-    let btns=''
-    if(c.statut==='brouillon') btns+='<button class="btn btn-xs btn-primary" data-action="publier" data-id="'+cid+'">🚀 Publier</button>'
-    if(c.statut==='active') btns+='<button class="btn btn-xs btn-ghost" data-action="pause" data-id="'+cid+'">⏸</button>'
-    if(c.statut==='pause') btns+='<button class="btn btn-xs btn-success" data-action="reprendre" data-id="'+cid+'">▶</button>'
-    btns+='<button class="btn btn-xs btn-ghost" data-action="prospects" data-id="'+cid+'">prospects</button>'
-    btns+='<button class="btn btn-xs btn-danger" data-action="supprimer" data-id="'+cid+'">✕</button>'
-    campsHtml += '<div style="background:var(--g50);border:1px solid var(--g100);border-radius:var(--rm);padding:16px;margin-bottom:10px">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
-      +'<div><div style="font-size:13px;font-weight:600">'+c.nom+'</div>'
-      +'<div style="font-size:11px;color:var(--g400)">créée '+fmtD(c.creee)+'</div></div>'
-      +'<div style="display:flex;align-items:center;gap:6px"><span class="badge '+badgeCls+'">'+badgeTxt+'</span>'+btns+'</div>'
-      +'</div>'
-      +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'
-      +'<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--r);padding:10px;text-align:center"><div style="font-size:22px;font-weight:300;font-family:var(--mono)">'+cps.length+'</div><div style="font-size:10px;color:var(--g400);margin-top:2px;text-transform:uppercase">Prospects</div></div>'
-      +'<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--r);padding:10px;text-align:center"><div style="font-size:22px;font-weight:300;font-family:var(--mono)">'+csent+'</div><div style="font-size:10px;color:var(--g400);margin-top:2px;text-transform:uppercase">Envoyés</div></div>'
-      +'<div style="background:var(--green-bg);border:1px solid var(--green-b);border-radius:var(--r);padding:10px;text-align:center"><div style="font-size:22px;font-weight:300;font-family:var(--mono);color:var(--green)">'+crep+'</div><div style="font-size:10px;color:var(--g400);margin-top:2px;text-transform:uppercase">Réponses</div></div>'
-      +'<div style="background:var(--accent-l);border:1px solid var(--accent-m);border-radius:var(--r);padding:10px;text-align:center"><div style="font-size:22px;font-weight:300;font-family:var(--mono);color:var(--accent)">'+ctx+'%</div><div style="font-size:10px;color:var(--g400);margin-top:2px;text-transform:uppercase">Taux réponse</div></div>'
-      +'</div></div>'
+async function publierCamp(id){
+  const camp=S.campagnes.find(c=>c.id===id)
+  if(!camp) return
+  const ps=S.prospects.filter(p=>p.campagneId===id&&!p.termine&&!p.repandu)
+  if(!confirm(`Publier "${camp.nom}" ?
+
+${ps.length} prospect${ps.length>1?'s':''} vont recevoir des emails.`)) return
+  if(!S.accessToken) {
+    alert('🔴 Connectez-vous à Outlook avant de publier.')
+    return
   }
+  camp.statut='active';sauver()
+  ajouterJournal(`🚀 Campagne "${camp.nom}" publiée`,'ok')
+  const seq=S.sequences.find(s=>s.id===camp.seqId)
+  if(seq){seq._etapesFlat=getEtapesSeq(seq);envoyerLot(camp.id,seq,camp.delai||45)}
+  demarrerSynchroAuto();afficherListeCamp();afficherTableau()
+}
 
-  overlay.innerHTML = '<div class="modal" style="width:600px;max-height:85vh;overflow-y:auto">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">'
-    +'<div><div class="modal-title">'+s.nom+'</div>'
-    +'<div style="font-size:12px;color:var(--g400);margin-top:3px">'+camps.length+' campagne'+(camps.length>1?'s':'')+'</div></div>'
-    +'<button class="close-btn" data-action="close">×</button></div>'
-    +(!camps.length?'<p style="color:var(--g400);text-align:center;padding:20px">Aucune campagne</p>':campsHtml)
-    +'<div class="modal-footer">'
-    +'<button class="btn btn-ghost" data-action="close">Fermer</button>'
-    +'<button class="btn btn-primary" data-action="modifier" data-seq="'+seqId+'">✏ Modifier</button>'
-    +'</div></div>'
-
-  // Gérer les actions via event delegation
-  overlay.addEventListener('click', e=>{
-    const btn=e.target.closest('[data-action]')
-    if(!btn) return
-    const action=btn.dataset.action, id=btn.dataset.id
-    if(action==='close') document.body.removeChild(overlay)
-    else if(action==='publier'){publierCamp(id);document.body.removeChild(overlay)}
-    else if(action==='pause'){statutCamp(id,'pause');document.body.removeChild(overlay);ouvrirSuiviSeq(seqId)}
-    else if(action==='reprendre'){statutCamp(id,'active');document.body.removeChild(overlay);ouvrirSuiviSeq(seqId)}
-    else if(action==='prospects') voirProspectsCamp(id)
-    else if(action==='supprimer'){supprimerCamp(id);document.body.removeChild(overlay)}
-    else if(action==='modifier'){document.body.removeChild(overlay);ouvrirModalSeq(btn.dataset.seq)}
-  })
-  document.body.appendChild(overlay)
+function supprimerCamp(id){
+  if(!confirm('Supprimer cette campagne et tous ses prospects ?')) return
+  S.campagnes=S.campagnes.filter(c=>c.id!==id)
+  S.prospects=S.prospects.filter(p=>p.campagneId!==id)
+  sauver(); mettreAJourBadges(); afficherSequences(); afficherTableau()
 }
 
 
-
-
-function compterBranches(node) {
-  if(!node) return 0
-  return 1 + (node.branches||[]).reduce((s,b)=>s+compterBranches(b),0)
+function voirProspects(campId){
+  aller('prospects',document.querySelector('[onclick*=prospects]'))
+  document.getElementById('prospCampSel').value=campId
+  afficherProspects()
 }
 
-function supprimerSeq(id){
-  if(!confirm('Supprimer cette séquence ?'))return
-  S.sequences=S.sequences.filter(s=>s.id!==id);sauver();afficherSequences()
-}
-
-// Ancien format compat : si la séquence a etapes[], les utiliser pour envoyer
-function getEtapesSeq(seq) {
-  if(seq.flowRoot) return aplatiArbre(seq.flowRoot)
-  return seq.etapes || []
+// ═══ PROSPECTS ═══
+function remplirSelectProspCamp(){
+  const sel=document.getElementById('prospCampSel'),cur=sel?.value
+  if(!sel) return
+  sel.innerHTML='<option value="">— sélectionner une campagne —</option>'+
+    S.campagnes.map(c=>`<option value="${c.id}">${c.nom}</option>`).join('')
+  if(cur) sel.value=cur
 }
 
 
-
-// ═══ LISTES DE PROSPECTS ═══
-let listeIdEnEdition = null
-let listeContactsTemp = []   // contacts en cours d'édition dans le modal
-let listeFileImport = []     // contacts importés via fichier dans le modal
-
-function ouvrirModalListe(listeId) {
-  listeIdEnEdition = listeId
-  const liste = listeId ? S.listes.find(l=>l.id===listeId) : null
-  document.getElementById('titreModalListe').textContent = liste ? 'modifier la liste' : 'nouvelle liste'
-  document.getElementById('nomListe').value = liste?.nom || ''
-  listeContactsTemp = liste ? JSON.parse(JSON.stringify(liste.contacts)) : []
-  listeFileImport = []
-  document.getElementById('listeFilePreview').innerHTML = ''
-  document.getElementById('listeManuelTable').innerHTML = ''
-  switchListeImport('fichier')
-  afficherApercuListeModal()
-  document.getElementById('modalListe').style.display = 'flex'
+function exporterCSV(){
+  const cid=document.getElementById('prospCampSel')?.value
+  const ps=cid?S.prospects.filter(p=>p.campagneId===cid):S.prospects
+  if(!ps.length){alert('Aucun prospect à exporter');return}
+  const header='email,prenom,nom,societe,poste,etape,ouvertures,tag,repandu,termine'
+  const body=ps.map(p=>[p.email,p.prenom||'',p.nom||'',p.societe||'',p.poste||'',p.etapeCourante||0,p.ouvertures||0,p.tag||'',p.repandu?'oui':'non',p.termine?'oui':'non'].map(v=>'"'+String(v)+'"').join(',')).join('\n')
+  const blob=new Blob([header+'\n'+body],{type:'text/csv'})
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='prospects.csv';a.click()
 }
 
-function switchListeImport(t) {
-  document.getElementById('ltab-fichier').classList.toggle('active', t==='fichier')
-  document.getElementById('ltab-manuel').classList.toggle('active', t==='manuel')
-  document.getElementById('limp-fichier').style.display = t==='fichier' ? 'block' : 'none'
-  document.getElementById('limp-manuel').style.display = t==='manuel' ? 'block' : 'none'
+// ═══ JOURNAUX ═══
+function afficherJournaux(){
+  const el=document.getElementById('contenu-journaux')
+  if(!el) return
+  // Filtrer les lignes bruyantes répétitives
+  const BRUIT = ['Aucun prospect à surveiller','Synchronisation boîte mail','Aucun déclenchement en attente','Synchronisation OK — aucun événement']
+  const important = S.journaux.filter(l=>!BRUIT.some(b=>l.msg.startsWith(b)))
+  const afficherTout = el.dataset.showAll==='true'
+  const liste = afficherTout ? S.journaux : important
+  if(!S.journaux.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">aucun journal</div></div>`;return}
+  el.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--g100)">
+    <div style="font-size:12px;color:var(--g400)">${important.length} événements importants · ${S.journaux.length} total</div>
+    <button class="btn btn-ghost btn-sm" onclick="const el=document.getElementById('contenu-journaux');el.dataset.showAll=el.dataset.showAll==='true'?'false':'true';afficherJournaux()">
+      ${afficherTout?'Masquer le bruit':'Tout afficher'}
+    </button>
+  </div>
+  ${liste.map(l=>{
+    const bruit=BRUIT.some(b=>l.msg.startsWith(b))
+    return `<div class="log-entry${bruit&&!afficherTout?' log-noise':''}">
+      <span class="log-time">${l.heure}</span>
+      <span class="log-${l.type==='ok'?'ok':l.type==='err'?'err':l.type==='warn'?'warn':'info'}">${l.type==='ok'?'✓':l.type==='err'?'✗':l.type==='warn'?'↩':'·'}</span>
+      <span style="flex:1;color:var(--g${bruit?'400':'700'})">${l.msg}</span>
+    </div>`
+  }).join('')}`
 }
 
-function handleListeDrop(e) {
-  e.preventDefault(); e.currentTarget.classList.remove('drag-over')
-  traiterFichierListe(e.dataTransfer.files[0])
-}
-function handleListeFile(e) { traiterFichierListe(e.target.files[0]) }
-
-function traiterFichierListe(file) {
-  if(!file) return
-  const reader = new FileReader()
-  reader.onload = e => {
-    try {
-      const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'})
-      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''})
-      listeFileImport = rows.map(r => ({
-        email: String(r[trouverCle(r,['email','mail','e-mail'])]||'').trim().toLowerCase(),
-        prenom: r[trouverCle(r,['prénom','prenom','first','firstname'])]||'',
-        nom: r[trouverCle(r,['nom','last','lastname','surname'])]||'',
-        societe: r[trouverCle(r,['société','societe','company','entreprise'])]||'',
-        poste: r[trouverCle(r,['poste','job','title','fonction'])]||''
-      })).filter(p=>p.email.includes('@'))
-      document.getElementById('listeFilePreview').innerHTML =
-        `<div class="info-box i-green" style="margin-top:8px;margin-bottom:0">✓ ${listeFileImport.length} contacts valides détectés</div>`
-      afficherApercuListeModal()
-    } catch(e) { alert('Erreur lecture fichier : '+e.message) }
-  }
-  reader.readAsArrayBuffer(file)
-}
-
-function ajouterContactListe() {
-  const email = document.getElementById('lmanEmail').value.trim().toLowerCase()
-  if(!email || !email.includes('@')) { alert('Email invalide'); return }
-  if(listeContactsTemp.find(p=>p.email===email)) { alert('Email déjà dans la liste'); return }
-  listeContactsTemp.push({
-    email,
-    prenom: document.getElementById('lmanPrenom').value.trim(),
-    nom: document.getElementById('lmanNom').value.trim(),
-    societe: document.getElementById('lmanSociete').value.trim(),
-    poste: document.getElementById('lmanPoste').value.trim()
-  })
-  ;['lmanEmail','lmanPrenom','lmanNom','lmanSociete','lmanPoste'].forEach(id=>document.getElementById(id).value='')
-  document.getElementById('lmanEmail').focus()
-  afficherApercuListeModal()
-}
-
-function afficherApercuListeModal() {
-  const tous = [...listeContactsTemp, ...listeFileImport]
-  const el = document.getElementById('listeApercu')
-  if(!tous.length) { el.innerHTML=''; return }
-  // Dédoublonner
-  const uniq = tous.filter((p,i,a)=>a.findIndex(x=>x.email===p.email)===i)
-  el.innerHTML = `<div style="margin-top:8px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div class="form-label" style="margin-bottom:0">${uniq.length} contact${uniq.length>1?'s':''} dans cette liste</div>
-    </div>
-    <div style="max-height:220px;overflow-y:auto;border:1px solid var(--g100);border-radius:var(--rm);overflow:hidden">
-      <table><thead><tr><th>Email</th><th>Prénom</th><th>Nom</th><th>Société</th><th>Poste</th><th></th></tr></thead>
-      <tbody>${uniq.map(p=>`<tr>
-        <td style="font-family:var(--mono);font-size:11px">${p.email}</td>
-        <td>${p.prenom||'—'}</td><td>${p.nom||'—'}</td>
-        <td>${p.societe||'—'}</td><td>${p.poste||'—'}</td>
-        <td><button class="btn btn-xs btn-danger" onclick="retirerContactListe('${p.email}')">✕</button></td>
-      </tr>`).join('')}</tbody></table>
+// ═══ FUNNEL ═══
+function rendreFunnel(campId){
+  const camp=S.campagnes.find(c=>c.id===campId)
+  const seq=camp?S.sequences.find(s=>s.id===camp.seqId):null
+  const ps=S.prospects.filter(p=>p.campagneId===campId)
+  if(!camp||!seq||!ps.length) return ''
+  const etapes=getEtapesSeq(seq)
+  const max=ps.length||1
+  const rep=ps.filter(p=>p.repandu).length
+  const term=ps.filter(p=>p.termine&&!p.repandu).length
+  const lus=ps.filter(p=>p.tag==='lu').length
+  const nonLus=ps.filter(p=>p.tag==='non_lu').length
+  return `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--g100)">
+    ${etapes.map((et,i)=>{
+      const env=ps.filter(p=>p.etapeCourante>i).length
+      return `${i>0?`<div class="funnel-conn"><div class="funnel-conn-line"></div><div class="funnel-conn-pill">J+${et.delaiJours||0} · ${max-env} sortis</div><div class="funnel-conn-line"></div></div>`:''}
+      <div class="funnel-step-row">
+        <div class="funnel-label">${i===0?'initial':`relance_${i}`}</div>
+        <div class="funnel-bar-wrap">
+          <div class="funnel-bg" style="width:${pct(env,max)}%;background:rgba(10,10,10,${0.08*(3-i)+0.04});border-radius:4px"></div>
+          <div class="funnel-content">
+            <div style="font-family:var(--mono);font-size:11px;font-weight:500">${(et.sujet||'').replace(/<[^>]*>/g,'').slice(0,30)}</div>
+            <div style="font-size:14px;font-weight:500;font-family:var(--mono)">${env}</div>
+          </div>
+        </div>
+      </div>`}).join('')}
+    <div class="funnel-outcomes">
+      <div class="funnel-outcome"><div class="funnel-outcome-val" style="color:var(--green)">${rep}</div><div class="funnel-outcome-lbl">réponses</div></div>
+      <div class="funnel-outcome"><div class="funnel-outcome-val" style="color:var(--amber)">${term}</div><div class="funnel-outcome-lbl">terminés</div></div>
+      <div class="funnel-outcome"><div class="funnel-outcome-val" style="color:var(--info)">${lus}</div><div class="funnel-outcome-lbl">lus</div></div>
+      <div class="funnel-outcome"><div class="funnel-outcome-val">${pct(rep,max)}%</div><div class="funnel-outcome-lbl">taux réponse</div></div>
     </div>
   </div>`
 }
 
-function retirerContactListe(email) {
-  listeContactsTemp = listeContactsTemp.filter(p=>p.email!==email)
-  listeFileImport = listeFileImport.filter(p=>p.email!==email)
-  afficherApercuListeModal()
+// ═══ BLACKLIST ═══
+function estBlackliste(email) {
+  return (S.blacklist||[]).some(e=>e.toLowerCase()===email.toLowerCase())
 }
 
-function sauvegarderListe() {
-  const nom = document.getElementById('nomListe').value.trim()
-  if(!nom) { alert('Nommez la liste'); return }
-  const tous = [...listeContactsTemp, ...listeFileImport]
-  const contacts = tous.filter((p,i,a)=>a.findIndex(x=>x.email===p.email)===i)
-  if(!contacts.length) { alert('Ajoutez au moins un contact'); return }
-  const liste = { id: listeIdEnEdition||uid(), nom, contacts, creee: isoMaint(), modifiee: isoMaint() }
-  if(listeIdEnEdition) {
-    const idx = S.listes.findIndex(l=>l.id===listeIdEnEdition)
-    if(idx>=0) S.listes[idx] = liste
+function ajouterBlacklist() {
+  const email=prompt('Email à blacklister :')
+  if(!email||!email.includes('@')) return
+  const e=email.trim().toLowerCase()
+  S.blacklist=S.blacklist||[]
+  if(S.blacklist.includes(e)){alert('Déjà dans la blacklist');return}
+  S.blacklist.push(e)
+  S.prospects.filter(p=>p.email.toLowerCase()===e&&!p.termine).forEach(p=>{
+    p.termine=true;p.prochainEnvoi=null;p.tag='blackliste'
+  })
+  sauver();afficherBlacklist()
+  ajouterJournal(`🚫 ${e} ajouté à la blacklist`,'warn')
+}
+
+function retirerBlacklist(email) {
+  S.blacklist=(S.blacklist||[]).filter(e=>e!==email)
+  sauver();afficherBlacklist()
+  mettreAJourBadges()
+}
+
+function afficherBlacklist() {
+  const el=document.getElementById('blacklistTable')
+  if(!el) return
+  const bl=S.blacklist||[]
+  if(!bl.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🚫</div><div class="empty-title">blacklist vide</div><p>Aucun email bloqué</p></div>`
   } else {
-    S.listes.push(liste)
+    el.innerHTML=`<table><thead><tr><th>Email bloqué</th><th></th></tr></thead><tbody>
+      ${bl.map(e=>`<tr>
+        <td style="font-family:var(--mono);font-size:12px">${e}</td>
+        <td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick="retirerBlacklist('${e}')">retirer</button></td>
+      </tr>`).join('')}
+    </tbody></table>`
   }
-  sauver(); fermerModal('modalListe'); afficherListes()
-  ajouterJournal(`Liste "${nom}" enregistrée — ${contacts.length} contacts`, 'ok')
+  const bb=document.getElementById('blacklistBadge');if(bb)bb.textContent=bl.length
 }
 
-function afficherListes() {
-  const el = document.getElementById('contenu-listes')
-  if(!S.listes.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">aucune liste</div><p>Créez des listes de prospects réutilisables à associer à vos campagnes</p></div>`
+// ═══ TEMPLATES ═══
+function sauvegarderTemplate(sujet,corps) {
+  const nom=prompt('Nom du template :')
+  if(!nom) return
+  S.templates=S.templates||[]
+  S.templates.push({id:uid(),nom,sujet,corps,creee:isoMaint()})
+  sauver();ajouterJournal(`Template "${nom}" sauvegardé`,'ok');alert('Template sauvegardé ✓')
+}
+
+function supprimerTemplate(id) {
+  if(!confirm('Supprimer ?')) return
+  S.templates=(S.templates||[]).filter(t=>t.id!==id);sauver()
+}
+
+function appliquerTemplateLineaire(i,tplId) {
+  if(!tplId) return
+  const t=(S.templates||[]).find(t=>t.id===tplId)
+  if(!t) return
+  const node=trouverNodeParIndex(flowRoot,i)
+  if(node){node.sujet=t.sujet;node.corps=t.corps}
+  const se=document.getElementById(`lin-sujet-${i}`)
+  const ce=document.getElementById(`lin-corps-${i}`)
+  if(se) se.value=t.sujet
+  if(ce) ce.innerHTML=t.corps
+  ajouterJournal(`Template "${t.nom}" appliqué`,'ok')
+}
+
+function trouverNodeParIndex(node,idx,ctr={n:0}) {
+  if(ctr.n===idx) return node
+  ctr.n++
+  for(const b of node.branches||[]){const f=trouverNodeParIndex(b,idx,ctr);if(f)return f}
+  return null
+}
+
+function trouverDerniereNode(node) {
+  if(!node.branches||!node.branches.length) return node
+  return trouverDerniereNode(node.branches[node.branches.length-1])
+}
+
+function mettreAJourEtapeLineaire(i,champ,valeur) {
+  const node=trouverNodeParIndex(flowRoot,i)
+  if(node) node[champ]=valeur
+}
+
+function ajouterEtapeLineaire() {
+  const d=trouverDerniereNode(flowRoot)
+  if(d){d.branches=d.branches||[];d.branches.push(creerNode('pas_de_reponse',3));rendreBuilderActif()}
+}
+
+function supprimerEtapeLineaire(i) {
+  if(i===0){alert("Impossible de supprimer l'email initial");return}
+  if(!confirm('Supprimer ?')) return
+  const node=trouverNodeParIndex(flowRoot,i)
+  if(node){supprimerNodeDansParent(flowRoot,node.id);rendreBuilderActif()}
+}
+
+// ═══ BUILDER LINÉAIRE ═══
+let modeBuilder='lineaire'
+
+function basculerModeBuilder() {
+  modeBuilder=modeBuilder==='lineaire'?'flow':'lineaire'
+  const btn=document.getElementById('btnModeBuilder')
+  if(btn) btn.textContent=modeBuilder==='lineaire'?'🔀 vue flow':'📋 vue linéaire'
+  rendreBuilderActif()
+}
+
+function rendreBuilderActif() {
+  if(modeBuilder==='lineaire') rendreBuilderLineaire()
+  else rendreFlow()
+}
+
+function rendreBuilderLineaire() {
+  const canvas=document.getElementById('flowCanvas')
+  if(!canvas) return
+  const etapes=aplatiArbre(flowRoot)
+  const tplOpts=(S.templates||[]).length
+    ?`<select class="form-select" style="width:150px;height:28px;font-size:11px" onchange="appliquerTemplateLineaire(##IDX##,this.value);this.value=''">
+        <option value="">📄 template…</option>
+        ${(S.templates||[]).map(t=>`<option value="${t.id}">${t.nom}</option>`).join('')}
+      </select>`
+    :''
+
+  canvas.innerHTML=etapes.map((et,i)=>`
+    <div style="background:var(--w);border:1.5px solid ${i===0?'var(--accent)':'var(--g200)'};border-radius:var(--rm);padding:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <div style="width:22px;height:22px;border-radius:50%;background:${i===0?'var(--accent)':'var(--g200)'};color:${i===0?'#fff':'var(--g600)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i+1}</div>
+        <span style="font-size:12px;font-weight:600;font-family:var(--mono);flex:1;color:var(--g800)">${i===0?'email initial':`relance ${i}`}</span>
+        ${i===0?`<div style="display:flex;align-items:center;gap:6px">
+            <select class="cond-select" style="font-size:11px;height:26px" onchange="mettreAJourEtapeLineaire(0,'envoisImmediat',this.value==='immediat');this.previousElementSibling&&(this.previousElementSibling.style.display=this.value==='immediat'?'none':'flex')">
+              <option value="immediat" ${!(et.envoisImmediat===false)?'selected':''}>⚡ Envoi immédiat à la publication</option>
+              <option value="planifie" ${et.envoisImmediat===false?'selected':''}>📅 Planifier une date</option>
+            </select>
+          </div>`:''}
+        ${i===0&&et.envoisImmediat===false?`<div class="seq-cond-wrap" style="margin-top:8px">
+          <span style="font-size:12px;color:var(--g500)">Envoyer le</span>
+          <input type="date" class="cond-select" style="width:150px" value="${et.dateEnvoi||''}" onchange="mettreAJourEtapeLineaire(0,'dateEnvoi',this.value)">
+          <span style="font-size:12px;color:var(--g500)">à</span>
+          <input type="time" class="cond-select" style="width:100px" value="${et.heureEnvoi||'09:00'}" onchange="mettreAJourEtapeLineaire(0,'heureEnvoi',this.value)">
+        </div>`:''}
+        ${i>0?`<button class="btn btn-danger btn-xs" onclick="supprimerEtapeLineaire(${i})">✕</button>`:''}
+      </div>
+      ${i>0?`<div style="background:var(--g50);border:1px solid var(--g100);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:12px;color:var(--g500)">Envoyer si</span>
+        <select class="cond-select" onchange="mettreAJourEtapeLineaire(${i},'condition',this.value)">
+          <option value="pas_de_reponse" ${et.condition==='pas_de_reponse'?'selected':''}>si pas de réponse</option>
+          <option value="delai" ${et.condition==='delai'?'selected':''}>délai fixe (toujours)</option>
+        </select>
+        <span style="font-size:12px;color:var(--g500)">après</span>
+        <input type="number" class="cond-num" value="${et.delaiJours||2}" min="1" max="90" onchange="mettreAJourEtapeLineaire(${i},'delaiJours',+this.value)">
+        <span style="font-size:12px;color:var(--g500)">jours à</span>
+        <input type="time" class="cond-select" style="width:100px" value="${et.heureEnvoi||'09:00'}" onchange="mettreAJourEtapeLineaire(${i},'heureEnvoi',this.value)">
+      </div>`:''}
+      <div class="form-group" style="margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <label class="form-label" style="margin-bottom:0;flex:1">Objet</label>
+          ${tplOpts.replace(/##IDX##/g,i)}
+          <button class="btn btn-ghost btn-xs" onclick="ouvrirApercu(${i})">👁 aperçu</button>
+          <button class="btn btn-ghost btn-xs" onclick="envoyerEmailTest(${i})">📧 test</button>
+        </div>
+        <input class="form-input" id="lin-sujet-${i}" value="${(et.sujet||'').replace(/"/g,'&quot;')}"
+          placeholder="Objet…" oninput="mettreAJourEtapeLineaire(${i},'sujet',this.value)"
+          onfocus="dernierEditeurFocus='lin-sujet-${i}'">
+      </div>
+      <div class="form-group" style="margin-bottom:8px">
+        <label class="form-label">Corps</label>
+        <div class="editor-wrap">
+          <div class="editor-toolbar">${outilsEditeur('lin-corps-'+i)}</div>
+          <div id="lin-corps-${i}" class="editor-body" contenteditable="true"
+            data-placeholder="Bonjour {{prenom}},&#10;&#10;..."
+            onfocus="dernierEditeurFocus='lin-corps-${i}'"
+            oninput="mettreAJourEtapeLineaire(${i},'corps',this.innerHTML)">${et.corps||''}</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="btn btn-ghost btn-xs"
+          onclick="sauvegarderTemplate(document.getElementById('lin-sujet-${i}').value,document.getElementById('lin-corps-${i}').innerHTML)">
+          💾 sauver template
+        </button>
+      </div>
+    </div>
+    ${i<etapes.length-1?`<div style="padding:4px 0 0 20px"><div style="width:2px;height:20px;background:var(--g200);margin-left:9px"></div></div>`:''}`
+  ).join('')+`
+  <div style="padding:12px 0 4px">
+    <button class="btn btn-ghost btn-sm" style="width:100%" onclick="ajouterEtapeLineaire()">+ ajouter une relance</button>
+  </div>`
+}
+
+// ═══ TOKEN REFRESH ═══
+let tokenExpireAt=null
+
+function noterExpirationToken() {
+  tokenExpireAt=Date.now()+50*60*1000
+  setTimeout(alerterExpirationToken,50*60*1000)
+}
+
+function alerterExpirationToken() {
+  if(!S.accessToken) return
+  const banner=document.getElementById('tokenBanner')
+  if(banner){
+    banner.style.display='flex'
+    banner.innerHTML=`<span style="flex:1">⚠ Session Outlook expire dans 10 min — reconnectez-vous pour ne pas rater d'envois</span>
+      <button class="btn btn-primary btn-sm" onclick="ouvrirConnexion()">🔄 Reconnecter</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('tokenBanner').style.display='none'">✕</button>`
+  }
+  setTimeout(()=>{
+    if(!S.accessToken) return
+    S.accessToken=null;sauver()
+    document.getElementById('statusDot').classList.remove('on')
+    document.getElementById('statusLabel').textContent='session expirée'
+    document.getElementById('statusEmail').textContent='cliquer pour reconnecter →'
+    const b=document.getElementById('tokenBanner')
+    if(b){b.style.display='flex';b.innerHTML=`<span style="flex:1">🔴 Session expirée — envois en pause</span><button class="btn btn-primary btn-sm" onclick="ouvrirConnexion()">Reconnecter</button>`}
+    ajouterJournal('Session Outlook expirée','err')
+  },10*60*1000)
+}
+
+
+// ═══ RENOMMER CAMPAGNE ═══
+function renommerCamp(id) {
+  const camp = S.campagnes.find(c=>c.id===id)
+  if(!camp) return
+  const nouveau = prompt('Nouveau nom de la campagne :', camp.nom)
+  if(!nouveau || nouveau.trim()===camp.nom) return
+  camp.nom = nouveau.trim()
+  sauver()
+  afficherListeCamp()
+  ajouterJournal(`Campagne renommée : "${nouveau.trim()}"`,'ok')
+}
+
+// ═══ BLACKLISTER DEPUIS PROSPECTS ═══
+function blacklisterDepuisProspect(prospectId) {
+  const p = S.prospects.find(x=>x.id===prospectId)
+  if(!p) return
+  if(!confirm(`Blacklister ${p.email} ?
+
+Cet email ne recevra plus jamais d'email via MailSeq.`)) return
+  p.tag='blackliste'; p.termine=true; p.prochainEnvoi=null
+  S.blacklist = S.blacklist||[]
+  if(!S.blacklist.includes(p.email.toLowerCase())) {
+    S.blacklist.push(p.email.toLowerCase())
+  }
+  sauver()
+  afficherProspects()
+  afficherBlacklist()
+  mettreAJourBadges()
+  ajouterJournal(`🚫 ${p.email} — blacklisté depuis le tableau prospects`,'warn')
+}
+
+// ═══ MODIFIER TAG PROSPECT ═══
+function changerTagProspect(prospectId, tag) {
+  const p = S.prospects.find(x=>x.id===prospectId)
+  if(!p || !tag) return
+  if(tag==='actif') {
+    p.tag=null; p.repandu=false; p.termine=false
+    p.etapeCourante=0; p.historique=[]; p.ouvertures=0
+    p.prochainEnvoi=new Date().toISOString()
+    ajouterJournal(`↺ ${p.email} — remis en actif (étape 1)`,'ok')
+  } else if(tag==='repandu') {
+    p.tag='repandu'; p.repandu=true; p.termine=true; p.prochainEnvoi=null
+    ajouterJournal(`↩ ${p.email} — marqué comme répondu`,'ok')
+  } else if(tag==='blackliste') {
+    if(!confirm(`Blacklister définitivement ${p.email} ?`)) return
+    p.tag='blackliste'; p.termine=true; p.prochainEnvoi=null
+    S.blacklist=S.blacklist||[]
+    if(!S.blacklist.includes(p.email.toLowerCase())) S.blacklist.push(p.email.toLowerCase())
+    ajouterJournal(`🚫 ${p.email} — blacklisté`,'warn')
+  }
+  sauver(); afficherProspects()
+}
+
+// ═══ FORCER ENVOI MAINTENANT ═══
+function forcerEnvoiSeq(seqId) {
+  const camps = S.campagnes.filter(c=>c.seqId===seqId&&c.statut==='active')
+  if(!camps.length) { alert('Aucune campagne active pour cette séquence'); return }
+  // Remettre le prochainEnvoi à maintenant pour tous les prospects en attente
+  let count = 0
+  camps.forEach(camp => {
+    const seq = S.sequences.find(s=>s.id===camp.seqId)
+    if(!seq) return
+    S.prospects.filter(p=>p.campagneId===camp.id&&!p.termine&&!p.repandu&&p.prochainEnvoi).forEach(p=>{
+      p.prochainEnvoi = new Date().toISOString()
+      count++
+    })
+    seq._etapesFlat = getEtapesSeq(seq)
+    envoyerLot(camp.id, seq, camp.delai||45)
+  })
+  if(count > 0) {
+    ajouterJournal(`⚡ Envoi forcé — ${count} prospect${count>1?'s':''} traités maintenant`,'ok')
+    afficherSequences()
+  } else {
+    alert('Aucun envoi en attente pour cette séquence')
+  }
+}
+
+// ═══ RELANCER PROSPECT EN ERREUR ═══
+async function relancerProspect(prospectId) {
+  const p = S.prospects.find(x=>x.id===prospectId)
+  if(!p) return
+  if(!S.accessToken) { alert('Connectez-vous à Outlook pour relancer.'); return }
+  const camp = S.campagnes.find(c=>c.id===p.campagneId)
+  const seq = camp ? S.sequences.find(s=>s.id===camp.seqId) : null
+  if(!seq) { alert('Séquence introuvable'); return }
+  const etapes = getEtapesSeq(seq)
+  const etape = etapes[Math.max(0, p.etapeCourante-1)]
+  if(!etape) return
+  p.tag = null; p.erreurMsg = null
+  const ok = await envoyerUn(p, etape.sujet, etape.corps)
+  if(ok) ajouterJournal(`↺ Relance manuelle réussie → ${p.email}`,'ok')
+  sauver(); afficherProspects()
+}
+
+// ═══ DUPLICATION DE SÉQUENCE ═══
+function dupliquerSeq(id) {
+  const seq = S.sequences.find(s=>s.id===id)
+  if(!seq) return
+  const nom = prompt('Nom de la copie :', seq.nom+' (copie)')
+  if(!nom) return
+  const copie = JSON.parse(JSON.stringify(seq))
+  copie.id = uid()
+  copie.nom = nom
+  copie.creee = isoMaint()
+  S.sequences.push(copie)
+  sauver(); afficherSequences()
+  ajouterJournal(`Séquence "${nom}" dupliquée`,'ok')
+}
+
+// ═══ EMAIL DE TEST ═══
+async function envoyerEmailTest(stepIndex) {
+  const emailTest = prompt('Adresse email pour le test :')
+  if(!emailTest || !emailTest.includes('@')) return
+  
+  // Récupérer l'étape depuis le builder linéaire actuel
+  const etapes = aplatiArbre(flowRoot)
+  const etape = etapes[stepIndex]
+  if(!etape) return
+
+  // Prospect fictif pour les variables
+  const prospectTest = {
+    email: emailTest,
+    prenom: 'Prénom',
+    nom: 'Nom',
+    societe: 'Société',
+    poste: 'Poste'
+  }
+
+  if(!S.accessToken) {
+    alert('🔴 Connectez-vous à Outlook pour envoyer un email test.')
     return
   }
-  el.innerHTML = S.listes.map(l => {
-    const campagnesAssoc = S.campagnes.filter(c=>c.listeId===l.id)
-    return `<div class="card">
-      <div class="card-header">
+
+
+
+
+
+  const sujetTest = `[TEST] ${interp(etape.sujet, prospectTest)}`
+  const ok = await envoyerUn(prospectTest, sujetTest, etape.corps)
+  if(ok) {
+    ajouterJournal(`📧 Email test envoyé → ${emailTest}`,'ok')
+    alert(`✓ Email test envoyé à ${emailTest}`)
+  }
+}
+
+// ═══ APERÇU EMAIL ═══
+function ouvrirApercu(stepIndex) {
+  // Récupérer un prospect exemple de la liste sélectionnée
+  const lid = document.getElementById('seqListeSel')?.value
+  const liste = lid ? S.listes.find(l=>l.id===lid) : null
+  const exempleProspect = liste?.contacts?.[0] || {
+    email: 'jean.dupont@exemple.fr',
+    prenom: 'Jean',
+    nom: 'Dupont',
+    societe: 'Acme Corp',
+    poste: 'Directeur Commercial'
+  }
+
+  const etapes = aplatiArbre(flowRoot)
+  const etape = etapes[stepIndex]
+  if(!etape) return
+
+  const sujetRendu = interp(etape.sujet, exempleProspect)
+  const corpsRendu = interp(etape.corps, exempleProspect)
+  const signature = S.signature ? `<br><br><hr style="border:none;border-top:1px solid #eee;margin:16px 0">${S.signature}` : ''
+
+  // Créer modal d'aperçu
+  const overlay = document.createElement('div')
+  overlay.className = 'overlay'
+  overlay.onclick = e => { if(e.target===overlay) document.body.removeChild(overlay) }
+  overlay.innerHTML = `
+    <div class="modal" style="width:680px;max-height:85vh">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--g100)">
         <div>
-          <div class="card-title">${l.nom}</div>
-          <div class="card-sub">${l.contacts.length} contact${l.contacts.length>1?'s':''} · créée ${fmtD(l.creee)}
-            ${campagnesAssoc.length?` · utilisée dans ${campagnesAssoc.length} campagne${campagnesAssoc.length>1?'s':''}`:' · non utilisée'}
-          </div>
+          <div class="modal-title" style="margin-bottom:0">Aperçu — ${stepIndex===0?'Email initial':`Relance ${stepIndex}`}</div>
+          <div style="font-size:11px;color:var(--g400);margin-top:3px">Variables remplacées avec : ${exempleProspect.prenom} ${exempleProspect.nom} · ${exempleProspect.societe}</div>
+        </div>
+        <button class="close-panel" onclick="this.closest('.overlay').remove()">×</button>
+      </div>
+      
+      <!-- Infos email -->
+      <div style="background:var(--g50);border:1px solid var(--g100);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;font-size:12px">
+        <div style="display:flex;gap:8px;margin-bottom:6px">
+          <span style="color:var(--g400);width:50px;flex-shrink:0">De :</span>
+          <span style="color:var(--g700)">${S.userEmail||'votre@email.fr'}</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:6px">
+          <span style="color:var(--g400);width:50px;flex-shrink:0">À :</span>
+          <span style="color:var(--g700)">${exempleProspect.email}</span>
         </div>
         <div style="display:flex;gap:8px">
+          <span style="color:var(--g400);width:50px;flex-shrink:0">Objet :</span>
+          <span style="color:var(--g900);font-weight:500">${sujetRendu||'(sans objet)'}</span>
+        </div>
+      </div>
+
+      <!-- Corps rendu -->
+      <div style="border:1px solid var(--g200);border-radius:var(--r);padding:16px 18px;font-size:13px;line-height:1.7;color:var(--g800);max-height:320px;overflow-y:auto;background:var(--w)">
+        ${corpsRendu+signature || '<span style="color:var(--g300)">(corps vide)</span>'}
+      </div>
+
+      <!-- Vérification variables non remplacées -->
+      ${(sujetRendu+corpsRendu).includes('{{') ? `
+      <div class="info-box i-amber" style="margin-top:12px;margin-bottom:0">
+        ⚠ Des variables n'ont pas été remplacées : ${[...new Set((sujetRendu+corpsRendu).match(/\{\{[^}]+\}\}/g)||[])].join(', ')}
+        <br>Vérifiez que vos colonnes Excel correspondent exactement.
+      </div>` : `
+      <div class="info-box i-green" style="margin-top:12px;margin-bottom:0">
+        ✓ Toutes les variables sont remplacées correctement
+      </div>`}
+
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="envoyerEmailTest(${stepIndex})">📧 Envoyer un email test</button>
+        <button class="btn btn-primary" onclick="this.closest('.overlay').remove()">Fermer</button>
+      </div>
+    </div>`
+  document.body.appendChild(overlay)
+}
+
+// ═══ PROGRESSION ENVOI EN TEMPS RÉEL ═══
+function afficherProgressionEnvoi(envoyes, total, nomCamp) {
+  const el = document.getElementById('progressEnvoi')
+  const label = document.getElementById('progressLabel')
+  const fill = document.getElementById('progressFill')
+  if(!el) return
+  if(total===0) { el.style.display='none'; return }
+  el.style.display='flex'
+  const pct = Math.round(envoyes/total*100)
+  if(label) label.textContent = `${envoyes}/${total} envoyés`
+  if(fill) fill.style.width = pct+'%'
+  if(envoyes>=total) setTimeout(()=>{ if(el) el.style.display='none' }, 3000)
+}
+
+// ═══ PAGINATION PROSPECTS ═══
+let pageProspects = 1
+const PAGE_SIZE = 50
+
+function afficherProspects() {
+  const el = document.getElementById('contenu-prospects')
+  if(!el) return
+  if(!S.listes.length) {
+    el.innerHTML=`<div class="empty"><div class="empty-icon">👥</div><div class="empty-title">aucune liste</div><p style="margin-bottom:16px">Créez votre première liste de prospects</p><button class="btn btn-primary" onclick="ouvrirModalListe(null)">+ nouvelle liste</button></div>`
+    return
+  }
+  // Afficher les listes avec leurs contacts
+  el.innerHTML=S.listes.map(l=>{
+    const campagnes=S.campagnes.filter(c=>c.listeId===l.id)
+    return `<div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--g900)">${l.nom}</div>
+          <div style="font-size:12px;color:var(--g400);margin-top:3px">${l.contacts.length} contact${l.contacts.length>1?'s':''} · créée ${fmtD(l.creee)}${campagnes.length?' · utilisée dans '+campagnes.length+' campagne'+(campagnes.length>1?'s':''):''}</div>
+        </div>
+        <div style="display:flex;gap:6px">
           <button class="btn btn-ghost btn-sm" onclick="ouvrirModalListe('${l.id}')">✏ modifier</button>
           <button class="btn btn-danger btn-sm" onclick="supprimerListe('${l.id}')">supprimer</button>
         </div>
       </div>
-      <!-- Aperçu contacts -->
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
-        ${l.contacts.slice(0,8).map(p=>`
-          <div style="display:flex;align-items:center;gap:5px;background:var(--g50);border:1px solid var(--g100);border-radius:20px;padding:3px 10px 3px 5px;font-size:11px">
-            <div style="width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">${(p.prenom||p.email)[0].toUpperCase()}</div>
-            <span style="color:var(--g600)">${p.prenom?p.prenom+' '+p.nom:p.email}</span>
-            ${p.societe?`<span style="color:var(--g400)">· ${p.societe}</span>`:''}
-          </div>`).join('')}
-        ${l.contacts.length>8?`<div style="display:flex;align-items:center;padding:3px 10px;background:var(--g50);border:1px solid var(--g100);border-radius:20px;font-size:11px;color:var(--g400)">+${l.contacts.length-8} autres</div>`:''}
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        ${l.contacts.slice(0,10).map(p=>`<div style="display:flex;align-items:center;gap:5px;background:var(--g50);border:1px solid var(--g100);border-radius:20px;padding:3px 10px 3px 5px;font-size:12px">
+          <div style="width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">${(p.prenom||p.email)[0].toUpperCase()}</div>
+          <span style="color:var(--g700)">${p.prenom?p.prenom+' '+(p.nom||''):p.email}</span>
+          ${p.societe?`<span style="color:var(--g400)">· ${p.societe}</span>`:''}
+        </div>`).join('')}
+        ${l.contacts.length>10?`<div style="display:flex;align-items:center;padding:3px 10px;background:var(--g50);border:1px solid var(--g100);border-radius:20px;font-size:12px;color:var(--g400)">+${l.contacts.length-10} autres</div>`:''}
       </div>
-      <!-- Campagnes associées -->
-      ${campagnesAssoc.length?`<div style="font-size:11px;color:var(--g400)">
-        Utilisée dans : ${campagnesAssoc.map(c=>`<span class="badge b-accent" style="margin-right:4px">${c.nom}</span>`).join('')}
-      </div>`:''}
     </div>`
   }).join('')
-  // Update badge
-  const badge = document.getElementById('listesBadge')
-  if(badge) badge.textContent = S.listes.length
-}
+  return // skip old code
+  const cid = ''
+  const recherche = ''
+  let ps = []
+  if(!cid) { return }
+  if(!ps.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-title">aucun prospect</div></div>`; return }
 
-function supprimerListe(id) {
-  if(!confirm('Supprimer cette liste ? Les campagnes associées ne seront pas affectées.')) return
-  S.listes = S.listes.filter(l=>l.id!==id)
-  sauver(); afficherListes()
-}
-
-// ═══ IMPORT ═══
-let prospectsImportes=[], tagsManuel=[]
-
-function gererDrop(e){e.preventDefault();e.currentTarget.classList.remove('drag-over');traiterFichier(e.dataTransfer.files[0])}
-function gererFichier(e){traiterFichier(e.target.files[0])}
-
-function trouverCle(row,candidats){const ks=Object.keys(row);for(const c of candidats){const k=ks.find(k=>k.toLowerCase().includes(c));if(k)return k}return null}
-
-function traiterFichier(file){
-  if(!file)return
-  const r=new FileReader()
-  r.onload=e=>{
-    try{
-      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'})
-      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''})
-      prospectsImportes=rows.map(r=>({
-        email:String(r[trouverCle(r,['email','mail','e-mail'])]||'').trim().toLowerCase(),
-        prenom:r[trouverCle(r,['prénom','prenom','first','firstname'])]||'',
-        nom:r[trouverCle(r,['nom','last','lastname','surname'])]||'',
-        societe:r[trouverCle(r,['société','societe','company','entreprise'])]||'',
-        poste:r[trouverCle(r,['poste','job','title','fonction'])]||''
-      })).filter(p=>p.email.includes('@'))
-      document.getElementById('aperçuFichier').innerHTML=`<div class="info-box i-green" style="margin-top:8px;margin-bottom:0">✓ ${prospectsImportes.length} contacts valides détectés</div>`
-    }catch(e){alert('Erreur lecture fichier : '+e.message)}
-  }
-  r.readAsArrayBuffer(file)
-}
-
-function ajouterProspectManuel() {
-  const email = document.getElementById('manEmail').value.trim().toLowerCase()
-  if(!email || !email.includes('@')) { alert('Email invalide'); return }
-  if(tagsManuel.find(p=>p.email===email)) { alert('Cet email est déjà dans la liste'); return }
-  tagsManuel.push({
-    email,
-    prenom: document.getElementById('manPrenom').value.trim(),
-    nom: document.getElementById('manNom').value.trim(),
-    societe: document.getElementById('manSociete').value.trim(),
-    poste: document.getElementById('manPoste').value.trim()
-  })
-  // Réinitialiser le formulaire
-  ['manEmail','manPrenom','manNom','manSociete','manPoste'].forEach(id => document.getElementById(id).value='')
-  document.getElementById('manEmail').focus()
-  afficherTags()
-}
-
-function validerTagInput() {
-  const val = document.getElementById('tagInput').value
-  val.split(/[;,\n\r\s]+/).forEach(e => {
-    const email = e.trim().toLowerCase()
-    if(email.includes('@') && !tagsManuel.find(p=>p.email===email))
-      tagsManuel.push({email, prenom:'', nom:'', societe:'', poste:''})
-  })
-  document.getElementById('tagInput').value=''
-  afficherTags()
-}
-
-function gererTouche(e){if([',',';','Entrée','Enter'].includes(e.key)){e.preventDefault();validerTagInput()}}
-function gererColler(e){
-  e.preventDefault()
-  const texte = e.clipboardData.getData('text')
-  texte.split(/[;,\n\r]+/).forEach(e => {
-    const email = e.trim().toLowerCase()
-    if(email.includes('@') && !tagsManuel.find(p=>p.email===email))
-      tagsManuel.push({email, prenom:'', nom:'', societe:'', poste:''})
-  })
-  afficherTags()
-}
-
-function supprimerProspectManuel(email){tagsManuel=tagsManuel.filter(x=>x.email!==email);afficherTags()}
-
-function afficherTags(){
-  const el = document.getElementById('manProspectsList')
-  if(!el) return
-  if(!tagsManuel.length) { el.innerHTML=''; document.getElementById('tagCount').textContent='0 prospect ajouté'; return }
-  el.innerHTML = `<table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-size:12px">
-    <thead><tr>
-      <th style="text-align:left;padding:6px 10px;background:var(--g50);border-bottom:1px solid var(--g200);font-size:10px;font-family:var(--mono);color:var(--g400);text-transform:uppercase;letter-spacing:.5px">Email</th>
-      <th style="text-align:left;padding:6px 10px;background:var(--g50);border-bottom:1px solid var(--g200);font-size:10px;font-family:var(--mono);color:var(--g400);text-transform:uppercase;letter-spacing:.5px">Prénom</th>
-      <th style="text-align:left;padding:6px 10px;background:var(--g50);border-bottom:1px solid var(--g200);font-size:10px;font-family:var(--mono);color:var(--g400);text-transform:uppercase;letter-spacing:.5px">Nom</th>
-      <th style="text-align:left;padding:6px 10px;background:var(--g50);border-bottom:1px solid var(--g200);font-size:10px;font-family:var(--mono);color:var(--g400);text-transform:uppercase;letter-spacing:.5px">Société</th>
-      <th style="text-align:left;padding:6px 10px;background:var(--g50);border-bottom:1px solid var(--g200);font-size:10px;font-family:var(--mono);color:var(--g400);text-transform:uppercase;letter-spacing:.5px">Poste</th>
-      <th style="padding:6px 10px;background:var(--g50);border-bottom:1px solid var(--g200)"></th>
-    </tr></thead>
-    <tbody>${tagsManuel.map(p=>`<tr>
-      <td style="padding:7px 10px;border-bottom:1px solid var(--g100);font-family:var(--mono);font-size:11px">${p.email}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid var(--g100)">${p.prenom||'—'}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid var(--g100)">${p.nom||'—'}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid var(--g100)">${p.societe||'—'}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid var(--g100)">${p.poste||'—'}</td>
-      <td style="padding:7px 10px;border-bottom:1px solid var(--g100)"><button class="btn btn-danger btn-xs" onclick="supprimerProspectManuel('${p.email}')">✕</button></td>
-    </tr>`).join('')}</tbody>
-  </table>`
-  document.getElementById('tagCount').textContent=tagsManuel.length+' prospect'+(tagsManuel.length>1?'s':'')+' ajouté'+(tagsManuel.length>1?'s':'')
-}
-
-// ═══ CAMPAGNES ═══
-function remplirSelectSeq(){
-  const sel=document.getElementById('campSeq'),cur=sel.value
-  sel.innerHTML='<option value="">— sélectionner —</option>'+S.sequences.map(s=>`<option value="${s.id}">${s.nom} (${s.etapes.length} email${s.etapes.length>1?'s':''})</option>`).join('')
-  sel.value=cur; aperçuSeq()
-}
-
-function aperçuSeq(){
-  const sid=document.getElementById('campSeq').value
-  const seq=S.sequences.find(s=>s.id===sid)
-  const el=document.getElementById('aperçuSeqRow')
-  if(!seq){el.innerHTML='';return}
-  const etapes=getEtapesSeq(seq)
-  el.innerHTML=etapes.map((et,i)=>`
-    <span style="display:flex;align-items:center;gap:4px">
-      ${i>0?`<span style="font-size:10px;color:${condColor(et.condition)};font-weight:500">→ J+${et.delaiJours}</span>`:''}
-      <span class="badge b-gray">${i===0?'initial':`relance_${i}`}</span>
-    </span>`).join('')
-}
-
-async function lancerCampagne(){
-  const nom=document.getElementById('campNom').value.trim()
-  const seqId=document.getElementById('campSeq').value
-  const activeTab = ['liste','fichier','manuel'].find(t=>{const el=document.getElementById('imp-'+t);return el&&el.style.display!=='none'}) || 'fichier'
-  let tousP = []
-  if(activeTab==='liste') {
-    const lid = document.getElementById('campListeSel')?.value
-    const liste = lid ? S.listes.find(l=>l.id===lid) : null
-    if(!liste) return alert('Sélectionnez une liste de prospects')
-    tousP = liste.contacts
-    S.campagnes[S.campagnes.length] // will be pushed below
-  } else if(activeTab==='fichier') {
-    tousP = prospectsImportes
-  } else {
-    tousP = tagsManuel
-  }
-  if(!nom) return alert('Nommez la campagne')
-  if(!seqId) return alert('Sélectionnez une séquence')
-  if(!tousP.length) return alert('Ajoutez des prospects')
-  if(!S.accessToken){alert('Connectez-vous à Outlook avant de lancer.');return}
-
-  const delai=+document.getElementById('campDelai').value||45
-  const campId=uid()
-  const listeIdCamp = document.getElementById('campListeSel')?.value || null
-  S.campagnes.push({
-    id:campId, nom, seqId, listeId:listeIdCamp,
-    heureEnvoi:document.getElementById('campHeure').value,
-    fuseau:document.getElementById('campFuseau').value,
-    delai, joursOuvres:document.getElementById('campJours').value==='semaine',
-    statut:'active', creee:isoMaint()
-  })
-
-  tousP.forEach(p=>S.prospects.push({
-    id:uid(), campagneId:campId,
-    email:p.email, prenom:p.prenom||'', nom:p.nom||'', societe:p.societe||'', poste:p.poste||'',
-    etapeCourante:0, prochainEnvoi:isoMaint(),
-    repandu:false, termine:false,
-    ouvertures:0, tag:null, // tag: 'lu' | 'non_lu' | null
-    historique:[]
-  }))
-
-  sauver(); ajouterJournal(`Campagne "${nom}" lancée — ${tousP.length} prospects`,'ok')
-  const seq=S.sequences.find(s=>s.id===seqId)
-  if(seq) seq._etapesFlat = getEtapesSeq(seq)
-  envoyerLot(campId,seq,delai)
-  reinitialiserFormCamp(); afficherOngletCamp('liste'); afficherTableau()
-}
-
-function reinitialiserFormCamp(){
-  document.getElementById('campNom').value=''
-  document.getElementById('campSeq').value=''
-  document.getElementById('aperçuSeqRow').innerHTML=''
-  document.getElementById('aperçuFichier').innerHTML=''
-  prospectsImportes=[]; tagsManuel=[]; afficherTags(); const ml=document.getElementById('manProspectsList'); if(ml)ml.innerHTML=''; const ls=document.getElementById('campListeSel'); if(ls)ls.value=''; const la=document.getElementById('campListeApercu'); if(la)la.innerHTML=''
-}
-
-// ═══ ENVOI ═══
-let envoyant=false
-
-async function envoyerUn(prospect, sujet, corpsHtml) {
-  // Vérification blacklist avant chaque envoi
-  if(estBlackliste(prospect.email)){
-    ajouterJournal(`🚫 ${prospect.email} — blacklisté, envoi ignoré`,'warn')
-    return false
-  }
-  // Recharger la signature depuis localStorage à chaque envoi (évite les bugs de cache)
-  const sigFraiche = JSON.parse(localStorage.getItem('msp_v3')||'{}').signature || S.signature || ''
-  const corpsComplet=corpsHtml+(sigFraiche?`<br><br><hr style="border:none;border-top:1px solid #eee;margin:16px 0">${sigFraiche}`:'')
-  if(!S.accessToken){
-    ajouterJournal(`🔴 Outlook non connecté — reconnectez-vous pour envoyer les emails`,'err')
-    // Afficher bannière
-    const b=document.getElementById('tokenBanner')
-    if(b){b.style.display='flex';b.innerHTML='<span style="flex:1">🔴 Session expirée — reconnectez-vous pour reprendre les envois</span><button class="btn btn-primary btn-sm" onclick="ouvrirConnexion()">Reconnecter</button>'}
-    return false
-  }
-  try{
-    const r=await fetch('https://graph.microsoft.com/v1.0/me/sendMail',{
-      method:'POST',
-      headers:{Authorization:'Bearer '+S.accessToken,'Content-Type':'application/json'},
-      body:JSON.stringify({
-        message:{
-          subject:interp(sujet,prospect),
-          body:{contentType:'HTML',content:interp(corpsComplet,prospect)},
-          toRecipients:[{emailAddress:{address:prospect.email}}]
-        },
-        saveToSentItems:true
-      })
-    })
-    if(r.ok||r.status===202){ajouterJournal(`✓ ${prospect.email} · étape ${prospect.etapeCourante+1} · "${sujet}"`,'ok');return true}
-    if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session expirée — reconnectez-vous','err');return false}
-    const err=await r.json().catch(()=>({}))
-    ajouterJournal(`✗ ${prospect.email} · ${err.error?.message||r.status}`,'err');return false
-  }catch(e){ajouterJournal(`✗ ${prospect.email} · ${e.message}`,'err');return false}
-}
-
-async function envoyerLot(campId, seq, delaiMs) {
-  if(envoyant)return
-  envoyant=true
-  const maint=new Date()
-  const enAttente=S.prospects.filter(p=>p.campagneId===campId&&!p.termine&&!p.repandu&&p.prochainEnvoi&&new Date(p.prochainEnvoi)<=maint)
-  let nbEnvoyes=0
-  const camp=S.campagnes.find(c=>c.id===campId)
-  afficherProgressionEnvoi(0, enAttente.length, camp?.nom||'')
-
-  for(const p of enAttente){
-    const etapesFlat = seq._etapesFlat || getEtapesSeq(seq)
-    if(p.etapeCourante>=etapesFlat.length){p.termine=true;continue}
-
-    // Vérifier condition avant d'envoyer
-    const etapeActuelle=etapesFlat[p.etapeCourante]
-    if(p.etapeCourante>0){
-      const cond=etapeActuelle.condition
-      const delaiJours=etapeActuelle.delaiJours||2
-      const dernierEnvoi=p.historique?.length?new Date(p.historique[p.historique.length-1].envoyeA):null
-
-      // Seules conditions supportées : pas_de_reponse (défaut) et delai (toujours envoyer)
-      // "delai" = envoyer quoi qu'il arrive — pas de vérification supplémentaire
-    }
-
-    const etape=etapesFlat[p.etapeCourante]
-    const ok=await envoyerUn(p,etape.sujet,etape.corps)
-    if(ok){
-      nbEnvoyes++
-      afficherProgressionEnvoi(nbEnvoyes, enAttente.length, camp?.nom||'')
-      p.historique=p.historique||[]
-      p.historique.push({etape:p.etapeCourante,envoyeA:isoMaint(),condition:etape.condition})
-      p.etapeCourante++
-      if(p.etapeCourante<etapesFlat.length){
-        const prochaineEtape=etapesFlat[p.etapeCourante]
-        const nd=new Date()
-        nd.setDate(nd.getDate()+(prochaineEtape.delaiJours||2))
-        const camp=S.campagnes.find(c=>c.id===campId)
-        if(camp?.joursOuvres){const d=nd.getDay();if(d===0)nd.setDate(nd.getDate()+1);if(d===6)nd.setDate(nd.getDate()+2)}
-        // Appliquer l'heure d'envoi configurée
-        const [h,m]=(prochaineEtape.heureEnvoi||'09:00').split(':')
-        nd.setHours(+h,+m,0,0)
-        p.prochainEnvoi=nd.toISOString()
-      }else{p.termine=true;p.prochainEnvoi=null}
-    }
-    sauver(); seq._etapesFlat = getEtapesSeq(seq)
-    if(enAttente.indexOf(p)<enAttente.length-1)await new Promise(r=>setTimeout(r,delaiMs*1000))
-  }
-  envoyant=false; mettreAJourBadges(); afficherSequences()
-}
-
-// ═══ VÉRIFICATION RÉPONSES + OUVERTURES (Tags) ═══
-let intervalSynchro=null
-
-function lancerDeclencheurs(){
-  const maint=new Date(); let n=0
-  for(const camp of S.campagnes){
-    if(camp.statut!=='active')continue
-    const seq=S.sequences.find(s=>s.id===camp.seqId)
-    if(!seq)continue
-    const enAtt=S.prospects.filter(p=>p.campagneId===camp.id&&!p.termine&&!p.repandu&&p.prochainEnvoi&&new Date(p.prochainEnvoi)<=maint)
-    if(enAtt.length){n+=enAtt.length;envoyerLot(camp.id,seq,camp.delai||45)}
-  }
-  ajouterJournal(n?`⚡ ${n} déclenchement${n>1?'s':''} lancé${n>1?'s':''}`:'Aucun déclenchement en attente',n?'warn':'info')
-  afficherTableau()
-}
-
-let synchroEnCours = false
-async function verifierReponses(){
-  if(synchroEnCours) return // éviter les appels simultanés
-  if(!S.accessToken){ajouterJournal('🔴 Synchronisation impossible — reconnectez-vous à Outlook','err');return}
-  synchroEnCours = true
-  ajouterJournal('Synchronisation boîte mail…','info')
-  try{
-    // Surveiller tous les prospects ayant reçu au moins 1 email, même terminés (ils peuvent répondre après)
-    const prospectsActifs = {}
-    S.prospects.filter(p=>!p.repandu && p.etapeCourante>0).forEach(p=>{
-      prospectsActifs[p.email.toLowerCase()] = p
-    })
-    
-    if(!Object.keys(prospectsActifs).length){
-      ajouterJournal('Aucun prospect à surveiller — aucun email envoyé','info')
-      return
-    }
-
-    // ── 1. RÉPONSES — lire les 200 derniers emails reçus ──
-    const r = await fetch(
-      `https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages?$select=from,receivedDateTime,subject&$top=200&$orderby=receivedDateTime desc`,
-      {headers:{Authorization:'Bearer '+S.accessToken}}
+  // Filtrer par recherche
+  if(recherche) {
+    ps = ps.filter(p =>
+      (p.email||'').toLowerCase().includes(recherche) ||
+      (p.prenom||'').toLowerCase().includes(recherche) ||
+      (p.nom||'').toLowerCase().includes(recherche) ||
+      (p.societe||'').toLowerCase().includes(recherche)
     )
-    if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session expirée — reconnectez-vous','err');return}
-    const data = await r.json()
-    
-    let nRep=0
-    for(const msg of data.value||[]){
-      const from=(msg.from?.emailAddress?.address||'').toLowerCase()
-      const p = prospectsActifs[from]
-      if(!p) continue
-      // Ne pas retraiter si déjà marqué répondu
-      if(p.repandu) { delete prospectsActifs[from]; continue }
-
-      // Vérifier que la réponse est postérieure au dernier envoi
-      const dernierEnvoi = p.historique?.length ? p.historique[p.historique.length-1].envoyeA : null
-      const dateReponse = msg.receivedDateTime
-      if(dernierEnvoi && dateReponse && new Date(dateReponse) < new Date(dernierEnvoi)) {
-        // Réponse antérieure au dernier envoi — ignorer
-        delete prospectsActifs[from]; continue
-      }
-
-      // Réponse reçue → stopper la séquence, PAS de blacklist automatique
-      p.repandu=true; p.termine=true; p.prochainEnvoi=null; p.tag='repandu'
-      nRep++
-      ajouterJournal(`↩ Réponse de ${from} · "${msg.subject||'sans sujet'}" — séquence stoppée`,'warn')
-      delete prospectsActifs[from]
-    }
-
-    // ── RÉSUMÉ ──
-    if(!nRep) ajouterJournal('Synchronisation OK — aucun événement','info')
-    else ajouterJournal(`Synchro : ${nRep} réponse${nRep>1?'s':''}`, 'ok')
-    
-    sauver()
-    afficherTableau()
-    
-  }catch(e){
-    ajouterJournal('Erreur synchro : '+e.message,'err')
-    console.error('Synchro error:', e)
-  } finally {
-    synchroEnCours = false
   }
-}
 
+  const total = ps.length
+  const totalPages = Math.ceil(total/PAGE_SIZE)
+  if(pageProspects > totalPages) pageProspects = 1
+  const slice = ps.slice((pageProspects-1)*PAGE_SIZE, pageProspects*PAGE_SIZE)
 
-
-// ═══ SYNCHRO AUTO ═══
-function demarrerSynchroAuto(){
-  if(intervalSynchro) return // déjà actif — ne pas créer un 2ème intervalle
-  intervalSynchro=setInterval(()=>{lancerDeclencheurs();verifierReponses()},5*60*1000)
-  ajouterJournal('Synchronisation automatique activée — toutes les 5 min','ok')
-}
-
-// ═══ TABLEAU DE BORD ═══
-function afficherTableau(){
-  const env=S.prospects.filter(p=>p.etapeCourante>0).length
-  const rep=S.prospects.filter(p=>p.repandu).length
-  const att=S.prospects.filter(p=>!p.termine&&!p.repandu&&p.prochainEnvoi).length
-  const act=S.campagnes.filter(c=>c.statut==='active').length
-  const el=document.getElementById('contenu-tableau')
-  if(!el) return
   el.innerHTML=`
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">
-      <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:18px 20px;box-shadow:var(--shadow)">
-        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--g400);margin-bottom:10px">Emails envoyés</div>
-        <div style="font-size:34px;font-weight:300;letter-spacing:-2px;color:var(--g900);line-height:1">${env}</div>
-        <div style="font-size:11px;color:var(--g400);margin-top:6px">toutes campagnes</div>
-      </div>
-      <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:18px 20px;box-shadow:var(--shadow)">
-        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--g400);margin-bottom:10px">Réponses</div>
-        <div style="font-size:34px;font-weight:300;letter-spacing:-2px;color:var(--green);line-height:1">${rep}</div>
-        <div style="font-size:11px;color:var(--g400);margin-top:6px">${env?pct(rep,env)+'% taux de réponse':'—'}</div>
-      </div>
-      <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:18px 20px;box-shadow:var(--shadow)">
-        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--g400);margin-bottom:10px">En attente</div>
-        <div style="font-size:34px;font-weight:300;letter-spacing:-2px;color:${att>0?'var(--amber)':'var(--g300)'};line-height:1">${att}</div>
-        <div style="font-size:11px;color:var(--g400);margin-top:6px">envois planifiés</div>
-      </div>
-      <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:18px 20px;box-shadow:var(--shadow)">
-        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--g400);margin-bottom:10px">Campagnes actives</div>
-        <div style="font-size:34px;font-weight:300;letter-spacing:-2px;color:var(--accent);line-height:1">${act}</div>
-        <div style="font-size:11px;color:var(--g400);margin-top:6px">${S.campagnes.filter(c=>c.statut==='brouillon').length} en brouillon</div>
-      </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--g100);background:var(--g50)">
+      <input class="form-input" id="rechercheProspects" placeholder="Rechercher…" style="height:28px;font-size:12px;max-width:220px" 
+        value="${recherche}" oninput="pageProspects=1;afficherProspects()">
+      <span style="font-size:11px;color:var(--g400);margin-left:auto">${total} prospect${total>1?'s':''}</span>
     </div>
-    ${att>0?`<div style="background:var(--green-bg);border:1px solid var(--green-b);border-radius:var(--r);padding:10px 14px;font-size:12.5px;color:#15803D;margin-bottom:16px">
-      ✓ <strong>${att}</strong> envoi${att>1?'s':''} planifié${att>1?'s':''} — partira automatiquement à la prochaine ouverture de l'onglet
+    <table><thead><tr><th>email</th><th>prénom</th><th>société</th><th>étape</th><th>prochain envoi</th><th>tag</th><th>statut</th></tr></thead><tbody>
+      ${slice.map(p=>`<tr>
+        <td style="font-family:var(--mono);font-size:11.5px">${p.email}</td>
+        <td>${[p.prenom,p.nom].filter(Boolean).join(' ')||'—'}</td>
+        <td style="color:var(--g500)">${p.societe||'—'}</td>
+        <td><span class="badge b-gray">étape_${p.etapeCourante||0}</span></td>
+        <td style="font-size:12px;color:var(--g600)">${p.repandu||p.termine?'—':fmtProchainEnvoi(p.prochainEnvoi)}</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:4px">
+            ${p.tag==='repandu'?badge('↩ répondu','green'):p.tag==='blackliste'?badge('🚫 blacklist','red'):p.tag==='erreur'?`<span class="badge b-red" title="${p.erreurMsg||''}">✗ erreur</span>`:badge('—','gray')}
+            <select style="height:22px;font-size:10px;border:1px solid var(--g200);border-radius:4px;background:var(--w);color:var(--g600);cursor:pointer;outline:none;padding:0 4px"
+              onchange="changerTagProspect('${p.id}',this.value);this.value=''">
+              <option value="">✏</option>
+              <option value="repandu">↩ répondu</option>
+              <option value="actif">actif (reset)</option>
+              <option value="blackliste">🚫 blacklister</option>
+            </select>
+          </div>
+        </td>
+        <td>
+          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+            ${p.repandu?badge('↩ répondu','green'):p.tag==='erreur'?badge('erreur','red'):p.termine?badge('terminé','gray'):badge('actif','amber')}
+            ${p.tag==='erreur'?`<button class="btn btn-xs btn-ghost" onclick="relancerProspect('${p.id}')">↺</button>`:''}
+            ${!p.repandu&&p.tag!=='blackliste'?`<button class="btn btn-xs btn-danger" onclick="blacklisterDepuisProspect('${p.id}')" title="Blacklister">🚫</button>`:''}
+          </div>
+        </td>
+      </tr>`).join('')}
+    </tbody></table>
+    ${totalPages>1?`<div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-top:1px solid var(--g100)">
+      <button class="btn btn-ghost btn-sm" onclick="pageProspects=Math.max(1,pageProspects-1);afficherProspects()" ${pageProspects<=1?'disabled':''}>←</button>
+      <span style="font-size:12px;color:var(--g500);font-family:var(--mono)">${pageProspects} / ${totalPages}</span>
+      <button class="btn btn-ghost btn-sm" onclick="pageProspects=Math.min(${totalPages},pageProspects+1);afficherProspects()" ${pageProspects>=totalPages?'disabled':''}>→</button>
     </div>`:''}
-    <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);overflow:hidden;box-shadow:var(--shadow)">
-      <div style="padding:16px 18px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:13px;font-weight:600;color:var(--g900)">Campagnes récentes</div>
-        <button class="btn btn-ghost btn-sm" onclick="aller('sequences',document.getElementById('nav-sequences'))">voir tout →</button>
-      </div>
-      ${!S.campagnes.length?`<div style="text-align:center;padding:40px 24px;color:var(--g400)">
-        <div style="font-size:24px;margin-bottom:8px;opacity:.3">📭</div>
-        <div style="font-size:13px;font-weight:500;color:var(--g500);margin-bottom:4px">Aucune campagne</div>
-        <p style="font-size:12px">Créez une séquence et publiez-la</p>
-      </div>`:`<table><thead><tr><th>Nom</th><th>Envoyés</th><th>Réponses</th><th>Taux</th><th>Statut</th></tr></thead><tbody>
-        ${S.campagnes.slice(0,6).map(c=>{
-          const ps=S.prospects.filter(p=>p.campagneId===c.id)
-          const sent=ps.filter(p=>p.etapeCourante>0).length
-          const rep=ps.filter(p=>p.repandu).length
-          const rr=pct(rep,sent)
-          return `<tr>
-            <td style="font-weight:500;color:var(--g900)">${c.nom}</td>
-            <td>${sent}</td>
-            <td style="color:var(--green);font-weight:500">${rep}</td>
-            <td><span class="badge ${rr>15?'b-green':rr>5?'b-amber':'b-gray'}">${rr}%</span></td>
-            <td><span class="badge ${c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray'}">${c.statut==='brouillon'?'brouillon':c.statut==='active'?'active':c.statut==='pause'?'pausée':'terminée'}</span></td>
-          </tr>`}).join('')}
-      </tbody></table>`}
-    </div>`
+  `
 }
 
-
->
+// ═══ INIT ═══
+mettreAJourBadges()
+afficherTableau()
+if(S.accessToken) { noterExpirationToken(); setTimeout(demarrerSynchroAuto,2000) }
+</script>
+</body>
+</html>
