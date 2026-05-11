@@ -1885,8 +1885,11 @@ function lancerDeclencheurs(){
   afficherTableau()
 }
 
+let synchroEnCours = false
 async function verifierReponses(){
+  if(synchroEnCours) return // éviter les appels simultanés
   if(!S.accessToken){ajouterJournal('[DÉMO] Synchronisation ignorée','warn');return}
+  synchroEnCours = true
   ajouterJournal('Synchronisation boîte mail…','info')
   try{
     // Surveiller tous les prospects ayant reçu au moins 1 email, même terminés (ils peuvent répondre après)
@@ -1913,6 +1916,8 @@ async function verifierReponses(){
       const from=(msg.from?.emailAddress?.address||'').toLowerCase()
       const p = prospectsActifs[from]
       if(!p) continue
+      // Ne pas retraiter si déjà marqué
+      if(p.repandu || p.tag==='desabonne') { delete prospectsActifs[from]; continue }
 
       // Détecter STOP dans le sujet ou le corps
       const sujet = (msg.subject||'').toUpperCase()
@@ -1924,13 +1929,12 @@ async function verifierReponses(){
         p.repandu=false; p.termine=true; p.prochainEnvoi=null; p.tag='desabonne'
         nStop++
         ajouterJournal(`🛑 STOP reçu de ${from} — désabonné définitivement`,'warn')
-        delete prospectsActifs[from] // éviter double traitement
       } else {
         p.repandu=true; p.termine=true; p.prochainEnvoi=null; p.tag='repandu'
         nRep++
         ajouterJournal(`↩ Réponse de ${from} · "${msg.subject||'sans sujet'}" — séquence stoppée`,'warn')
-        delete prospectsActifs[from]
       }
+      delete prospectsActifs[from] // traité — retirer pour éviter doublon
     }
 
     // ── RÉSUMÉ ──
@@ -1943,6 +1947,8 @@ async function verifierReponses(){
   }catch(e){
     ajouterJournal('Erreur synchro : '+e.message,'err')
     console.error('Synchro error:', e)
+  } finally {
+    synchroEnCours = false
   }
 }
 
@@ -1950,7 +1956,7 @@ async function verifierReponses(){
 
 // ═══ SYNCHRO AUTO ═══
 function demarrerSynchroAuto(){
-  if(intervalSynchro) clearInterval(intervalSynchro)
+  if(intervalSynchro) return // déjà actif — ne pas créer un 2ème intervalle
   intervalSynchro=setInterval(()=>{lancerDeclencheurs();verifierReponses()},5*60*1000)
   ajouterJournal('Synchronisation automatique activée — toutes les 5 min','ok')
 }
