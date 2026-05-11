@@ -1355,7 +1355,7 @@ async function sauvegarderEtLancer(statut='active') {
 
 Confirmer le lancement ?`
     if(!confirm(msg)) return
-    if(!S.accessToken && !confirm("⚠ Outlook non connecté. Lancer en mode démonstration ?")) return
+
   }
 
   // 1. Sauvegarder la séquence
@@ -1762,7 +1762,7 @@ async function lancerCampagne(){
   if(!nom) return alert('Nommez la campagne')
   if(!seqId) return alert('Sélectionnez une séquence')
   if(!tousP.length) return alert('Ajoutez des prospects')
-  if(!S.accessToken&&!confirm('Outlook non connecté. Mode démonstration (aucun vrai email envoyé) ?')) return
+  if(!S.accessToken){alert('Connectez-vous à Outlook avant de lancer.');return}
 
   const delai=+document.getElementById('campDelai').value||45
   const campId=uid()
@@ -1809,7 +1809,13 @@ async function envoyerUn(prospect, sujet, corpsHtml) {
     return false
   }
   const corpsComplet=corpsHtml+(S.signature?`<br><br><hr style="border:none;border-top:1px solid #eee;margin:16px 0">${S.signature}`:'')
-  if(!S.accessToken){ajouterJournal(`[DÉMO] → ${prospect.email} · "${sujet}"`,'ok');return true}
+  if(!S.accessToken){
+    ajouterJournal(`🔴 Outlook non connecté — reconnectez-vous pour envoyer les emails`,'err')
+    // Afficher bannière
+    const b=document.getElementById('tokenBanner')
+    if(b){b.style.display='flex';b.innerHTML='<span style="flex:1">🔴 Session expirée — reconnectez-vous pour reprendre les envois</span><button class="btn btn-primary btn-sm" onclick="ouvrirConnexion()">Reconnecter</button>'}
+    return false
+  }
   try{
     const r=await fetch('https://graph.microsoft.com/v1.0/me/sendMail',{
       method:'POST',
@@ -1899,7 +1905,7 @@ function lancerDeclencheurs(){
 let synchroEnCours = false
 async function verifierReponses(){
   if(synchroEnCours) return // éviter les appels simultanés
-  if(!S.accessToken){ajouterJournal('[DÉMO] Synchronisation ignorée','warn');return}
+  if(!S.accessToken){ajouterJournal('🔴 Synchronisation impossible — reconnectez-vous à Outlook','err');return}
   synchroEnCours = true
   ajouterJournal('Synchronisation boîte mail…','info')
   try{
@@ -2101,7 +2107,10 @@ async function publierCamp(id){
   if(!confirm(`Publier "${camp.nom}" ?
 
 ${ps.length} prospect${ps.length>1?'s':''} vont recevoir des emails.`)) return
-  if(!S.accessToken&&!confirm("⚠ Outlook non connecté. Lancer en mode démonstration ?")) return
+  if(!S.accessToken) {
+    alert('🔴 Connectez-vous à Outlook avant de publier.')
+    return
+  }
   camp.statut='active';sauver()
   ajouterJournal(`🚀 Campagne "${camp.nom}" publiée`,'ok')
   const seq=S.sequences.find(s=>s.id===camp.seqId)
@@ -2452,7 +2461,7 @@ function changerTagProspect(prospectId, tag) {
 async function relancerProspect(prospectId) {
   const p = S.prospects.find(x=>x.id===prospectId)
   if(!p) return
-  if(!S.accessToken && !confirm("Outlook non connecté. Mode démonstration ?")) return
+  if(!S.accessToken) { alert('Connectez-vous à Outlook pour relancer.'); return }
   const camp = S.campagnes.find(c=>c.id===p.campagneId)
   const seq = camp ? S.sequences.find(s=>s.id===camp.seqId) : null
   if(!seq) { alert('Séquence introuvable'); return }
@@ -2500,13 +2509,13 @@ async function envoyerEmailTest(stepIndex) {
   }
 
   if(!S.accessToken) {
-    alert(`[DÉMO] Email test simulé vers ${emailTest}
-
-Objet: ${etape.sujet}
-
-Les variables seraient remplacées par des valeurs d'exemple.`)
+    alert('🔴 Connectez-vous à Outlook pour envoyer un email test.')
     return
   }
+
+
+
+
 
   const sujetTest = `[TEST] ${interp(etape.sujet, prospectTest)}`
   const ok = await envoyerUn(prospectTest, sujetTest, etape.corps)
