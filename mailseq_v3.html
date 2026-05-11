@@ -1926,12 +1926,17 @@ async function envoyerLot(campId, seq, delaiMs) {
       if(p.etapeCourante<etapesFlat.length){
         const prochaineEtape=etapesFlat[p.etapeCourante]
         const nd=new Date()
-        nd.setDate(nd.getDate()+(prochaineEtape.delaiJours||2))
-        const camp=S.campagnes.find(c=>c.id===campId)
-        if(camp?.joursOuvres){const d=nd.getDay();if(d===0)nd.setDate(nd.getDate()+1);if(d===6)nd.setDate(nd.getDate()+2)}
-        // Appliquer l'heure d'envoi configurée
-        const [h,m]=(prochaineEtape.heureEnvoi||'09:00').split(':')
-        nd.setHours(+h,+m,0,0)
+        const delaiVal=prochaineEtape.delaiVal||prochaineEtape.delaiJours||2
+        const delaiUnite=prochaineEtape.delaiUnite||'jours'
+        if(delaiUnite==='minutes') nd.setMinutes(nd.getMinutes()+delaiVal)
+        else if(delaiUnite==='heures') nd.setHours(nd.getHours()+delaiVal)
+        else {
+          nd.setDate(nd.getDate()+delaiVal)
+          const camp2=S.campagnes.find(c=>c.id===campId)
+          if(camp2?.joursOuvres){const d=nd.getDay();if(d===0)nd.setDate(nd.getDate()+1);if(d===6)nd.setDate(nd.getDate()+2)}
+          const [h,m]=(prochaineEtape.heureEnvoi||'09:00').split(':')
+          nd.setHours(+h,+m,0,0)
+        }
         p.prochainEnvoi=nd.toISOString()
       }else{p.termine=true;p.prochainEnvoi=null}
     }
