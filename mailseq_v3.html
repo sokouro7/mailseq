@@ -3,578 +3,370 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>mailseq v3 — 20260507_133043</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<title>MailSeq</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#F8F9FC;--w:#FFFFFF;--g50:#F4F5F8;--g100:#ECEEF2;--g200:#DDE0E8;
-  --g300:#C1C7D4;--g400:#8C95A8;--g500:#5E6B82;--g600:#3D4A60;
-  --g700:#2A3347;--g800:#1A2236;--g900:#0F1623;
-  --accent:#6366F1;--accent-light:#EEF2FF;--accent-mid:#C7D2FE;
-  --green:#10B981;--green-bg:#ECFDF5;--green-b:#A7F3D0;
-  --amber:#F59E0B;--amber-bg:#FFFBEB;--amber-b:#FDE68A;
-  --red:#EF4444;--red-bg:#FEF2F2;--red-b:#FECACA;
-  --blue:#3B82F6;--blue-bg:#EFF6FF;--blue-b:#BFDBFE;
-  --sans:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;
-  --r:6px;--rm:10px;--rl:14px;
-  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
-  --shadow-md:0 4px 12px rgba(0,0,0,.08),0 2px 4px rgba(0,0,0,.04);
+  --bg:#F7F8FC;--w:#FFFFFF;
+  --g50:#F0F2F7;--g100:#E4E7EF;--g200:#CDD2DF;--g300:#A8B0C2;
+  --g400:#7C8699;--g500:#57616E;--g600:#3A424F;--g700:#252D38;--g900:#111827;
+  --accent:#4F46E5;--accent-l:#EEF2FF;--accent-m:#C7D2FE;
+  --green:#059669;--green-bg:#ECFDF5;--green-b:#6EE7B7;
+  --amber:#D97706;--amber-bg:#FFFBEB;--amber-b:#FDE68A;
+  --red:#DC2626;--red-bg:#FEF2F2;--red-b:#FECACA;
+  --sans:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
+  --r:8px;--rm:12px;
+  --shadow:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 16px rgba(0,0,0,.08);
 }
-html,body{height:100%;overflow:hidden}
-body{font-family:var(--sans);background:var(--bg);color:var(--g800);font-size:13px;line-height:1.55;-webkit-font-smoothing:antialiased}
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-thumb{background:var(--g200);border-radius:10px}
-::-webkit-scrollbar-track{background:transparent}
-.app{display:flex;height:100vh;overflow:hidden}
+html,body{height:100%;overflow:hidden;font-family:var(--sans);background:var(--bg);color:var(--g700);font-size:13px;line-height:1.55;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-thumb{background:var(--g200);border-radius:4px}
+.app{display:flex;height:100vh}
 
 /* ── SIDEBAR ── */
-.sb{width:220px;min-width:220px;background:var(--w);border-right:1px solid var(--g100);display:flex;flex-direction:column;box-shadow:1px 0 0 var(--g100)}
-.logo{height:56px;display:flex;align-items:center;padding:0 20px;border-bottom:1px solid var(--g100);gap:10px;flex-shrink:0}
-.logo-mark{width:28px;height:28px;background:linear-gradient(135deg,#6366F1,#8B5CF6);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(99,102,241,.3)}
-.logo-mark svg{width:14px;height:14px}
-.logo-text{display:flex;flex-direction:column}
-.logo-name{font-size:13px;font-weight:600;color:var(--g900);letter-spacing:-.3px}
-.logo-ver{font-size:10px;color:var(--g400);font-family:var(--mono);margin-top:1px}
-.conn-block{margin:12px;padding:10px 12px;background:var(--g50);border:1px solid var(--g100);border-radius:var(--rm);cursor:pointer;transition:all .2s}
-.conn-block:hover{background:var(--w);border-color:var(--g200);box-shadow:var(--shadow)}
+.sb{width:200px;min-width:200px;background:var(--w);border-right:1px solid var(--g100);display:flex;flex-direction:column}
+.logo{height:52px;display:flex;align-items:center;padding:0 16px;gap:10px;border-bottom:1px solid var(--g100)}
+.logo-icon{width:30px;height:30px;background:linear-gradient(135deg,#4F46E5,#7C3AED);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-icon svg{width:15px;height:15px}
+.logo-name{font-size:15px;font-weight:600;color:var(--g900);letter-spacing:-.4px}
+
+/* Connexion */
+.conn-btn{margin:10px;padding:9px 12px;background:var(--g50);border:1px solid var(--g100);border-radius:var(--r);cursor:pointer;transition:all .2s}
+.conn-btn:hover{background:var(--w);border-color:var(--g200);box-shadow:var(--shadow)}
 .conn-row{display:flex;align-items:center;gap:7px}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0;transition:background .3s}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0}
 .dot.on{background:var(--green);box-shadow:0 0 0 3px var(--green-bg)}
-.conn-label{font-size:11.5px;color:var(--g600);font-weight:500}
-.conn-email{font-size:10.5px;color:var(--g400);margin-top:3px;font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-nav{flex:1;overflow-y:auto;padding:8px 0}
-.nav-section{padding:16px 16px 6px;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--g300);font-weight:600}
-.nav-item{display:flex;align-items:center;gap:9px;padding:8px 14px;margin:1px 8px;cursor:pointer;font-size:13px;color:var(--g500);transition:all .15s;user-select:none;border-radius:var(--r);position:relative}
-.nav-item:hover{color:var(--g800);background:var(--g50)}
-.nav-item.active{color:var(--accent);background:var(--accent-light);font-weight:500}
-.nav-item.active .nav-icon{color:var(--accent)}
-.nav-icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
-.nav-item.active .nav-icon,.nav-item:hover .nav-icon{opacity:1}
-.nav-badge{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--accent);background:var(--accent-light);padding:2px 7px;border-radius:20px;border:1px solid var(--accent-mid);font-weight:500}
+.conn-label{font-size:12px;font-weight:500;color:var(--g600)}
+.conn-email{font-size:10.5px;color:var(--g400);margin-top:2px;font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Navigation */
+nav{flex:1;padding:8px 8px;overflow-y:auto}
+.nav-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--g300);padding:10px 8px 5px;display:flex;align-items:center;gap:6px}
+.nav-step{display:flex;align-items:center;gap:5px;margin-bottom:1px}
+.nav-step-num{width:18px;height:18px;border-radius:50%;background:var(--g100);color:var(--g400);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--mono)}
+.nav-item{flex:1;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;cursor:pointer;color:var(--g500);border-radius:var(--r);transition:all .15s;font-size:13px;user-select:none}
+.nav-item:hover{color:var(--g900);background:var(--g50)}
+.nav-item.active{color:var(--accent);background:var(--accent-l);font-weight:500}
+.nav-badge{font-size:10px;font-weight:600;color:var(--accent);background:var(--accent-l);padding:1px 6px;border-radius:20px;border:1px solid var(--accent-m)}
+.nav-divider{height:1px;background:var(--g100);margin:8px 0}
+.nav-item-sm{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;color:var(--g400);border-radius:var(--r);font-size:12px;transition:all .15s}
+.nav-item-sm:hover{color:var(--g700);background:var(--g50)}
+.nav-item-sm.active{color:var(--accent);background:var(--accent-l)}
 
 /* ── MAIN ── */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
-.topbar{height:56px;border-bottom:1px solid var(--g100);display:flex;align-items:center;padding:0 24px;gap:10px;flex-shrink:0;background:var(--w);box-shadow:0 1px 0 var(--g100)}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:52px;border-bottom:1px solid var(--g100);display:flex;align-items:center;padding:0 24px;gap:10px;flex-shrink:0;background:var(--w)}
 .topbar-title{font-size:15px;font-weight:600;flex:1;color:var(--g900);letter-spacing:-.3px}
 .content{flex:1;overflow-y:auto;padding:24px}
 
+/* Token banner */
+#tokenBanner{display:none;background:#FEF3C7;border-bottom:1px solid #FDE68A;padding:10px 24px;font-size:12px;color:#92400E;align-items:center;gap:10px;flex-shrink:0}
+
 /* ── BUTTONS ── */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:0 14px;height:34px;border-radius:var(--r);font-size:13px;font-family:var(--sans);font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap;letter-spacing:-.1px}
-.btn-primary{background:var(--accent);color:#fff;box-shadow:0 2px 4px rgba(99,102,241,.25)}
-.btn-primary:hover{background:#4F46E5;box-shadow:0 4px 8px rgba(99,102,241,.3)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:0 14px;height:34px;border-radius:var(--r);font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap;font-family:var(--sans)}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 2px 6px rgba(79,70,229,.3)}
+.btn-primary:hover{background:#4338CA;box-shadow:0 4px 10px rgba(79,70,229,.35)}
 .btn-ghost{background:var(--w);color:var(--g600);border-color:var(--g200);box-shadow:var(--shadow)}
-.btn-ghost:hover{background:var(--g50);border-color:var(--g300);color:var(--g800)}
+.btn-ghost:hover{background:var(--g50);border-color:var(--g300);color:var(--g900)}
 .btn-danger{color:var(--red);border-color:var(--red-b);background:var(--red-bg)}
-.btn-danger:hover{background:#fee2e2;border-color:#fca5a5}
+.btn-danger:hover{background:#fee2e2}
 .btn-success{color:var(--green);border-color:var(--green-b);background:var(--green-bg)}
-.btn-success:hover{background:#d1fae5}
 .btn-sm{height:28px;padding:0 11px;font-size:12px}
-.btn-xs{height:24px;padding:0 8px;font-size:11px;border-radius:4px}
-.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-xs{height:22px;padding:0 8px;font-size:11px;border-radius:6px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
 
 /* ── CARDS ── */
 .card{background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px;margin-bottom:12px;box-shadow:var(--shadow)}
-.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.card-title{font-size:13px;font-weight:600;color:var(--g900);letter-spacing:-.2px}
-.card-sub{font-size:11.5px;color:var(--g400);margin-top:2px}
+.card-title{font-size:13px;font-weight:600;color:var(--g900);margin-bottom:16px;letter-spacing:-.2px}
+.card-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 
 /* ── STATS ── */
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-.stat-card{background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:16px 18px;box-shadow:var(--shadow)}
-.stat-label{font-size:11px;color:var(--g400);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-weight:500}
-.stat-value{font-size:30px;font-weight:300;line-height:1;color:var(--g900);font-family:var(--mono);letter-spacing:-1.5px}
-.stat-sub{font-size:11px;color:var(--g400);margin-top:6px}
-.c-ok{color:var(--green)}.c-warn{color:var(--amber)}.c-info{color:var(--blue)}.c-accent{color:var(--accent)}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.stat{background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:16px 18px;box-shadow:var(--shadow)}
+.stat-label{font-size:10px;color:var(--g400);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;font-weight:600}
+.stat-value{font-size:28px;font-weight:300;line-height:1;color:var(--g900);font-family:var(--mono);letter-spacing:-1.5px}
+.stat-sub{font-size:11px;color:var(--g400);margin-top:5px}
+.c-green{color:var(--green)}.c-amber{color:var(--amber)}.c-accent{color:var(--accent)}
 
 /* ── FORMS ── */
 .form-group{margin-bottom:14px}
-.form-label{display:block;font-size:12px;color:var(--g500);margin-bottom:5px;font-weight:500}
-.form-input,.form-select,.form-textarea{width:100%;background:var(--w);border:1.5px solid var(--g200);border-radius:var(--r);padding:0 11px;height:36px;color:var(--g900);font-family:var(--sans);font-size:13px;transition:border-color .15s,box-shadow .15s;outline:none}
-.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.1)}
-.form-input::placeholder{color:var(--g300)}
-.form-select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%238C95A8' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;background-size:16px;appearance:none;padding-right:28px}
-.form-textarea{height:auto;padding:10px 11px;resize:vertical;min-height:110px;line-height:1.6}
-.form-mono{font-family:var(--mono);font-size:12px}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.label{display:block;font-size:12px;color:var(--g500);margin-bottom:5px;font-weight:500}
+.input,.select,.textarea{width:100%;background:var(--w);border:1.5px solid var(--g200);border-radius:var(--r);padding:0 12px;height:36px;color:var(--g900);font-family:var(--sans);font-size:13px;transition:border-color .15s,box-shadow .15s;outline:none}
+.input:focus,.select:focus,.textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.input::placeholder{color:var(--g300)}
+.select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%238C95A8' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:16px;padding-right:32px}
+.textarea{height:auto;padding:10px 12px;resize:vertical;min-height:110px;line-height:1.6}
+.mono{font-family:var(--mono);font-size:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 
 /* ── TABLES ── */
+.table-wrap{background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);overflow:hidden;box-shadow:var(--shadow)}
 table{width:100%;border-collapse:collapse}
 thead{background:var(--g50)}
 th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--g400);font-weight:600;padding:10px 14px;text-align:left;border-bottom:1px solid var(--g100)}
-td{padding:11px 14px;font-size:13px;color:var(--g700);border-bottom:1px solid var(--g50)}
+td{padding:10px 14px;font-size:13px;color:var(--g700);border-bottom:1px solid var(--g50)}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:var(--g50)}
 
 /* ── BADGES ── */
-.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid transparent}
-.bg-green{background:var(--green-bg);color:#065F46;border-color:var(--green-b)}
-.bg-amber{background:var(--amber-bg);color:#92400E;border-color:var(--amber-b)}
-.bg-red{background:var(--red-bg);color:#991B1B;border-color:var(--red-b)}
-.bg-blue{background:var(--blue-bg);color:#1E40AF;border-color:var(--blue-b)}
-.bg-gray{background:var(--g50);color:var(--g500);border-color:var(--g200)}
-.bg-accent{background:var(--accent-light);color:#4338CA;border-color:var(--accent-mid)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.b-green{background:var(--green-bg);color:#065F46;border:1px solid var(--green-b)}
+.b-amber{background:var(--amber-bg);color:#92400E;border:1px solid var(--amber-b)}
+.b-red{background:var(--red-bg);color:#991B1B;border:1px solid var(--red-b)}
+.b-blue{background:#EFF6FF;color:#1E40AF;border:1px solid #BFDBFE}
+.b-gray{background:var(--g50);color:var(--g500);border:1px solid var(--g200)}
+.b-accent{background:var(--accent-l);color:#4338CA;border:1px solid var(--accent-m)}
 
 /* ── TABS ── */
-.tabs{display:flex;border-bottom:2px solid var(--g100);margin-bottom:20px;gap:4px}
-.tab{padding:0 16px;height:38px;display:flex;align-items:center;cursor:pointer;font-size:13px;color:var(--g400);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;user-select:none;font-weight:500}
+.tabs{display:flex;border-bottom:2px solid var(--g100);margin-bottom:20px}
+.tab{padding:0 16px;height:40px;display:flex;align-items:center;cursor:pointer;font-size:13px;color:var(--g400);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;font-weight:500;user-select:none}
 .tab:hover{color:var(--g700)}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 
 /* ── DROP ZONE ── */
-.drop-zone{border:2px dashed var(--g200);border-radius:var(--rm);padding:36px 24px;text-align:center;cursor:pointer;transition:all .2s;color:var(--g400);background:var(--g50)}
-.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:var(--accent-light);color:var(--accent)}
+.drop-zone{border:2px dashed var(--g200);border-radius:var(--rm);padding:36px;text-align:center;cursor:pointer;transition:all .2s;background:var(--g50)}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:var(--accent-l)}
 
 /* ── RICH EDITOR ── */
 .editor-wrap{border:1.5px solid var(--g200);border-radius:var(--rm);overflow:hidden;background:var(--w);transition:border-color .15s,box-shadow .15s}
-.editor-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.1)}
-.editor-toolbar{display:flex;gap:2px;padding:8px 10px;border-bottom:1px solid var(--g100);background:var(--g50);flex-wrap:wrap;align-items:center}
-.tb-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:none;background:transparent;border-radius:5px;cursor:pointer;color:var(--g500);font-size:13px;font-family:var(--sans);transition:all .1s}
+.editor-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.editor-toolbar{display:flex;gap:2px;padding:8px;border-bottom:1px solid var(--g100);background:var(--g50);flex-wrap:wrap;align-items:center}
+.tb-btn{width:28px;height:28px;border:none;background:transparent;border-radius:6px;cursor:pointer;color:var(--g500);font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .1s}
 .tb-btn:hover{background:var(--w);color:var(--g900);box-shadow:var(--shadow)}
 .tb-sep{width:1px;height:18px;background:var(--g200);margin:0 4px}
-.tb-select{height:26px;padding:0 8px;font-size:11px;background:var(--w);border:1px solid var(--g200);border-radius:5px;color:var(--g600);font-family:var(--sans);cursor:pointer;outline:none}
+.tb-select{height:26px;padding:0 8px;font-size:11px;background:var(--w);border:1px solid var(--g200);border-radius:6px;color:var(--g600);cursor:pointer;outline:none}
 .editor-body{min-height:130px;padding:14px 16px;outline:none;font-size:13.5px;line-height:1.75;color:var(--g800)}
 .editor-body:empty::before{content:attr(data-placeholder);color:var(--g300);pointer-events:none}
-.editor-body img{max-width:100%;border-radius:6px}
-.editor-body table td{border:1px solid var(--g200);padding:6px 8px;font-size:12px}
-.editor-body a{color:var(--accent)}
-.editor-footer{padding:6px 12px;border-top:1px solid var(--g100);display:flex;justify-content:flex-end}
-.char-count{font-size:10px;color:var(--g300);font-family:var(--mono)}
 
-/* ── FLOW BUILDER (nouveau v4) ── */
-.flow-canvas{overflow-x:auto;overflow-y:visible;padding:8px 0 20px;min-height:200px}
-.flow-row{display:flex;align-items:flex-start;gap:0;min-width:max-content}
-.flow-col{display:flex;flex-direction:column;gap:10px;min-width:180px}
-.flow-connector{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:0;padding-top:28px;min-width:140px}
-.flow-arrow{display:flex;align-items:center;gap:0;flex-shrink:0;margin-bottom:10px;cursor:pointer}
-.flow-arrow-line{flex:1;height:2px;min-width:20px;transition:opacity .15s}
-.flow-arrow-head{width:0;height:0;border-top:5px solid transparent;border-bottom:5px solid transparent;flex-shrink:0}
-.flow-cond-pill{font-size:10.5px;padding:3px 9px;border-radius:20px;white-space:nowrap;font-weight:500;margin-bottom:4px;border:1px solid;font-family:var(--mono);cursor:pointer;transition:all .15s}
-.flow-cond-pill:hover{filter:brightness(.95);transform:translateY(-1px)}
-.email-node{width:172px;background:var(--w);border:1.5px solid var(--g200);border-radius:var(--rm);padding:14px;box-shadow:var(--shadow);cursor:pointer;transition:all .2s;flex-shrink:0}
-.email-node:hover{border-color:var(--accent);box-shadow:0 4px 12px rgba(99,102,241,.15);transform:translateY(-1px)}
-.email-node.selected{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
-.email-node.initial{border-top:3px solid var(--accent)}
-.node-num{font-size:10px;font-family:var(--mono);color:var(--g400);margin-bottom:5px;font-weight:500}
-.node-label{font-size:11px;font-weight:600;color:var(--g700);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.node-subject{font-size:11.5px;color:var(--g500);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.node-tags{display:flex;gap:3px;margin-top:6px;flex-wrap:wrap}
-.add-branch-btn{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--accent);cursor:pointer;padding:6px 10px;border:1.5px dashed var(--accent-mid);border-radius:var(--r);background:var(--accent-light);transition:all .15s;font-weight:500;margin-top:4px}
-.add-branch-btn:hover{background:var(--accent-mid);border-color:var(--accent)}
-.add-node-btn{display:flex;align-items:center;justify-content:center;gap:5px;font-size:11px;color:var(--g400);cursor:pointer;padding:8px;border:1.5px dashed var(--g200);border-radius:var(--rm);background:transparent;transition:all .15s;width:172px;font-weight:500}
-.add-node-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
-.node-actions{display:flex;gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid var(--g100)}
-
-/* ── EMAIL EDITOR PANEL ── */
-.editor-panel{background:var(--w);border:1.5px solid var(--g100);border-radius:var(--rm);padding:20px;margin-top:16px;box-shadow:var(--shadow-md);animation:slideUp .2s ease}
-@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.editor-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--g100)}
-.editor-panel-title{font-size:13px;font-weight:600;color:var(--g900)}
-.close-panel{background:none;border:none;cursor:pointer;color:var(--g400);font-size:18px;padding:0;line-height:1;transition:color .15s}
-.close-panel:hover{color:var(--g900)}
-
-/* ── CONDITION CHIPS ── */
-.cond-nr-style{background:var(--green-bg);color:#065F46;border-color:var(--green-b)}
-.cond-lu-style{background:var(--blue-bg);color:#1E40AF;border-color:var(--blue-b)}
-.cond-nlu-style{background:var(--amber-bg);color:#92400E;border-color:var(--amber-b)}
-.cond-del-style{background:var(--g50);color:var(--g600);border-color:var(--g200)}
-.arrow-nr{background:#10B981}.arrow-lu{background:#3B82F6}.arrow-nlu{background:#F59E0B}.arrow-del{background:#8C95A8}
-.head-nr{border-left-color:#10B981}.head-lu{border-left-color:#3B82F6}.head-nlu{border-left-color:#F59E0B}.head-del{border-left-color:#8C95A8}
+/* ── SEQ BUILDER ── */
+.seq-step{background:var(--w);border:1.5px solid var(--g200);border-radius:var(--rm);padding:18px;margin-bottom:0}
+.seq-step.is-initial{border-top:3px solid var(--accent)}
+.seq-connector{padding:8px 0 4px 20px;display:flex;align-items:flex-start;gap:0}
+.seq-line{width:2px;background:var(--g200);height:32px;margin-left:8px}
+.seq-cond-wrap{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--g50);border:1px solid var(--g100);border-radius:var(--r);margin-bottom:14px;flex-wrap:wrap}
 
 /* ── VAR PILLS ── */
-.var-pill{display:inline-flex;align-items:center;background:var(--accent-light);color:var(--accent);padding:3px 9px;border-radius:20px;font-size:11px;font-family:var(--mono);cursor:pointer;margin:2px;border:1px solid var(--accent-mid);user-select:none;transition:all .15s;font-weight:500}
+.var-pill{display:inline-flex;align-items:center;background:var(--accent-l);color:var(--accent);padding:3px 10px;border-radius:20px;font-size:11px;font-family:var(--mono);cursor:pointer;border:1px solid var(--accent-m);transition:all .15s;font-weight:500}
 .var-pill:hover{background:var(--accent);color:#fff}
 
-/* ── TAGS INPUT ── */
-.tag-area{background:var(--w);border:1.5px solid var(--g200);border-radius:var(--r);padding:8px;min-height:72px;cursor:text;display:flex;flex-wrap:wrap;gap:5px;align-content:flex-start;transition:border-color .15s,box-shadow .15s}
-.tag-area:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.1)}
-.tag-area input{background:none;border:none;outline:none;color:var(--g900);font-size:13px;min-width:140px;padding:2px 4px;height:24px;font-family:var(--sans)}
-.prospect-tag{display:inline-flex;align-items:center;gap:5px;background:var(--accent-light);border:1px solid var(--accent-mid);border-radius:20px;padding:2px 8px 2px 5px;font-size:12px;color:#4338CA;height:24px}
-.tag-av{width:16px;height:16px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
-.tag-rm{background:none;border:none;color:var(--accent-mid);cursor:pointer;font-size:14px;padding:0;line-height:1;transition:color .1s}
-.tag-rm:hover{color:var(--red)}
-
 /* ── MODAL ── */
-.overlay{position:fixed;inset:0;background:rgba(15,22,35,.4);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:200}
-.modal{background:var(--w);border:1px solid var(--g100);border-radius:var(--rl);padding:28px;width:640px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.overlay{position:fixed;inset:0;background:rgba(17,24,39,.4);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:200}
+.modal{background:var(--w);border:1px solid var(--g100);border-radius:16px;padding:28px;width:640px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15)}
 .modal-wide{width:860px}
 .modal-full{width:96vw;max-width:1100px}
-.modal-title{font-size:16px;font-weight:600;margin-bottom:5px;letter-spacing:-.3px}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:4px;letter-spacing:-.3px}
 .modal-sub{font-size:13px;color:var(--g400);margin-bottom:20px}
 .modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--g100)}
+.close-btn{background:none;border:none;cursor:pointer;color:var(--g400);font-size:20px;padding:0;line-height:1;transition:color .15s}
+.close-btn:hover{color:var(--g900)}
 
 /* ── PROGRESS ── */
 .progress{height:4px;background:var(--g100);border-radius:4px;overflow:hidden}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#8B5CF6);border-radius:4px;transition:width .5s}
-
-/* ── FUNNEL ── */
-.funnel-step-row{display:flex;align-items:center;gap:0;margin-bottom:4px}
-.funnel-label{min-width:110px;text-align:right;padding-right:14px;font-size:11px;font-family:var(--mono);color:var(--g400)}
-.funnel-bar-wrap{flex:1;height:46px;position:relative;display:flex;align-items:center;padding:0 14px;border-radius:var(--r);overflow:hidden}
-.funnel-bg{position:absolute;left:0;top:0;bottom:0;border-radius:var(--r);transition:width .6s}
-.funnel-content{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;width:100%}
-.funnel-conn{display:flex;align-items:center;gap:10px;padding:4px 0 4px 124px}
-.funnel-conn-line{flex:1;height:1px;background:var(--g100)}
-.funnel-conn-pill{font-size:10px;font-family:var(--mono);color:var(--g400);background:var(--g50);border:1px solid var(--g100);border-radius:20px;padding:2px 10px;white-space:nowrap}
-.funnel-outcomes{display:flex;gap:10px;margin-top:14px;padding-left:124px}
-.funnel-outcome{flex:1;border:1px solid var(--g100);border-radius:var(--rm);padding:12px 14px;background:var(--g50)}
-.funnel-outcome-val{font-size:20px;font-weight:500;font-family:var(--mono);letter-spacing:-1px}
-.funnel-outcome-lbl{font-size:10px;font-family:var(--mono);color:var(--g400);margin-top:3px;text-transform:uppercase;letter-spacing:.4px}
-
-/* ── CHARTS ── */
-.chart-bar-wrap{display:flex;flex-direction:column;gap:8px}
-.chart-bar-row{display:flex;align-items:center;gap:12px;font-size:12px}
-.chart-bar-label{width:110px;color:var(--g500);text-align:right;flex-shrink:0;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.chart-bar-track{flex:1;background:var(--g100);border-radius:4px;height:10px;overflow:hidden}
-.chart-bar-fill{height:100%;border-radius:4px;transition:width .6s}
-.chart-bar-val{width:36px;text-align:right;color:var(--g700);font-family:var(--mono);font-size:11px;flex-shrink:0;font-weight:500}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#7C3AED);border-radius:4px;transition:width .4s}
 
 /* ── CAMP CARD ── */
-.camp-card{background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:16px 20px;margin-bottom:10px;box-shadow:var(--shadow);transition:all .2s}
-.camp-card:hover{border-color:var(--g200);box-shadow:var(--shadow-md)}
-.camp-meta{display:flex;gap:16px;font-size:11.5px;color:var(--g400);margin:5px 0}
-.camp-meta strong{color:var(--g700)}
+.camp-card{background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:18px 20px;margin-bottom:10px;box-shadow:var(--shadow);transition:box-shadow .2s}
+.camp-card:hover{box-shadow:var(--shadow-md)}
 
-/* ── SETUP STEPS ── */
-.setup-step{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--g100)}
-.setup-step:last-child{border-bottom:none}
-.s-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;margin-top:1px}
-.s-text{font-size:12.5px;color:var(--g600);line-height:1.7}
-.s-text strong{color:var(--g900)}
-.s-text code{background:var(--accent-light);padding:1px 6px;border-radius:4px;font-family:var(--mono);font-size:11px;color:var(--accent)}
-.s-text a{color:var(--accent)}
+/* ── FUNNEL ── */
+.funnel-row{display:flex;align-items:center;gap:0;margin-bottom:4px}
+.funnel-label{min-width:90px;text-align:right;padding-right:12px;font-size:11px;font-family:var(--mono);color:var(--g400)}
+.funnel-bar{flex:1;height:40px;position:relative;display:flex;align-items:center;padding:0 14px;border-radius:var(--r);overflow:hidden}
+.funnel-bg{position:absolute;left:0;top:0;bottom:0;border-radius:var(--r);transition:width .6s}
+.funnel-content{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;width:100%}
+.funnel-conn{display:flex;align-items:center;gap:10px;padding:3px 0 3px 102px}
+.funnel-conn-line{flex:1;height:1px;background:var(--g100)}
+.funnel-conn-pill{font-size:10px;font-family:var(--mono);color:var(--g400);background:var(--g50);border:1px solid var(--g100);border-radius:20px;padding:2px 10px}
+.funnel-outcomes{display:flex;gap:8px;margin-top:12px;padding-left:102px}
+.funnel-outcome{flex:1;border:1px solid var(--g100);border-radius:var(--r);padding:10px 12px}
+.funnel-val{font-size:18px;font-weight:500;font-family:var(--mono);letter-spacing:-1px}
+.funnel-lbl{font-size:10px;color:var(--g400);margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
 
-/* ── EMPTY ── */
+/* ── MISC ── */
 .empty{text-align:center;padding:60px 24px;color:var(--g400)}
-.empty-icon{font-size:32px;margin-bottom:12px;filter:grayscale(1);opacity:.3}
-.empty-title{font-size:14px;font-weight:500;color:var(--g600);margin-bottom:6px}
-.empty p{font-size:13px}
-
-/* ── INFO BOXES ── */
+.empty-icon{font-size:28px;margin-bottom:12px;opacity:.3;filter:grayscale(1)}
+.empty-title{font-size:14px;font-weight:500;color:var(--g500);margin-bottom:6px}
 .info-box{padding:12px 14px;border-radius:var(--r);font-size:12.5px;margin-bottom:14px;line-height:1.6}
 .i-green{background:var(--green-bg);border:1px solid var(--green-b);color:#065F46}
 .i-amber{background:var(--amber-bg);border:1px solid var(--amber-b);color:#92400E}
-.i-blue{background:var(--blue-bg);border:1px solid var(--blue-b);color:#1E40AF}
+.i-blue{background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF}
 .i-gray{background:var(--g50);border:1px solid var(--g100);color:var(--g600)}
-.i-accent{background:var(--accent-light);border:1px solid var(--accent-mid);color:#4338CA}
-
-/* ── LOGS ── */
+.i-accent{background:var(--accent-l);border:1px solid var(--accent-m);color:#4338CA}
+.i-red{background:var(--red-bg);border:1px solid var(--red-b);color:#991B1B}
 .log-entry{display:flex;gap:14px;padding:8px 0;border-bottom:1px solid var(--g50);font-size:12px;font-family:var(--mono)}
 .log-entry:last-child{border-bottom:none}
 .log-time{color:var(--g300);flex-shrink:0}
 .log-ok{color:var(--green)}.log-err{color:var(--red)}.log-warn{color:var(--amber)}.log-info{color:var(--g700)}
-
-/* ── MISC ── */
-.note{font-size:11.5px;color:var(--g400);margin-top:5px}
-.trigger-block{background:var(--g50);border:1px solid var(--g100);border-radius:var(--r);padding:14px 16px;margin-bottom:12px}
-.trigger-title{font-size:11px;font-weight:600;color:var(--g400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
-.trigger-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
-.trigger-row:last-child{margin-bottom:0}
-.trigger-label{font-size:12.5px;color:var(--g600);flex-shrink:0}
-.cond-select{height:30px;padding:0 10px;font-size:12px;background:var(--w);border:1.5px solid var(--g200);border-radius:var(--r);color:var(--g900);font-family:var(--sans);cursor:pointer;outline:none;transition:border-color .15s}
+.note{font-size:11.5px;color:var(--g400);margin-top:4px}
+.cond-select{height:30px;padding:0 10px;font-size:12px;background:var(--w);border:1.5px solid var(--g200);border-radius:var(--r);color:var(--g900);cursor:pointer;outline:none;transition:border-color .15s}
 .cond-select:focus{border-color:var(--accent)}
-.cond-num{height:30px;padding:0 8px;font-size:12px;font-family:var(--mono);background:var(--w);border:1.5px solid var(--g200);border-radius:var(--r);color:var(--g900);outline:none;width:56px;text-align:center;transition:border-color .15s}
+.cond-num{height:30px;padding:0 8px;font-size:12px;font-family:var(--mono);background:var(--w);border:1.5px solid var(--g200);border-radius:var(--r);color:var(--g900);outline:none;width:58px;text-align:center}
 .cond-num:focus{border-color:var(--accent)}
+.tag-area{background:var(--w);border:1.5px solid var(--g200);border-radius:var(--r);padding:8px;min-height:72px;cursor:text;display:flex;flex-wrap:wrap;gap:5px;align-content:flex-start;transition:border-color .15s}
+.tag-area:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.tag-area input{background:none;border:none;outline:none;color:var(--g900);font-size:13px;min-width:140px;padding:2px 4px;height:24px}
 </style>
 </head>
 <body>
 <div class="app">
 
-  <!-- SIDEBAR -->
-  <aside class="sb">
-    <div class="logo">
-      <div class="logo-mark">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M1 3.5L7 8L13 3.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
-          <rect x="1" y="2" width="12" height="10" rx="2" stroke="white" stroke-width="1.5"/>
-        </svg>
-      </div>
-      <div class="logo-text">
-        <div class="logo-name">MailSeq</div>
-        <div class="logo-ver">v3 · prospection</div>
-      </div>
+<!-- ── SIDEBAR ── -->
+<aside class="sb">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 15 15" fill="none"><path d="M1 3.5L7.5 9L14 3.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/><rect x="1" y="2" width="13" height="11" rx="2" stroke="white" stroke-width="1.5"/></svg>
+    </div>
+    <div class="logo-name">MailSeq</div>
+  </div>
+
+  <!-- Connexion -->
+  <div class="conn-btn" onclick="ouvrirConnexion()">
+    <div class="conn-row"><div class="dot" id="statusDot"></div><div class="conn-label" id="statusLabel">non connecté</div></div>
+    <div class="conn-email" id="statusEmail">connecter Outlook →</div>
+  </div>
+
+  <nav>
+    <!-- Étapes principales -->
+    <div class="nav-label">Prospection</div>
+
+    <div class="nav-step">
+      <div class="nav-step-num">1</div>
+      <div class="nav-item" id="nav-prospects" onclick="aller('prospects',this)">Prospects <span class="nav-badge" id="prospBadge">0</span></div>
+    </div>
+    <div class="nav-step">
+      <div class="nav-step-num">2</div>
+      <div class="nav-item" id="nav-blacklist" onclick="aller('blacklist',this)">Blacklist <span class="nav-badge" id="blacklistBadge">0</span></div>
+    </div>
+    <div class="nav-step">
+      <div class="nav-step-num">3</div>
+      <div class="nav-item" id="nav-sequences" onclick="aller('sequences',this)">Séquences <span class="nav-badge" id="seqBadge">0</span></div>
+    </div>
+    <div class="nav-step">
+      <div class="nav-step-num">4</div>
+      <div class="nav-item" id="nav-campagnes" onclick="aller('campagnes',this)">Campagnes <span class="nav-badge" id="campBadge">0</span></div>
     </div>
 
-    <div class="conn-block" onclick="ouvrirConnexion()">
-      <div class="conn-row"><div class="dot" id="statusDot"></div><div class="conn-label" id="statusLabel">non connecté</div></div>
-      <div class="conn-email" id="statusEmail">cliquer pour connecter Outlook →</div>
+    <div class="nav-divider"></div>
+
+    <!-- Outils -->
+    <div class="nav-label">Outils</div>
+    <div class="nav-item-sm" id="nav-tableau" onclick="aller('tableau',this)">📊 Tableau de bord</div>
+    <div class="nav-item-sm" id="nav-analytiques" onclick="aller('analytiques',this)">📈 Analytiques</div>
+    <div class="nav-item-sm" id="nav-signature" onclick="aller('signature',this)">✏ Signature</div>
+    <div class="nav-item-sm" id="nav-journaux" onclick="aller('journaux',this)">📋 Journaux</div>
+  </nav>
+</aside>
+
+<!-- ── MAIN ── -->
+<main class="main">
+  <div id="tokenBanner"></div>
+
+  <!-- 1. PROSPECTS -->
+  <div id="page-prospects" class="page" style="display:none;flex-direction:column">
+    <div class="topbar">
+      <div class="topbar-title">1 — Prospects</div>
+      <button class="btn btn-primary btn-sm" onclick="ouvrirModalListe(null)">+ nouvelle liste</button>
     </div>
+    <div class="content" id="contenu-prospects"></div>
+  </div>
 
-    <nav>
-      <div class="nav-section">Vue d'ensemble</div>
-      <div class="nav-item active" onclick="aller('tableau',this)">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="9.5" y="1.5" width="5" height="5" rx="1"/><rect x="1.5" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></svg>
-        tableau de bord
-      </div>
-      <div class="nav-item" onclick="aller('analytiques',this)">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12l3-4 3 2 3-5 3 2"/></svg>
-        analytiques
-      </div>
-      <div class="nav-section">Prospection</div>
-      <div class="nav-item" onclick="aller('sequences',this)">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h10"/></svg>
-        séquences
-        <span class="nav-badge" id="seqBadge">0</span>
-      </div>
-      <div class="nav-item" onclick="aller('campagnes',this)">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="2"/><path d="M1 5l7 5 7-5"/></svg>
-        campagnes
-        <span class="nav-badge" id="campBadge">0</span>
-      </div>
-      <div class="nav-section">Paramètres</div>
-      <div class="nav-item" onclick="aller('signature',this)">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12c2-4 8-6 12-2M2 12l2-6 4 4"/></svg>
-        signature
-      </div>
-      <div class="nav-item" onclick="aller('listes',this)">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="3" rx="1"/><rect x="1" y="7" width="14" height="3" rx="1"/><rect x="1" y="12" width="14" height="3" rx="1"/></svg>
-        listes prospects
-        <span class="nav-badge" id="listesBadge">0</span>
-      </div>
-      <div class="nav-item" onclick="aller('prospects',this)">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="5" r="3"/><path d="M1 14.5c0-2.5 2-4 5-4s5 1.5 5 4"/><path d="M12 7v4M10 9h4"/></svg>
-        tous les prospects
-      </div>
-      <div class="nav-item" onclick="aller('blacklist',this)">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M5 8h6"/></svg>
-        blacklist
-        <span class="nav-badge" id="blacklistBadge">0</span>
-      </div>
-      <div class="nav-item" onclick="aller('journaux',this)">
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M5 6h6M5 9h4"/></svg>
-        journaux d'envoi
-      </div>
-    </nav>
-  </aside>
-
-  <!-- MAIN -->
-  <main class="main">
-    <!-- Bannière expiration token -->
-    <div id="tokenBanner" style="display:none;background:#fef3c7;border-bottom:1px solid #fde68a;padding:10px 20px;font-size:12px;color:#92400e;align-items:center;gap:12px;flex-shrink:0"></div>
-
-    <!-- TABLEAU DE BORD -->
-    <div id="page-tableau" class="page">
-      <div class="topbar">
-        <div class="topbar-title">tableau de bord</div>
-        <button class="btn btn-ghost btn-sm" onclick="lancerDeclencheurs();verifierReponses()">↻ synchroniser</button>
-  
-        <button class="btn btn-primary btn-sm" onclick="aller('campagnes',null);afficherOngletCamp('nouvelle')">+ nouvelle campagne</button>
-      </div>
-      <div class="content" id="contenu-tableau"></div>
+  <!-- 2. BLACKLIST -->
+  <div id="page-blacklist" class="page" style="display:none;flex-direction:column">
+    <div class="topbar">
+      <div class="topbar-title">2 — Blacklist</div>
+      <button class="btn btn-primary btn-sm" onclick="ajouterBlacklist()">+ ajouter un email</button>
     </div>
-
-    <!-- ANALYTIQUES -->
-    <div id="page-analytiques" class="page" style="display:none">
-      <div class="topbar">
-        <div class="topbar-title">analytiques</div>
-        <button class="btn btn-ghost btn-sm" onclick="afficherAnalytiques()">↻ actualiser</button>
-      </div>
-      <div class="content" id="contenu-analytiques"></div>
+    <div class="content">
+      <div class="info-box i-amber">Les emails de cette liste ne recevront <strong>jamais</strong> d'email, même s'ils sont présents dans une liste de prospects active.</div>
+      <div class="table-wrap" id="blacklistTable"></div>
     </div>
+  </div>
 
-    <!-- SÉQUENCES -->
-    <div id="page-sequences" class="page" style="display:none">
-      <div class="topbar">
-        <div class="topbar-title">séquences</div>
-        <button class="btn btn-primary btn-sm" onclick="ouvrirModalSeq(null)">+ nouvelle séquence</button>
-      </div>
-      <div class="content" id="contenu-sequences"></div>
+  <!-- 3. SÉQUENCES -->
+  <div id="page-sequences" class="page" style="display:none;flex-direction:column">
+    <div class="topbar">
+      <div class="topbar-title">3 — Séquences</div>
+      <button class="btn btn-primary btn-sm" onclick="ouvrirModalSeq(null)">+ nouvelle séquence</button>
     </div>
+    <div class="content" id="contenu-sequences"></div>
+  </div>
 
-    <!-- CAMPAGNES -->
-    <div id="page-campagnes" class="page" style="display:none">
-      <div class="topbar">
-        <div class="topbar-title">campagnes</div>
-        <div id="progressEnvoi" style="display:none;align-items:center;gap:10px;flex:1;max-width:300px;margin-left:16px">
-          <div style="font-size:11px;color:var(--g500);font-family:var(--mono);white-space:nowrap" id="progressLabel">Envoi en cours…</div>
-          <div class="progress" style="flex:1"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-        </div>
+  <!-- 4. CAMPAGNES -->
+  <div id="page-campagnes" class="page" style="display:none;flex-direction:column">
+    <div class="topbar">
+      <div class="topbar-title">4 — Campagnes</div>
+      <div id="progressEnvoi" style="display:none;align-items:center;gap:10px;flex:1;max-width:280px;margin-left:16px">
+        <span style="font-size:11px;color:var(--g500);font-family:var(--mono);white-space:nowrap" id="progressLabel">Envoi…</span>
+        <div class="progress" style="flex:1"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
       </div>
-      <div class="content">
-        <div class="tabs">
-          <div class="tab active" id="ctab-nouvelle" onclick="afficherOngletCamp('nouvelle')">nouvelle campagne</div>
-          <div class="tab" id="ctab-liste" onclick="afficherOngletCamp('liste')">toutes les campagnes (<span id="campCount">0</span>)</div>
-        </div>
-        <div id="panel-nouvelle-camp">
-          <div class="card">
-            <div class="card-header"><div><div class="card-title">01 — campagne</div><div class="card-sub">nom et séquence</div></div></div>
-            <div class="form-group"><label class="form-label">Nom de la campagne</label><input class="form-input form-mono" id="campNom" placeholder="prospection-q2-saas-paris"></div>
-            <div class="form-group"><label class="form-label">Séquence</label>
-              <select class="form-select" id="campSeq" onchange="aperçuSeq()"><option value="">— sélectionner —</option></select>
-            </div>
-            <div id="aperçuSeqRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:-4px"></div>
+    </div>
+    <div class="content" id="contenu-campagnes"></div>
+  </div>
+
+  <!-- TABLEAU DE BORD -->
+  <div id="page-tableau" class="page" style="flex-direction:column">
+    <div class="topbar">
+      <div class="topbar-title">Tableau de bord</div>
+      <button class="btn btn-ghost btn-sm" onclick="lancerDeclencheurs();verifierReponses()">↻ synchroniser</button>
+      <button class="btn btn-primary btn-sm" onclick="aller('sequences',document.getElementById('nav-sequences'))">+ nouvelle séquence</button>
+    </div>
+    <div class="content" id="contenu-tableau"></div>
+  </div>
+
+  <!-- ANALYTIQUES -->
+  <div id="page-analytiques" class="page" style="display:none;flex-direction:column">
+    <div class="topbar"><div class="topbar-title">Analytiques</div><button class="btn btn-ghost btn-sm" onclick="afficherAnalytiques()">↻ actualiser</button></div>
+    <div class="content" id="contenu-analytiques"></div>
+  </div>
+
+  <!-- SIGNATURE -->
+  <div id="page-signature" class="page" style="display:none;flex-direction:column">
+    <div class="topbar"><div class="topbar-title">Signature</div><button class="btn btn-primary btn-sm" onclick="sauvegarderSig()">enregistrer</button></div>
+    <div class="content">
+      <div class="card">
+        <div class="card-title">Signature globale</div>
+        <div class="info-box i-blue">Ajoutée automatiquement en bas de chaque email envoyé.</div>
+        <div class="editor-wrap">
+          <div class="editor-toolbar">
+            <button class="tb-btn" onclick="cmdSur('sig-body','bold')"><b>G</b></button>
+            <button class="tb-btn" onclick="cmdSur('sig-body','italic')"><i>I</i></button>
+            <button class="tb-btn" onclick="cmdSur('sig-body','underline')"><u>S</u></button>
+            <div class="tb-sep"></div>
+            <button class="tb-btn" onclick="ajouterLien('sig-body')">🔗</button>
+            <button class="tb-btn" onclick="ajouterImage('sig-body')">🖼</button>
           </div>
-          <div class="card">
-            <div class="card-header"><div><div class="card-title">02 — prospects</div><div class="card-sub">choisir une liste ou importer directement</div></div></div>
-            <div class="tabs" style="margin-bottom:14px">
-              <div class="tab active" id="itab-liste" onclick="afficherOngletImport('liste')">Depuis une liste</div>
-              <div class="tab" id="itab-fichier" onclick="afficherOngletImport('fichier')">Fichier Excel / CSV</div>
-              <div class="tab" id="itab-manuel" onclick="afficherOngletImport('manuel')">Saisie manuelle</div>
-            </div>
-            <div id="imp-liste">
-              <div class="form-group">
-                <label class="form-label">Sélectionner une liste de prospects</label>
-                <select class="form-select" id="campListeSel" onchange="aperçuListeCamp()">
-                  <option value="">— choisir une liste —</option>
-                </select>
-              </div>
-              <div id="campListeApercu"></div>
-              <div style="margin-top:10px;font-size:12px;color:var(--g400)">
-                Pas encore de liste ? <button class="btn btn-ghost btn-sm" onclick="aller('listes',null);fermerModal('modalSeq')">→ Créer une liste</button>
-              </div>
-            </div>
-            <div id="imp-fichier">
-              <div class="drop-zone" onclick="document.getElementById('fileInput').click()"
-                ondragover="event.preventDefault();this.classList.add('drag-over')"
-                ondragleave="this.classList.remove('drag-over')"
-                ondrop="gererDrop(event)">
-                <div style="font-size:20px;margin-bottom:8px">⬆</div>
-                <div style="font-size:13px;font-weight:500;color:var(--g700)">Glisser le fichier ou cliquer</div>
-                <div style="font-size:11px;margin-top:3px">Excel · CSV — colonnes : email, prénom, nom, société, poste</div>
-              </div>
-              <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="gererFichier(event)">
-              <div id="aperçuFichier"></div>
-            </div>
-            <div id="imp-manuel" style="display:none">
-              <div style="background:var(--g50);border:1px solid var(--g200);border-radius:var(--rm);padding:14px;margin-bottom:12px">
-                <div class="form-label" style="margin-bottom:10px">Ajouter un prospect</div>
-                <div class="grid-2" style="margin-bottom:8px">
-                  <div class="form-group" style="margin-bottom:0"><label class="form-label">Email *</label><input class="form-input form-mono" id="manEmail" placeholder="nom@entreprise.com"></div>
-                  <div class="form-group" style="margin-bottom:0"><label class="form-label">Prénom</label><input class="form-input" id="manPrenom" placeholder="Jean"></div>
-                </div>
-                <div class="grid-2" style="margin-bottom:8px">
-                  <div class="form-group" style="margin-bottom:0"><label class="form-label">Nom</label><input class="form-input" id="manNom" placeholder="Dupont"></div>
-                  <div class="form-group" style="margin-bottom:0"><label class="form-label">Société</label><input class="form-input" id="manSociete" placeholder="Acme Corp"></div>
-                </div>
-                <div class="grid-2" style="margin-bottom:10px">
-                  <div class="form-group" style="margin-bottom:0"><label class="form-label">Poste</label><input class="form-input" id="manPoste" placeholder="Directeur Commercial"></div>
-                  <div></div>
-                </div>
-                <div style="display:flex;gap:8px;align-items:center">
-                  <button class="btn btn-primary btn-sm" onclick="ajouterProspectManuel()">+ Ajouter</button>
-                  <span style="font-size:11px;color:var(--g400)">ou coller plusieurs emails :</span>
-                  <input id="tagInput" placeholder="email1@co.com; email2@co.com" style="flex:1;height:26px;padding:0 8px;border:1px solid var(--g200);border-radius:var(--r);font-size:12px;outline:none;font-family:var(--sans)" onkeydown="gererTouche(event)" onpaste="gererColler(event)">
-                  <button class="btn btn-ghost btn-sm" onclick="validerTagInput()">Valider</button>
-                </div>
-              </div>
-              <div id="manProspectsList"></div>
-              <div class="note" id="tagCount">0 prospect ajouté</div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header"><div><div class="card-title">03 — paramètres d'envoi</div><div class="card-sub">horaires et conformité RGPD</div></div></div>
-            <div class="grid-2">
-              <div class="form-group"><label class="form-label">Heure d'envoi</label><input type="time" class="form-input" id="campHeure" value="09:00"></div>
-              <div class="form-group"><label class="form-label">Délai anti-spam entre envois (secondes)</label><input type="number" class="form-input form-mono" id="campDelai" value="45" min="15"></div>
-              <div class="form-group"><label class="form-label">Jours actifs</label>
-                <select class="form-select" id="campJours"><option value="semaine">Lun → Ven uniquement</option><option value="tous">Tous les jours</option></select>
-              </div>
-              <div class="form-group"><label class="form-label">Fuseau horaire</label>
-                <select class="form-select" id="campFuseau"><option value="Europe/Paris">Europe/Paris</option><option value="Europe/London">Europe/London</option><option value="America/New_York">America/New_York</option></select>
-              </div>
-            </div>
-            <div class="info-box i-gray" style="display:flex;gap:8px;margin-bottom:0">
-              <span style="font-family:var(--mono);font-size:11px;flex-shrink:0">RGPD</span>
-              <span>Chaque email est envoyé individuellement — 1 appel SMTP par destinataire. Aucun envoi groupé ni copie cachée.</span>
-            </div>
-          </div>
-          <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:24px">
-            <button class="btn btn-ghost" onclick="reinitialiserFormCamp()">réinitialiser</button>
-            <button class="btn btn-primary" onclick="lancerCampagne()">→ lancer la campagne</button>
-          </div>
-        </div>
-        <div id="panel-liste-camp" style="display:none"><div id="contenu-liste-camp"></div></div>
-      </div>
-    </div>
-
-    <!-- SIGNATURE -->
-    <div id="page-signature" class="page" style="display:none">
-      <div class="topbar"><div class="topbar-title">signature email</div><button class="btn btn-primary btn-sm" onclick="sauvegarderSig()">enregistrer</button></div>
-      <div class="content">
-        <div class="card">
-          <div class="card-header"><div class="card-title">signature globale</div><div class="card-sub">Ajoutée automatiquement à chaque email envoyé</div></div>
-          <div class="info-box i-blue">La signature est injectée en bas de chaque email au format HTML.</div>
-          <label class="form-label">Éditeur de signature</label>
-          <div class="editor-wrap">
-            <div class="editor-toolbar">
-              <button class="tb-btn" onclick="cmd('bold')"><b>G</b></button>
-              <button class="tb-btn" onclick="cmd('italic')"><i>I</i></button>
-              <button class="tb-btn" onclick="cmd('underline')"><u>S</u></button>
-              <div class="tb-sep"></div>
-              <button class="tb-btn" onclick="ajouterLien('sig-body')">🔗</button>
-              <button class="tb-btn" onclick="ajouterImage('sig-body')">🖼</button>
-            </div>
-            <div id="sig-body" class="editor-body" contenteditable="true" data-placeholder="Maxence Desbois | La Poste Groupe | +33 6 00 00 00 00"></div>
-          </div>
+          <div id="sig-body" class="editor-body" contenteditable="true" data-placeholder="Maxence Desbois | La Poste Groupe | +33 6 00 00 00 00"></div>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- PROSPECTS -->
-    <div id="page-prospects" class="page" style="display:none">
-      <div class="topbar">
-        <div class="topbar-title">prospects</div>
-        <select class="form-select" style="width:240px;height:28px;font-size:12px" id="prospCampSel" onchange="afficherProspects()">
-          <option value="">— sélectionner une campagne —</option>
-        </select>
-        <button class="btn btn-ghost btn-sm" onclick="exporterCSV()">↓ exporter CSV</button>
-      </div>
-      <div class="content"><div class="card" style="padding:0;overflow:hidden"><div id="tableau-prospects"></div></div></div>
-    </div>
-
-    <!-- LISTES DE PROSPECTS -->
-    <div id="page-listes" class="page" style="display:none">
-      <div class="topbar">
-        <div class="topbar-title">listes de prospects</div>
-        <button class="btn btn-primary btn-sm" onclick="ouvrirModalListe(null)">+ nouvelle liste</button>
-      </div>
-      <div class="content" id="contenu-listes"></div>
-    </div>
-
-    <!-- BLACKLIST -->
-    <div id="page-blacklist" class="page" style="display:none">
-      <div class="topbar">
-        <div class="topbar-title">blacklist</div>
-        <button class="btn btn-primary btn-sm" onclick="ajouterBlacklist()">+ ajouter</button>
-      </div>
-      <div class="content">
-        <div class="info-box i-amber">Les emails de cette liste ne recevront <strong>jamais</strong> d'email, même s'ils sont présents dans une liste de prospects ou une campagne active.</div>
-        <div class="card" style="padding:0;overflow:hidden" id="blacklistTable"></div>
-      </div>
-    </div>
-
-    <!-- JOURNAUX -->
-    <div id="page-journaux" class="page" style="display:none">
-      <div class="topbar"><div class="topbar-title">journaux d'envoi</div><button class="btn btn-danger btn-sm" onclick="S.journaux=[];sauver();afficherJournaux()">vider</button></div>
-      <div class="content"><div class="card" id="contenu-journaux"></div></div>
-    </div>
-
-  </main>
+  <!-- JOURNAUX -->
+  <div id="page-journaux" class="page" style="display:none;flex-direction:column">
+    <div class="topbar"><div class="topbar-title">Journaux d'envoi</div><button class="btn btn-danger btn-sm" onclick="S.journaux=[];sauver();afficherJournaux()">vider</button></div>
+    <div class="content"><div class="card" id="contenu-journaux"></div></div>
+  </div>
+</main>
 </div>
 
-<!-- ═══ MODAL CONNEXION ═══ -->
+<!-- ══════════ MODAL CONNEXION ══════════ -->
 <div class="overlay" id="modalConnexion" style="display:none">
   <div class="modal">
-    <div class="modal-title">connexion outlook</div>
-    <div class="modal-sub">Microsoft Graph API — OAuth2 · vos emails partent depuis votre vrai compte Outlook</div>
-    <div id="conn-etape1">
-      <div style="background:var(--g50);border:1px solid var(--g200);border-radius:var(--rm);padding:14px;margin-bottom:16px">
-        <div class="setup-step"><div class="s-num">1</div><div class="s-text"><strong>Créer l'app Azure AD</strong> — <a href="https://portal.azure.com" target="_blank" style="color:var(--info)">portal.azure.com</a> → Inscriptions d'applications → Nouvelle inscription</div></div>
-        <div class="setup-step"><div class="s-num">2</div><div class="s-text"><strong>Authentification</strong> → Ajouter une plateforme → Application monopage → URI : <code id="uriRedir"></code></div></div>
-        <div class="setup-step"><div class="s-num">3</div><div class="s-text"><strong>Autorisations API</strong> → Microsoft Graph → Déléguées : <code>Mail.Send</code> <code>Mail.Read</code> <code>User.Read</code></div></div>
-        <div class="setup-step"><div class="s-num">4</div><div class="s-text">Copier l'<strong>ID d'application (client)</strong> depuis la page Vue d'ensemble → coller ci-dessous</div></div>
-      </div>
-      <div class="form-group"><label class="form-label">ID client</label><input class="form-input form-mono" id="clientIdInput" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>
-      <div class="form-group"><label class="form-label">ID de locataire (laisser "common" pour un compte Outlook personnel)</label><input class="form-input form-mono" id="tenantIdInput" placeholder="common" value="common"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+      <div><div class="modal-title">Connexion Outlook</div><div class="modal-sub">Microsoft Graph API — vos emails partent depuis votre vrai compte</div></div>
+      <button class="close-btn" onclick="fermerModal('modalConnexion')">×</button>
     </div>
-    <div id="conn-etape2" style="display:none;text-align:center;padding:20px 0">
-      <div style="font-size:28px;margin-bottom:10px">🔐</div>
-      <div style="font-size:13px;font-weight:500;font-family:var(--mono)">authentification en cours…</div>
-      <div style="font-size:12px;color:var(--g400);margin-top:4px">Une fenêtre Microsoft va s'ouvrir pour autoriser l'accès</div>
+    <div id="conn-e1">
+      <div class="form-group"><label class="label">ID client (Azure)</label><input class="input mono" id="clientIdInput" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>
+      <div class="form-group"><label class="label">ID de locataire</label><input class="input mono" id="tenantIdInput" placeholder="common" value="common"></div>
+      <div class="info-box i-gray" style="font-size:11.5px">URI de redirection à enregistrer dans Azure :<br><strong id="uriRedir" style="font-family:var(--mono);font-size:11px"></strong></div>
+    </div>
+    <div id="conn-e2" style="display:none;text-align:center;padding:20px 0">
+      <div style="font-size:24px;margin-bottom:10px">🔐</div>
+      <div style="font-size:13px;font-weight:500">Authentification en cours…</div>
       <div class="progress" style="margin-top:14px"><div class="progress-fill" id="barreAuth" style="width:0%"></div></div>
     </div>
     <div class="modal-footer">
@@ -584,167 +376,108 @@ tr:hover td{background:var(--g50)}
   </div>
 </div>
 
-<!-- ═══ MODAL SÉQUENCE ═══ -->
-<div class="overlay" id="modalSeq" style="display:none">
-  <div class="modal modal-full">
-    <!-- HEADER -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--g100)">
-      <div>
-        <div class="modal-title" id="titreModalSeq" style="margin-bottom:0">nouvelle séquence</div>
-        <div style="font-size:12px;color:var(--g400);margin-top:3px">Rédigez vos emails · choisissez vos prospects · lancez</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn btn-ghost btn-sm" id="btnModeBuilder" onclick="basculerModeBuilder()">🔀 vue flow</button>
-        <button class="close-panel" onclick="fermerModal('modalSeq')">×</button>
-      </div>
-    </div>
-
-    <!-- LAYOUT 2 COLONNES : flow | config -->
-    <div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start">
-
-      <!-- COLONNE GAUCHE : builder flow -->
-      <div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div class="form-label" style="margin-bottom:0">Flow d'emails</div>
-          <div>
-            <span class="var-pill" onclick="insererVar('{{prenom}}')">{{prenom}}</span>
-            <span class="var-pill" onclick="insererVar('{{nom}}')">{{nom}}</span>
-            <span class="var-pill" onclick="insererVar('{{societe}}')">{{societe}}</span>
-            <span class="var-pill" onclick="insererVar('{{poste}}')">{{poste}}</span>
-            <span class="var-pill" onclick="insererVar('{{email}}')">{{email}}</span>
-          </div>
-        </div>
-        <div style="background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--rm);padding:20px">
-          <div class="flow-canvas" id="flowCanvas"></div>
-        </div>
-        <div id="editorPanel" style="display:none"></div>
-      </div>
-
-      <!-- COLONNE DROITE : config + lancement -->
-      <div style="position:sticky;top:0">
-
-        <!-- Nom séquence -->
-        <div class="form-group">
-          <label class="form-label">Nom de la séquence</label>
-          <input class="form-input form-mono" id="nomSeq" placeholder="saas-b2b-3-relances">
-        </div>
-
-        <!-- Séparateur -->
-        <div style="height:1px;background:var(--g100);margin:14px 0"></div>
-
-        <!-- Sélection liste prospects -->
-        <div style="margin-bottom:10px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <label class="form-label" style="margin-bottom:0">Liste de prospects</label>
-            <button class="btn btn-xs btn-ghost" onclick="fermerModal('modalSeq');aller('listes',null)">+ créer une liste</button>
-          </div>
-          <select class="form-select" id="seqListeSel" onchange="aperçuListeSeq()">
-            <option value="">— sélectionner une liste —</option>
-          </select>
-          <div id="seqListeApercu" style="margin-top:6px"></div>
-        </div>
-
-        <!-- Paramètres envoi -->
-        <div style="height:1px;background:var(--g100);margin:14px 0"></div>
-        <div class="form-label" style="margin-bottom:10px">Paramètres d'envoi</div>
-        <div class="form-group">
-          <label class="form-label">Heure d'envoi</label>
-          <input type="time" class="form-input" id="seqHeure" value="09:00">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Jours actifs</label>
-          <select class="form-select" id="seqJours">
-            <option value="semaine">Lun → Ven uniquement</option>
-            <option value="tous">Tous les jours</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Délai anti-spam entre envois (sec)</label>
-          <input type="number" class="form-input form-mono" id="seqDelai" value="45" min="15">
-        </div>
-
-        <!-- BOUTONS ACTIONS -->
-        <div style="height:1px;background:var(--g100);margin:14px 0"></div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <!-- Bouton principal : Publier = lancer immédiatement -->
-          <button class="btn btn-primary" style="width:100%;height:42px;font-size:13px;justify-content:center" onclick="sauvegarderEtLancer('active')">
-            🚀 Publier — lancer la campagne
-          </button>
-          <!-- Bouton secondaire : Brouillon -->
-          <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="sauvegarderEtLancer('brouillon')">
-            💾 Enregistrer en brouillon
-          </button>
-          <button class="btn btn-ghost" style="width:100%;justify-content:center;color:var(--g400)" onclick="fermerModal('modalSeq')">
-            annuler
-          </button>
-        </div>
-        <div style="margin-top:10px;font-size:11px;color:var(--g400);text-align:center;line-height:1.6">
-          Brouillon → aucun email envoyé<br>
-          Publier → les envois démarrent immédiatement
-        </div>
-        <!-- Statut -->
-        <div id="seqLancementStatus" style="margin-top:10px"></div>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<!-- ═══ MODAL LISTE ═══ -->
+<!-- ══════════ MODAL LISTE ══════════ -->
 <div class="overlay" id="modalListe" style="display:none">
   <div class="modal" style="width:700px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-      <div class="modal-title" id="titreModalListe">nouvelle liste</div>
-      <button class="close-panel" onclick="fermerModal('modalListe')">×</button>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+      <div><div class="modal-title" id="titreModalListe">nouvelle liste</div><div class="modal-sub">Nommez et importez vos contacts</div></div>
+      <button class="close-btn" onclick="fermerModal('modalListe')">×</button>
     </div>
-    <div class="modal-sub">Nommez votre liste et importez vos contacts</div>
-    <div class="form-group">
-      <label class="form-label">Nom de la liste</label>
-      <input class="form-input" id="nomListe" placeholder="Ex: Startups Paris Q2, Grands comptes, Leads LinkedIn…">
-    </div>
-    <div class="tabs" style="margin-bottom:14px" id="listeImportTabs">
+    <div class="form-group"><label class="label">Nom de la liste</label><input class="input" id="nomListe" placeholder="Ex: Startups Paris, Grands comptes…"></div>
+    <div class="tabs" style="margin-bottom:14px">
       <div class="tab active" id="ltab-fichier" onclick="switchListeImport('fichier')">Excel / CSV</div>
       <div class="tab" id="ltab-manuel" onclick="switchListeImport('manuel')">Saisie manuelle</div>
     </div>
     <div id="limp-fichier">
-      <div class="drop-zone" onclick="document.getElementById('listeFileInput').click()"
-        ondragover="event.preventDefault();this.classList.add('drag-over')"
-        ondragleave="this.classList.remove('drag-over')"
-        ondrop="handleListeDrop(event)">
-        <div style="font-size:20px;margin-bottom:8px">⬆</div>
-        <div style="font-size:13px;font-weight:500;color:var(--g700)">Glisser le fichier ou cliquer</div>
-        <div style="font-size:11px;margin-top:3px">Excel · CSV — colonnes : email, prénom, nom, société, poste</div>
+      <div class="drop-zone" onclick="document.getElementById('listeFileInput').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleListeDrop(event)">
+        <div style="font-size:24px;margin-bottom:8px">⬆</div>
+        <div style="font-size:13px;font-weight:500;color:var(--g700)">Glisser ou cliquer</div>
+        <div style="font-size:11px;color:var(--g400);margin-top:4px">Excel · CSV — colonnes : email, prénom, nom, société, poste</div>
       </div>
       <input type="file" id="listeFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleListeFile(event)">
       <div id="listeFilePreview"></div>
     </div>
     <div id="limp-manuel" style="display:none">
-      <div class="form-label" style="margin-bottom:6px">Ajouter un contact</div>
       <div style="background:var(--g50);border:1px solid var(--g100);border-radius:var(--rm);padding:14px;margin-bottom:12px">
-        <div class="grid-2" style="margin-bottom:8px">
-          <div class="form-group" style="margin-bottom:0"><label class="form-label">Email *</label><input class="form-input form-mono" id="lmanEmail" placeholder="nom@entreprise.com"></div>
-          <div class="form-group" style="margin-bottom:0"><label class="form-label">Prénom</label><input class="form-input" id="lmanPrenom" placeholder="Jean"></div>
+        <div class="grid2" style="margin-bottom:8px">
+          <div class="form-group" style="margin-bottom:0"><label class="label">Email *</label><input class="input mono" id="lmanEmail" placeholder="nom@entreprise.com"></div>
+          <div class="form-group" style="margin-bottom:0"><label class="label">Prénom</label><input class="input" id="lmanPrenom" placeholder="Jean"></div>
         </div>
-        <div class="grid-2" style="margin-bottom:8px">
-          <div class="form-group" style="margin-bottom:0"><label class="form-label">Nom</label><input class="form-input" id="lmanNom" placeholder="Dupont"></div>
-          <div class="form-group" style="margin-bottom:0"><label class="form-label">Société</label><input class="form-input" id="lmanSociete" placeholder="Acme Corp"></div>
+        <div class="grid2" style="margin-bottom:8px">
+          <div class="form-group" style="margin-bottom:0"><label class="label">Nom</label><input class="input" id="lmanNom" placeholder="Dupont"></div>
+          <div class="form-group" style="margin-bottom:0"><label class="label">Société</label><input class="input" id="lmanSociete" placeholder="Acme Corp"></div>
         </div>
-        <div class="grid-2" style="margin-bottom:10px">
-          <div class="form-group" style="margin-bottom:0"><label class="form-label">Poste</label><input class="form-input" id="lmanPoste" placeholder="Directeur Commercial"></div>
-          <div></div>
-        </div>
+        <div class="form-group" style="margin-bottom:10px"><label class="label">Poste</label><input class="input" id="lmanPoste" placeholder="Directeur Commercial"></div>
         <button class="btn btn-primary btn-sm" onclick="ajouterContactListe()">+ Ajouter</button>
       </div>
       <div id="listeManuelTable"></div>
     </div>
-    <!-- Aperçu contacts importés -->
     <div id="listeApercu" style="margin-top:10px"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="fermerModal('modalListe')">annuler</button>
-      <button class="btn btn-primary" onclick="sauvegarderListe()">✓ enregistrer la liste</button>
+      <button class="btn btn-primary" onclick="sauvegarderListe()">✓ enregistrer</button>
     </div>
   </div>
 </div>
+
+<!-- ══════════ MODAL SÉQUENCE ══════════ -->
+<div class="overlay" id="modalSeq" style="display:none">
+  <div class="modal modal-full">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--g100)">
+      <div><div class="modal-title" id="titreModalSeq">nouvelle séquence</div><div style="font-size:12px;color:var(--g400);margin-top:3px">Rédigez vos emails · choisissez vos prospects · publiez</div></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost btn-sm" id="btnModeBuilder" onclick="basculerModeBuilder()">🔀 vue flow</button>
+        <button class="close-btn" onclick="fermerModal('modalSeq')">×</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start">
+      <!-- Gauche : builder -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div class="label" style="margin-bottom:0">Emails de la séquence</div>
+          <div>
+            <span class="var-pill" onclick="insererVar('{{prenom}}')">{{prenom}}</span>
+            <span class="var-pill" onclick="insererVar('{{nom}}')">{{nom}}</span>
+            <span class="var-pill" onclick="insererVar('{{societe}}')">{{societe}}</span>
+            <span class="var-pill" onclick="insererVar('{{poste}}')">{{poste}}</span>
+          </div>
+        </div>
+        <div style="background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--rm);padding:16px">
+          <div id="flowCanvas"></div>
+        </div>
+        <div id="editorPanel" style="display:none"></div>
+      </div>
+      <!-- Droite : config -->
+      <div style="position:sticky;top:0">
+        <div class="form-group"><label class="label">Nom de la séquence</label><input class="input mono" id="nomSeq" placeholder="saas-b2b-3-relances"></div>
+        <div style="height:1px;background:var(--g100);margin:14px 0"></div>
+        <div style="margin-bottom:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <label class="label" style="margin-bottom:0">Liste de prospects</label>
+            <button class="btn btn-xs btn-ghost" onclick="fermerModal('modalSeq');aller('prospects',document.getElementById('nav-prospects'))">+ créer</button>
+          </div>
+          <select class="select" id="seqListeSel" onchange="aperçuListeSeq()"><option value="">— sélectionner —</option></select>
+          <div id="seqListeApercu" style="margin-top:6px"></div>
+        </div>
+        <div style="height:1px;background:var(--g100);margin:14px 0"></div>
+        <div class="form-group"><label class="label">Heure d'envoi</label><input type="time" class="input" id="seqHeure" value="09:00"></div>
+        <div class="form-group"><label class="label">Jours actifs</label>
+          <select class="select" id="seqJours"><option value="semaine">Lun → Ven uniquement</option><option value="tous">Tous les jours</option></select>
+        </div>
+        <div class="form-group"><label class="label">Délai anti-spam (secondes)</label><input type="number" class="input mono" id="seqDelai" value="45" min="15"></div>
+        <div style="height:1px;background:var(--g100);margin:14px 0"></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-primary" style="width:100%;height:42px;justify-content:center" onclick="sauvegarderEtLancer('active')">🚀 Publier la campagne</button>
+          <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="sauvegarderEtLancer('brouillon')">💾 Enregistrer en brouillon</button>
+          <button class="btn btn-ghost" style="width:100%;justify-content:center;color:var(--g400)" onclick="fermerModal('modalSeq')">annuler</button>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--g400);text-align:center;line-height:1.6">Brouillon → aucun email · Publier → envoi immédiat</div>
+        <div id="seqLancementStatus" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <script>
 // ═══ ÉTAT ═══
@@ -793,7 +526,8 @@ function ajouterJournal(msg, type='info') {
 }
 
 function badge(libelle, cls, icone='') {
-  return `<span class="badge bg-${cls}">${icone?icone+' ':''}${libelle}</span>`
+  const map={green:'b-green',amber:'b-amber',red:'b-red',blue:'b-blue',gray:'b-gray',accent:'b-accent'}
+  return `<span class="badge ${map[cls]||'b-gray'}">${icone?icone+' ':''}${libelle}</span>`
 }
 
 // ═══ NAVIGATION ═══
@@ -815,11 +549,11 @@ function aller(id, el) {
 }
 
 function mettreAJourBadges() {
-  document.getElementById('seqBadge').textContent = S.sequences.length
-  document.getElementById('campBadge').textContent = S.campagnes.length
-  document.getElementById('campCount').textContent = S.campagnes.length
-  const lb = document.getElementById('listesBadge'); if(lb) lb.textContent = S.listes.length
-  const bb = document.getElementById('blacklistBadge'); if(bb) bb.textContent = S.blacklist.length
+  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val}
+  set('seqBadge', S.sequences.length)
+  set('campBadge', S.campagnes.length)
+  set('blacklistBadge', (S.blacklist||[]).length)
+  set('prospBadge', S.listes.length)
 }
 
 function afficherOngletCamp(t) {
@@ -1613,7 +1347,7 @@ function afficherListes() {
       </div>
       <!-- Campagnes associées -->
       ${campagnesAssoc.length?`<div style="font-size:11px;color:var(--g400)">
-        Utilisée dans : ${campagnesAssoc.map(c=>`<span class="badge bg-accent" style="margin-right:4px">${c.nom}</span>`).join('')}
+        Utilisée dans : ${campagnesAssoc.map(c=>`<span class="badge b-accent" style="margin-right:4px">${c.nom}</span>`).join('')}
       </div>`:''}
     </div>`
   }).join('')
@@ -1739,7 +1473,7 @@ function aperçuSeq(){
   el.innerHTML=etapes.map((et,i)=>`
     <span style="display:flex;align-items:center;gap:4px">
       ${i>0?`<span style="font-size:10px;color:${condColor(et.condition)};font-weight:500">→ J+${et.delaiJours}</span>`:''}
-      <span class="badge bg-gray">${i===0?'initial':`relance_${i}`}</span>
+      <span class="badge b-gray">${i===0?'initial':`relance_${i}`}</span>
     </span>`).join('')
 }
 
@@ -1936,8 +1670,15 @@ async function verifierReponses(){
       // Ne pas retraiter si déjà marqué répondu
       if(p.repandu) { delete prospectsActifs[from]; continue }
 
+      // Vérifier que la réponse est postérieure au dernier envoi
+      const dernierEnvoi = p.historique?.length ? p.historique[p.historique.length-1].envoyeA : null
+      const dateReponse = msg.receivedDateTime
+      if(dernierEnvoi && dateReponse && new Date(dateReponse) < new Date(dernierEnvoi)) {
+        // Réponse antérieure au dernier envoi — ignorer
+        delete prospectsActifs[from]; continue
+      }
+
       // Réponse reçue → stopper la séquence, PAS de blacklist automatique
-      // La blacklist est manuelle uniquement
       p.repandu=true; p.termine=true; p.prochainEnvoi=null; p.tag='repandu'
       nRep++
       ajouterJournal(`↩ Réponse de ${from} · "${msg.subject||'sans sujet'}" — séquence stoppée`,'warn')
@@ -2442,8 +2183,9 @@ function changerTagProspect(prospectId, tag) {
   if(!p || !tag) return
   if(tag==='actif') {
     p.tag=null; p.repandu=false; p.termine=false
+    p.etapeCourante=0; p.historique=[]; p.ouvertures=0
     p.prochainEnvoi=new Date().toISOString()
-    ajouterJournal(`↺ ${p.email} — remis en actif`,'ok')
+    ajouterJournal(`↺ ${p.email} — remis en actif (étape 1)`,'ok')
   } else if(tag==='repandu') {
     p.tag='repandu'; p.repandu=true; p.termine=true; p.prochainEnvoi=null
     ajouterJournal(`↩ ${p.email} — marqué comme répondu`,'ok')
@@ -2618,13 +2360,41 @@ let pageProspects = 1
 const PAGE_SIZE = 50
 
 function afficherProspects() {
-  const cid = document.getElementById('prospCampSel')?.value
-  const recherche = document.getElementById('rechercheProspects')?.value?.toLowerCase()||''
-  const el = document.getElementById('tableau-prospects')
+  const el = document.getElementById('contenu-prospects')
   if(!el) return
-
-  let ps = cid ? S.prospects.filter(p=>p.campagneId===cid) : []
-  if(!cid) { el.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-title">sélectionner une campagne</div></div>`; return }
+  if(!S.listes.length) {
+    el.innerHTML=`<div class="empty"><div class="empty-icon">👥</div><div class="empty-title">aucune liste</div><p style="margin-bottom:16px">Créez votre première liste de prospects</p><button class="btn btn-primary" onclick="ouvrirModalListe(null)">+ nouvelle liste</button></div>`
+    return
+  }
+  // Afficher les listes avec leurs contacts
+  el.innerHTML=S.listes.map(l=>{
+    const campagnes=S.campagnes.filter(c=>c.listeId===l.id)
+    return `<div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--g900)">${l.nom}</div>
+          <div style="font-size:12px;color:var(--g400);margin-top:3px">${l.contacts.length} contact${l.contacts.length>1?'s':''} · créée ${fmtD(l.creee)}${campagnes.length?' · utilisée dans '+campagnes.length+' campagne'+(campagnes.length>1?'s':''):''}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="ouvrirModalListe('${l.id}')">✏ modifier</button>
+          <button class="btn btn-danger btn-sm" onclick="supprimerListe('${l.id}')">supprimer</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        ${l.contacts.slice(0,10).map(p=>`<div style="display:flex;align-items:center;gap:5px;background:var(--g50);border:1px solid var(--g100);border-radius:20px;padding:3px 10px 3px 5px;font-size:12px">
+          <div style="width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">${(p.prenom||p.email)[0].toUpperCase()}</div>
+          <span style="color:var(--g700)">${p.prenom?p.prenom+' '+(p.nom||''):p.email}</span>
+          ${p.societe?`<span style="color:var(--g400)">· ${p.societe}</span>`:''}
+        </div>`).join('')}
+        ${l.contacts.length>10?`<div style="display:flex;align-items:center;padding:3px 10px;background:var(--g50);border:1px solid var(--g100);border-radius:20px;font-size:12px;color:var(--g400)">+${l.contacts.length-10} autres</div>`:''}
+      </div>
+    </div>`
+  }).join('')
+  return // skip old code
+  const cid = ''
+  const recherche = ''
+  let ps = []
+  if(!cid) { return }
   if(!ps.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-title">aucun prospect</div></div>`; return }
 
   // Filtrer par recherche
@@ -2653,11 +2423,11 @@ function afficherProspects() {
         <td style="font-family:var(--mono);font-size:11.5px">${p.email}</td>
         <td>${[p.prenom,p.nom].filter(Boolean).join(' ')||'—'}</td>
         <td style="color:var(--g500)">${p.societe||'—'}</td>
-        <td><span class="badge bg-gray">étape_${p.etapeCourante||0}</span></td>
+        <td><span class="badge b-gray">étape_${p.etapeCourante||0}</span></td>
         <td style="font-size:12px;color:var(--g600)">${p.repandu||p.termine?'—':fmtProchainEnvoi(p.prochainEnvoi)}</td>
         <td>
           <div style="display:flex;align-items:center;gap:4px">
-            ${p.tag==='repandu'?badge('↩ répondu','green'):p.tag==='blackliste'?badge('🚫 blacklist','red'):p.tag==='erreur'?`<span class="badge bg-red" title="${p.erreurMsg||''}">✗ erreur</span>`:badge('—','gray')}
+            ${p.tag==='repandu'?badge('↩ répondu','green'):p.tag==='blackliste'?badge('🚫 blacklist','red'):p.tag==='erreur'?`<span class="badge b-red" title="${p.erreurMsg||''}">✗ erreur</span>`:badge('—','gray')}
             <select style="height:22px;font-size:10px;border:1px solid var(--g200);border-radius:4px;background:var(--w);color:var(--g600);cursor:pointer;outline:none;padding:0 4px"
               onchange="changerTagProspect('${p.id}',this.value);this.value=''">
               <option value="">✏</option>
@@ -2669,7 +2439,7 @@ function afficherProspects() {
         </td>
         <td>
           <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-            ${p.repandu?badge('répondu','green'):p.tag==='erreur'?badge('erreur','red'):p.termine?badge('terminé','gray'):badge('actif','amber')}
+            ${p.repandu?badge('↩ répondu','green'):p.tag==='erreur'?badge('erreur','red'):p.termine?badge('terminé','gray'):badge('actif','amber')}
             ${p.tag==='erreur'?`<button class="btn btn-xs btn-ghost" onclick="relancerProspect('${p.id}')">↺</button>`:''}
             ${!p.repandu&&p.tag!=='blackliste'?`<button class="btn btn-xs btn-danger" onclick="blacklisterDepuisProspect('${p.id}')" title="Blacklister">🚫</button>`:''}
           </div>
