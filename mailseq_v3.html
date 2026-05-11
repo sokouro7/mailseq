@@ -360,7 +360,7 @@ tr:hover td{background:var(--g50)}
     <div id="page-tableau" class="page">
       <div class="topbar">
         <div class="topbar-title">tableau de bord</div>
-        <button class="btn btn-ghost btn-sm" onclick="verifierReponses()">↻ synchroniser</button>
+        <button class="btn btn-ghost btn-sm" onclick="lancerDeclencheurs();verifierReponses()">↻ synchroniser</button>
   
         <button class="btn btn-primary btn-sm" onclick="aller('campagnes',null);afficherOngletCamp('nouvelle')">+ nouvelle campagne</button>
       </div>
@@ -1350,7 +1350,13 @@ async function sauvegarderEtLancer(statut='active') {
   }
   const liste = S.listes.find(l=>l.id===lid)
   if(!liste || !liste.contacts.length) { alert('La liste sélectionnée est vide'); return }
-  if(statut==='active' && !S.accessToken && !confirm("Outlook non connecté. Mode démonstration ?")) return
+  if(statut==='active') {
+    const msg = `Vous allez envoyer des emails à ${liste.contacts.length} prospect${liste.contacts.length>1?'s':''} depuis ${S.userEmail||'votre compte Outlook'}.
+
+Confirmer le lancement ?`
+    if(!confirm(msg)) return
+    if(!S.accessToken && !confirm("⚠ Outlook non connecté. Lancer en mode démonstration ?")) return
+  }
 
   // 1. Sauvegarder la séquence
   const seq = { id: seqIdEnEdition||uid(), nom, flowRoot: JSON.parse(JSON.stringify(flowRoot)), etapes: aplatiArbre(flowRoot), creee: isoMaint() }
@@ -2053,8 +2059,17 @@ function afficherListeCamp(){
     return `<div class="camp-card">
       <div style="display:flex;align-items:flex-start;justify-content:space-between">
         <div>
-          <div style="font-family:var(--mono);font-size:13px;font-weight:500">${c.nom}</div>
-          <div class="camp-meta"><span>${ps.length} prospects</span><span>envoyés <strong>${sent}</strong></span><span>réponses <strong style="color:var(--green)">${rep}</strong></span><span>${fmtD(c.creee)}</span></div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="font-family:var(--mono);font-size:13px;font-weight:500" id="camp-nom-${c.id}">${c.nom}</div>
+            <button class="btn btn-xs btn-ghost" onclick="renommerCamp('${c.id}')" title="Renommer">✏</button>
+          </div>
+          <div class="camp-meta">
+            <span>${ps.length} prospects</span>
+            <span>envoyés <strong>${sent}</strong></span>
+            <span>réponses <strong style="color:var(--green)">${rep}</strong></span>
+            <span>${S.sequences.find(s=>s.id===c.seqId)?.nom||'—'}</span>
+            <span>${fmtD(c.creee)}</span>
+          </div>
         </div>
         <div style="display:flex;gap:6px;align-items:center">
           <span class="badge ${c.statut==='active'?'bg-green':c.statut==='pause'?'bg-amber':c.statut==='brouillon'?'bg-gray':'bg-gray'}">${c.statut==='brouillon'?'📝 brouillon':c.statut==='active'?'active':c.statut==='pause'?'pausée':'terminée'}</span>
@@ -2082,7 +2097,11 @@ function statutCamp(id,s){
 async function publierCamp(id){
   const camp=S.campagnes.find(c=>c.id===id)
   if(!camp) return
-  if(!S.accessToken&&!confirm("Outlook non connecté. Mode démonstration ?")) return
+  const ps=S.prospects.filter(p=>p.campagneId===id&&!p.termine&&!p.repandu)
+  if(!confirm(`Publier "${camp.nom}" ?
+
+${ps.length} prospect${ps.length>1?'s':''} vont recevoir des emails.`)) return
+  if(!S.accessToken&&!confirm("⚠ Outlook non connecté. Lancer en mode démonstration ?")) return
   camp.statut='active';sauver()
   ajouterJournal(`🚀 Campagne "${camp.nom}" publiée`,'ok')
   const seq=S.sequences.find(s=>s.id===camp.seqId)
@@ -2112,28 +2131,6 @@ function remplirSelectProspCamp(){
   if(cur) sel.value=cur
 }
 
-function afficherProspects(){
-  const cid=document.getElementById('prospCampSel')?.value
-  const el=document.getElementById('tableau-prospects')
-  if(!el) return
-  const ps=cid?S.prospects.filter(p=>p.campagneId===cid):[]
-  if(!cid){el.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-title">sélectionner une campagne</div></div>`;return}
-  if(!ps.length){el.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-title">aucun prospect</div></div>`;return}
-  el.innerHTML=`<table><thead><tr><th>email</th><th>prénom</th><th>société</th><th>étape</th><th>tag</th><th>statut</th></tr></thead><tbody>
-    ${ps.map(p=>`<tr>
-      <td style="font-family:var(--mono);font-size:11.5px">${p.email}</td>
-      <td>${p.prenom} ${p.nom}</td>
-      <td style="color:var(--g500)">${p.societe||'—'}</td>
-      <td><span class="badge bg-gray">étape_${p.currentStep||p.etapeCourante||0}</span></td>
-
-      <td>${p.tag==='repandu'?badge('↩ répondu','green'):p.tag==='desabonne'||p.tag==='blackliste'?badge('🛑 stop','red'):p.tag==='lu'?badge('👁 lu','blue'):p.tag==='non_lu'?badge('✗ non lu','amber'):'—'}</td>
-      <td>
-        ${p.repandu?badge('↩ répondu','green'):p.tag==='erreur'?`<span class="badge bg-red" title="${p.erreurMsg||''}">✗ erreur</span>`:p.termine?badge('terminé','gray'):badge('actif','amber')}
-        ${p.tag==='erreur'?`<button class="btn btn-xs btn-ghost" style="margin-left:4px" onclick="relancerProspect('${p.id}')">↺ relancer</button>`:''}
-      </td>
-    </tr>`).join('')}
-  </tbody></table>`
-}
 
 function exporterCSV(){
   const cid=document.getElementById('prospCampSel')?.value
@@ -2399,6 +2396,58 @@ function alerterExpirationToken() {
 }
 
 
+// ═══ RENOMMER CAMPAGNE ═══
+function renommerCamp(id) {
+  const camp = S.campagnes.find(c=>c.id===id)
+  if(!camp) return
+  const nouveau = prompt('Nouveau nom de la campagne :', camp.nom)
+  if(!nouveau || nouveau.trim()===camp.nom) return
+  camp.nom = nouveau.trim()
+  sauver()
+  afficherListeCamp()
+  ajouterJournal(`Campagne renommée : "${nouveau.trim()}"`,'ok')
+}
+
+// ═══ BLACKLISTER DEPUIS PROSPECTS ═══
+function blacklisterDepuisProspect(prospectId) {
+  const p = S.prospects.find(x=>x.id===prospectId)
+  if(!p) return
+  if(!confirm(`Blacklister ${p.email} ?
+
+Cet email ne recevra plus jamais d'email via MailSeq.`)) return
+  p.tag='blackliste'; p.termine=true; p.prochainEnvoi=null
+  S.blacklist = S.blacklist||[]
+  if(!S.blacklist.includes(p.email.toLowerCase())) {
+    S.blacklist.push(p.email.toLowerCase())
+  }
+  sauver()
+  afficherProspects()
+  afficherBlacklist()
+  mettreAJourBadges()
+  ajouterJournal(`🚫 ${p.email} — blacklisté depuis le tableau prospects`,'warn')
+}
+
+// ═══ MODIFIER TAG PROSPECT ═══
+function changerTagProspect(prospectId, tag) {
+  const p = S.prospects.find(x=>x.id===prospectId)
+  if(!p || !tag) return
+  if(tag==='actif') {
+    p.tag=null; p.repandu=false; p.termine=false
+    p.prochainEnvoi=new Date().toISOString()
+    ajouterJournal(`↺ ${p.email} — remis en actif`,'ok')
+  } else if(tag==='repandu') {
+    p.tag='repandu'; p.repandu=true; p.termine=true; p.prochainEnvoi=null
+    ajouterJournal(`↩ ${p.email} — marqué comme répondu`,'ok')
+  } else if(tag==='blackliste') {
+    if(!confirm(`Blacklister définitivement ${p.email} ?`)) return
+    p.tag='blackliste'; p.termine=true; p.prochainEnvoi=null
+    S.blacklist=S.blacklist||[]
+    if(!S.blacklist.includes(p.email.toLowerCase())) S.blacklist.push(p.email.toLowerCase())
+    ajouterJournal(`🚫 ${p.email} — blacklisté`,'warn')
+  }
+  sauver(); afficherProspects()
+}
+
 // ═══ RELANCER PROSPECT EN ERREUR ═══
 async function relancerProspect(prospectId) {
   const p = S.prospects.find(x=>x.id===prospectId)
@@ -2593,14 +2642,28 @@ function afficherProspects() {
     <table><thead><tr><th>email</th><th>prénom</th><th>société</th><th>étape</th><th>prochain envoi</th><th>tag</th><th>statut</th></tr></thead><tbody>
       ${slice.map(p=>`<tr>
         <td style="font-family:var(--mono);font-size:11.5px">${p.email}</td>
-        <td>${p.prenom||''} ${p.nom||''}</td>
+        <td>${[p.prenom,p.nom].filter(Boolean).join(' ')||'—'}</td>
         <td style="color:var(--g500)">${p.societe||'—'}</td>
         <td><span class="badge bg-gray">étape_${p.etapeCourante||0}</span></td>
         <td style="font-size:12px;color:var(--g600)">${p.repandu||p.termine?'—':fmtProchainEnvoi(p.prochainEnvoi)}</td>
-        <td>${p.tag==='repandu'?badge('↩ répondu','green'):p.tag==='blackliste'?badge('🚫 blacklist','red'):p.tag==='erreur'?`<span class="badge bg-red" title="${p.erreurMsg||''}">✗ erreur</span>`:'—'}</td>
-        <td style="display:flex;align-items:center;gap:6px">
-          ${p.repandu?badge('répondu','green'):p.tag==='erreur'?badge('erreur','red'):p.termine?badge('terminé','gray'):badge('actif','amber')}
-          ${p.tag==='erreur'?`<button class="btn btn-xs btn-ghost" onclick="relancerProspect('${p.id}')">↺</button>`:''}
+        <td>
+          <div style="display:flex;align-items:center;gap:4px">
+            ${p.tag==='repandu'?badge('↩ répondu','green'):p.tag==='blackliste'?badge('🚫 blacklist','red'):p.tag==='erreur'?`<span class="badge bg-red" title="${p.erreurMsg||''}">✗ erreur</span>`:badge('—','gray')}
+            <select style="height:22px;font-size:10px;border:1px solid var(--g200);border-radius:4px;background:var(--w);color:var(--g600);cursor:pointer;outline:none;padding:0 4px"
+              onchange="changerTagProspect('${p.id}',this.value);this.value=''">
+              <option value="">✏</option>
+              <option value="repandu">↩ répondu</option>
+              <option value="actif">actif (reset)</option>
+              <option value="blackliste">🚫 blacklister</option>
+            </select>
+          </div>
+        </td>
+        <td>
+          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+            ${p.repandu?badge('répondu','green'):p.tag==='erreur'?badge('erreur','red'):p.termine?badge('terminé','gray'):badge('actif','amber')}
+            ${p.tag==='erreur'?`<button class="btn btn-xs btn-ghost" onclick="relancerProspect('${p.id}')">↺</button>`:''}
+            ${!p.repandu&&p.tag!=='blackliste'?`<button class="btn btn-xs btn-danger" onclick="blacklisterDepuisProspect('${p.id}')" title="Blacklister">🚫</button>`:''}
+          </div>
         </td>
       </tr>`).join('')}
     </tbody></table>
