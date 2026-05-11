@@ -961,11 +961,10 @@ function sauvegarderSig(){S.signature=document.getElementById('sig-body')?.inner
 
 // ═══ SÉQUENCES ═══
 // STRUCTURE D'UNE ÉTAPE v3 :
-// { sujet, corps, condition: 'pas_de_reponse'|'non_lu'|'lu'|'delai', delaiJours, heureEnvoi, tagSiNonLu, tagSiLu }
+// { sujet, corps, condition: 'pas_de_reponse'|'non_lu'|'lu'|'delai', delaiJours, heureEnvoi}
 
 // ═══ FLOW BUILDER — SÉQUENCES BRANCHÉES ═══
 // Structure : arbre de nodes, chaque node peut avoir N branches enfants
-// node = { id, sujet, corps, condition, delaiJours, heureEnvoi, tagSiNonLu, tagSiLu, branches: [node,...] }
 
 let seqIdEnEdition = null
 let flowRoot = null        // node racine
@@ -980,7 +979,7 @@ const COND = {
 }
 
 function creerNode(condition='pas_de_reponse', delaiJours=3) {
-  return { id:uid(), sujet:'', corps:'', condition, delaiJours, heureEnvoi:'09:00', tagSiNonLu:false, tagSiLu:false, branches:[] }
+  return { id:uid(), sujet:'', corps:'', condition, delaiJours, heureEnvoi:'09:00', branches:[] }
 }
 
 function trouverNode(node, id) {
@@ -1057,10 +1056,7 @@ function renderColumn(nodes, isRoot=false) {
       <div class="node-num">${isRoot?'Email 1':'Relance'}</div>
       <div class="node-label">${node.sujet ? (node.sujet.replace(/<[^>]*>/g,'').slice(0,22)||(node.sujet.replace(/<[^>]*>/g,'').length>22?'…':'')) : '<span style="color:var(--g300)">Sans objet</span>'}</div>
       <div class="node-subject">${node.corps ? node.corps.replace(/<[^>]*>/g,'').slice(0,50)+'…' : '<span style="color:var(--g300)">Cliquer pour rédiger</span>'}</div>
-      ${node.tagSiNonLu||node.tagSiLu?`<div class="node-tags">
-        ${node.tagSiNonLu?'<span class="badge bg-amber" style="font-size:10px">non lu</span>':''}
-        ${node.tagSiLu?'<span class="badge bg-blue" style="font-size:10px">lu</span>':''}
-      </div>`:''}
+      
       <div class="node-actions">
         <button class="btn btn-xs btn-ghost" onclick="event.stopPropagation();selectionnerNode('${node.id}')">✏ éditer</button>
         ${!isRoot?`<button class="btn btn-xs btn-danger" onclick="event.stopPropagation();supprimerBranche('${node.id}')">✕</button>`:''}
@@ -1108,11 +1104,7 @@ function renderChildColumns(node) {
       <div class="node-num" style="color:${condColor(branch.condition)}">${cond.short} · J+${branch.delaiJours}</div>
       <div class="node-label">${branch.sujet ? branch.sujet.replace(/<[^>]*>/g,'').slice(0,22) : '<span style="color:var(--g300)">Sans objet</span>'}</div>
       <div class="node-subject">${branch.corps ? branch.corps.replace(/<[^>]*>/g,'').slice(0,50)+'…' : '<span style="color:var(--g300)">Cliquer pour rédiger</span>'}</div>
-      ${branch.tagSiNonLu||branch.tagSiLu?`<div class="node-tags">
-        ${branch.tagSiNonLu?'<span class="badge bg-amber" style="font-size:10px">non lu</span>':''}
-        ${branch.tagSiLu?'<span class="badge bg-blue" style="font-size:10px">lu</span>':''}
-      </div>`:''}
-      <div class="node-actions">
+            <div class="node-actions">
         <button class="btn btn-xs btn-ghost" onclick="event.stopPropagation();selectionnerNode('${branch.id}')">✏ éditer</button>
         <button class="btn btn-xs btn-danger" onclick="event.stopPropagation();supprimerBranche('${branch.id}')">✕</button>
       </div>
@@ -1172,16 +1164,7 @@ function afficherPanelEditeur(nodeId) {
           <span class="trigger-label" style="margin-left:8px">à</span>
           <input type="time" class="cond-select" style="width:100px" id="ep-heure" value="${node.heureEnvoi}" onchange="mettreAJourNode('${nodeId}','heureEnvoi',this.value)">
         </div>
-        <div class="trigger-row" style="gap:16px">
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--g600)">
-            <input type="checkbox" id="ep-nlu" ${node.tagSiNonLu?'checked':''} onchange="mettreAJourNode('${nodeId}','tagSiNonLu',this.checked)">
-            Taguer <span class="badge bg-amber">non lu</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--g600)">
-            <input type="checkbox" id="ep-lu" ${node.tagSiLu?'checked':''} onchange="mettreAJourNode('${nodeId}','tagSiLu',this.checked)">
-            Taguer <span class="badge bg-blue">lu</span>
-          </label>
-        </div>
+
       </div>` : ''}
       <div class="form-group">
         <label class="form-label">Objet de l'email</label>
@@ -1272,7 +1255,7 @@ function insererVar(v) {
 
 // Convertir l'arbre en tableau plat pour l'envoi
 function aplatiArbre(node, result=[]) {
-  result.push({ sujet:node.sujet, corps:node.corps, condition:node.condition, delaiJours:node.delaiJours, heureEnvoi:node.heureEnvoi, tagSiNonLu:node.tagSiNonLu, tagSiLu:node.tagSiLu })
+  result.push({ sujet:node.sujet, corps:node.corps, condition:node.condition, delaiJours:node.delaiJours, heureEnvoi:node.heureEnvoi })
   for(const b of node.branches||[]) aplatiArbre(b, result)
   return result
 }
@@ -1731,8 +1714,6 @@ function aperçuSeq(){
     <span style="display:flex;align-items:center;gap:4px">
       ${i>0?`<span style="font-size:10px;color:${condColor(et.condition)};font-weight:500">→ J+${et.delaiJours}</span>`:''}
       <span class="badge bg-gray">${i===0?'initial':`relance_${i}`}</span>
-      ${i>0&&et.tagSiNonLu?badge('non lu','amber'):''}
-      ${i>0&&et.tagSiLu?badge('lu','blue'):''}
     </span>`).join('')
 }
 
@@ -1832,20 +1813,11 @@ async function envoyerLot(campId, seq, delaiMs) {
     const etapeActuelle=etapesFlat[p.etapeCourante]
     if(p.etapeCourante>0){
       const cond=etapeActuelle.condition
-      if(cond==='non_lu'&&p.ouvertures>0){
-        // Lu → ne pas envoyer cette étape, passer
-        ajouterJournal(`⏭ ${p.email} — email lu, condition "non lu" non remplie, étape sautée`,'warn')
-        p.etapeCourante++
-        if(p.etapeCourante>=seq.etapes.length){p.termine=true;p.prochainEnvoi=null}
-        sauver();continue
-      }
-      if(cond==='lu'&&p.ouvertures===0){
-        // Non lu → ne pas envoyer
-        ajouterJournal(`⏭ ${p.email} — email non lu, condition "lu" non remplie, étape sautée`,'warn')
-        p.etapeCourante++
-        if(p.etapeCourante>=seq.etapes.length){p.termine=true;p.prochainEnvoi=null}
-        sauver();continue
-      }
+      const delaiJours=etapeActuelle.delaiJours||2
+      const dernierEnvoi=p.historique?.length?new Date(p.historique[p.historique.length-1].envoyeA):null
+
+      // Seules conditions supportées : pas_de_reponse (défaut) et delai (toujours envoyer)
+      // "delai" = envoyer quoi qu'il arrive — pas de vérification supplémentaire
     }
 
     const etape=etapesFlat[p.etapeCourante]
@@ -1892,14 +1864,14 @@ async function verifierReponses(){
   if(!S.accessToken){ajouterJournal('[DÉMO] Synchronisation ignorée','warn');return}
   ajouterJournal('Synchronisation boîte mail…','info')
   try{
-    // Prospects actifs indexés par email
+    // Surveiller tous les prospects ayant reçu au moins 1 email, même terminés (ils peuvent répondre après)
     const prospectsActifs = {}
-    S.prospects.filter(p=>!p.repandu&&!p.termine).forEach(p=>{
+    S.prospects.filter(p=>!p.repandu && p.etapeCourante>0).forEach(p=>{
       prospectsActifs[p.email.toLowerCase()] = p
     })
     
     if(!Object.keys(prospectsActifs).length){
-      ajouterJournal('Aucun prospect actif à surveiller','info')
+      ajouterJournal('Aucun prospect à surveiller — aucun email envoyé','info')
       return
     }
 
@@ -1936,64 +1908,9 @@ async function verifierReponses(){
       }
     }
 
-    // ── 2. OUVERTURES — lire les éléments envoyés récents ──
-    // On ne recheck que les prospects qui ont au moins 1 email envoyé
-    const prospectsEnvoyes = Object.values(prospectsActifs)
-      .filter(p=>p.etapeCourante>0&&p.historique?.length>0)
-    
-    let nOuv=0
-    if(prospectsEnvoyes.length){
-      const sr = await fetch(
-        `https://graph.microsoft.com/v1.0/me/mailFolders/SentItems/messages?$select=toRecipients,isRead,lastModifiedDateTime,subject&$top=200&$orderby=lastModifiedDateTime desc`,
-        {headers:{Authorization:'Bearer '+S.accessToken}}
-      )
-      if(sr.ok){
-        const sdata = await sr.json()
-        // Index pour éviter les doublons par prospect
-        const dejaConte = new Set()
-        for(const msg of sdata.value||[]){
-          if(!msg.isRead) continue
-          for(const rec of msg.toRecipients||[]){
-            const addr=(rec.emailAddress?.address||'').toLowerCase()
-            if(dejaConte.has(addr)) continue
-            const p = prospectsActifs[addr]
-            if(!p) continue
-            // Vérifier que cet email correspond bien à un envoi de prospection
-            // (le message doit avoir été modifié après le premier envoi)
-            const premierEnvoi = p.historique[0]?.envoyeA
-            if(premierEnvoi && new Date(msg.lastModifiedDateTime) >= new Date(premierEnvoi)){
-              if(!p.tag || p.tag==='non_lu'){
-                p.ouvertures=(p.ouvertures||0)+1
-                p.tag='lu'
-                nOuv++
-                dejaConte.add(addr)
-                ajouterJournal(`👁 Ouverture détectée : ${addr}`,'info')
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // ── 3. TAGUER "non lu" — envoyé depuis >24h sans ouverture ──
-    const hier = new Date(Date.now()-24*3600*1000)
-    Object.values(prospectsActifs).forEach(p=>{
-      if(p.tag && p.tag!=='non_lu') return // déjà tagué autrement
-      if(!p.historique?.length) return
-      const dernierEnvoi = p.historique[p.historique.length-1]
-      if(dernierEnvoi && new Date(dernierEnvoi.envoyeA) < hier && !p.ouvertures){
-        p.tag='non_lu'
-      }
-    })
-
     // ── RÉSUMÉ ──
-    const parts = []
-    if(nRep) parts.push(`${nRep} réponse${nRep>1?'s':''}`)
-    if(nStop) parts.push(`${nStop} STOP`)
-    if(nOuv) parts.push(`${nOuv} ouverture${nOuv>1?'s':''}`)
-    
-    if(!parts.length) ajouterJournal('Synchronisation OK — aucun événement','info')
-    else ajouterJournal(`Synchro : ${parts.join(', ')}`,'ok')
+    if(!nRep&&!nStop) ajouterJournal('Synchronisation OK — aucun événement','info')
+    else ajouterJournal(`Synchro : ${nRep} réponse${nRep>1?'s':''}${nStop?' · '+nStop+' STOP':''}`, 'ok')
     
     sauver()
     afficherTableau()
@@ -2032,16 +1949,16 @@ function afficherTableau(){
     <div class="card">
       <div class="card-header"><div class="card-title">campagnes récentes</div><button class="btn btn-ghost btn-sm" onclick="aller('campagnes',document.querySelector('[onclick*=campagnes]'))">voir tout →</button></div>
       ${!S.campagnes.length?`<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">aucune campagne</div></div>`:`
-      <table><thead><tr><th>nom</th><th>envoyés</th><th>ouvertures</th><th>réponses</th><th>taux</th><th>statut</th></tr></thead><tbody>
+      <table><thead><tr><th>nom</th><th>envoyés</th><th>réponses</th><th>taux</th><th>statut</th></tr></thead><tbody>
         ${S.campagnes.slice(0,6).map(c=>{
           const ps=S.prospects.filter(p=>p.campagneId===c.id)
           const sent=ps.filter(p=>p.etapeCourante>0).length
           const rep=ps.filter(p=>p.repandu).length
-          const ouv=ps.filter(p=>p.ouvertures>0).length
+          const ouv=0
           const rr=pct(rep,sent)
           return `<tr>
             <td style="font-family:var(--mono);font-size:12px">${c.nom}</td>
-            <td>${sent}</td><td>${ouv}</td><td>${rep}</td>
+            <td>${sent}</td><td>${rep}</td>
             <td><span class="badge ${rr>15?'bg-green':rr>5?'bg-amber':'bg-gray'}">${rr}%</span></td>
             <td><span class="badge ${c.statut==='active'?'bg-green':c.statut==='pause'?'bg-amber':c.statut==='brouillon'?'bg-gray':'bg-gray'}">${c.statut==='brouillon'?'📝 brouillon':c.statut==='active'?'active':c.statut==='pause'?'pausée':'terminée'}</span></td>
           </tr>`}).join('')}
@@ -2056,8 +1973,7 @@ function afficherAnalytiques(){
   if(!S.campagnes.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">aucune donnée</div><p>Lancez une campagne pour voir les analytiques</p></div>`;return}
   const envTotal=S.prospects.filter(p=>p.etapeCourante>0).length
   const repTotal=S.prospects.filter(p=>p.repandu).length
-  const ouvTotal=S.prospects.filter(p=>p.ouvertures>0).length
-  const txRep=pct(repTotal,envTotal), txOuv=pct(ouvTotal,envTotal)
+  const txRep=pct(repTotal,envTotal)
   const statsSeq=S.sequences.map(seq=>{
     const camps=S.campagnes.filter(c=>c.seqId===seq.id)
     const ps=S.prospects.filter(p=>camps.some(c=>c.id===p.campagneId))
@@ -2068,9 +1984,9 @@ function afficherAnalytiques(){
   el.innerHTML=`
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-label">taux de réponse</div><div class="stat-value ${txRep>15?'c-ok':txRep>5?'c-warn':'c-err'}">${txRep}%</div><div class="stat-sub">${repTotal}/${envTotal} envoyés</div></div>
-      <div class="stat-card"><div class="stat-label">taux d'ouverture</div><div class="stat-value c-info">${txOuv}%</div><div class="stat-sub">via Graph API</div></div>
-      <div class="stat-card"><div class="stat-label">tagués "lu"</div><div class="stat-value">${S.prospects.filter(p=>p.tag==='lu').length}</div></div>
-      <div class="stat-card"><div class="stat-label">tagués "non lu"</div><div class="stat-value">${S.prospects.filter(p=>p.tag==='non_lu').length}</div></div>
+
+      <div class="stat-card"><div class="stat-label">blacklistés</div><div class="stat-value">${(S.blacklist||[]).length}</div><div class="stat-sub">jamais contactés</div></div>
+      <div class="stat-card"><div class="stat-label">STOP reçus</div><div class="stat-value">${S.prospects.filter(p=>p.tag==='desabonne').length}</div></div>
     </div>
     <div class="card">
       <div class="card-header"><div class="card-title">taux de réponse par séquence</div></div>
@@ -2084,14 +2000,14 @@ function afficherAnalytiques(){
     </div>
     <div class="card">
       <div class="card-header"><div class="card-title">performance par campagne</div></div>
-      <table><thead><tr><th>campagne</th><th>envoyés</th><th>ouvertures</th><th>réponses</th><th>taux</th></tr></thead><tbody>
+      <table><thead><tr><th>campagne</th><th>envoyés</th><th>réponses</th><th>taux</th></tr></thead><tbody>
         ${S.campagnes.map(c=>{
           const ps=S.prospects.filter(p=>p.campagneId===c.id)
           const env=ps.filter(p=>p.etapeCourante>0).length
-          const ouv=ps.filter(p=>p.ouvertures>0).length
+          const ouv=0
           const rep=ps.filter(p=>p.repandu).length
           const tx=pct(rep,env)
-          return `<tr><td style="font-family:var(--mono);font-size:12px">${c.nom}</td><td>${env}</td><td>${ouv}</td><td>${rep}</td><td><span class="badge ${tx>15?'bg-green':tx>5?'bg-amber':'bg-gray'}">${tx}%</span></td></tr>`
+          return `<tr><td style="font-family:var(--mono);font-size:12px">${c.nom}</td><td>${env}</td><td>${rep}</td><td><span class="badge ${tx>15?'bg-green':tx>5?'bg-amber':'bg-gray'}">${tx}%</span></td></tr>`
         }).join('')}
       </tbody></table>
     </div>`
@@ -2177,13 +2093,13 @@ function afficherProspects(){
   const ps=cid?S.prospects.filter(p=>p.campagneId===cid):[]
   if(!cid){el.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-title">sélectionner une campagne</div></div>`;return}
   if(!ps.length){el.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-title">aucun prospect</div></div>`;return}
-  el.innerHTML=`<table><thead><tr><th>email</th><th>prénom</th><th>société</th><th>étape</th><th>ouvertures</th><th>tag</th><th>statut</th></tr></thead><tbody>
+  el.innerHTML=`<table><thead><tr><th>email</th><th>prénom</th><th>société</th><th>étape</th><th>tag</th><th>statut</th></tr></thead><tbody>
     ${ps.map(p=>`<tr>
       <td style="font-family:var(--mono);font-size:11.5px">${p.email}</td>
       <td>${p.prenom} ${p.nom}</td>
       <td style="color:var(--g500)">${p.societe||'—'}</td>
       <td><span class="badge bg-gray">étape_${p.currentStep||p.etapeCourante||0}</span></td>
-      <td style="font-family:var(--mono);font-size:11px">${p.ouvertures||0}</td>
+
       <td>${p.tag==='repandu'?badge('↩ répondu','green'):p.tag==='desabonne'||p.tag==='blackliste'?badge('🛑 stop','red'):p.tag==='lu'?badge('👁 lu','blue'):p.tag==='non_lu'?badge('✗ non lu','amber'):'—'}</td>
       <td>${p.repandu?badge('répondu','green'):p.termine?badge('terminé','gray'):badge('actif','amber')}</td>
     </tr>`).join('')}
@@ -2381,10 +2297,8 @@ function rendreBuilderLineaire() {
       ${i>0?`<div style="background:var(--g50);border:1px solid var(--g100);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span style="font-size:12px;color:var(--g500)">Envoyer si</span>
         <select class="cond-select" onchange="mettreAJourEtapeLineaire(${i},'condition',this.value)">
-          <option value="pas_de_reponse" ${et.condition==='pas_de_reponse'?'selected':''}>pas de réponse</option>
-          <option value="non_lu" ${et.condition==='non_lu'?'selected':''}>non lu</option>
-          <option value="lu" ${et.condition==='lu'?'selected':''}>lu sans réponse</option>
-          <option value="delai" ${et.condition==='delai'?'selected':''}>délai fixe</option>
+          <option value="pas_de_reponse" ${et.condition==='pas_de_reponse'?'selected':''}>si pas de réponse</option>
+          <option value="delai" ${et.condition==='delai'?'selected':''}>délai fixe (toujours)</option>
         </select>
         <span style="font-size:12px;color:var(--g500)">après</span>
         <input type="number" class="cond-num" value="${et.delaiJours||2}" min="1" max="90" onchange="mettreAJourEtapeLineaire(${i},'delaiJours',+this.value)">
@@ -2410,16 +2324,8 @@ function rendreBuilderLineaire() {
             oninput="mettreAJourEtapeLineaire(${i},'corps',this.innerHTML)">${et.corps||''}</div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--g600);cursor:pointer">
-          <input type="checkbox" ${et.tagSiNonLu?'checked':''} onchange="mettreAJourEtapeLineaire(${i},'tagSiNonLu',this.checked)">
-          <span class="badge bg-amber" style="font-size:10px">non lu</span>
-        </label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--g600);cursor:pointer">
-          <input type="checkbox" ${et.tagSiLu?'checked':''} onchange="mettreAJourEtapeLineaire(${i},'tagSiLu',this.checked)">
-          <span class="badge bg-blue" style="font-size:10px">lu</span>
-        </label>
-        <button class="btn btn-ghost btn-xs" style="margin-left:auto"
+      <div style="display:flex;justify-content:flex-end">
+        <button class="btn btn-ghost btn-xs"
           onclick="sauvegarderTemplate(document.getElementById('lin-sujet-${i}').value,document.getElementById('lin-corps-${i}').innerHTML)">
           💾 sauver template
         </button>
