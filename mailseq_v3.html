@@ -1797,6 +1797,11 @@ function reinitialiserFormCamp(){
 let envoyant=false
 
 async function envoyerUn(prospect, sujet, corpsHtml) {
+  // Vérification blacklist avant chaque envoi
+  if(estBlackliste(prospect.email)){
+    ajouterJournal(`🚫 ${prospect.email} — blacklisté, envoi ignoré`,'warn')
+    return false
+  }
   const corpsComplet=corpsHtml+(S.signature?`<br><br><hr style="border:none;border-top:1px solid #eee;margin:16px 0">${S.signature}`:'')
   if(!S.accessToken){ajouterJournal(`[DÉMO] → ${prospect.email} · "${sujet}"`,'ok');return true}
   try{
@@ -1905,41 +1910,31 @@ async function verifierReponses(){
 
     // ── 1. RÉPONSES — lire les 200 derniers emails reçus ──
     const r = await fetch(
-      `https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages?$select=from,receivedDateTime,subject,body&$top=200&$orderby=receivedDateTime desc`,
+      `https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages?$select=from,receivedDateTime,subject&$top=200&$orderby=receivedDateTime desc`,
       {headers:{Authorization:'Bearer '+S.accessToken}}
     )
     if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session expirée — reconnectez-vous','err');return}
     const data = await r.json()
     
-    let nRep=0, nStop=0
+    let nRep=0
     for(const msg of data.value||[]){
       const from=(msg.from?.emailAddress?.address||'').toLowerCase()
       const p = prospectsActifs[from]
       if(!p) continue
-      // Ne pas retraiter si déjà marqué
-      if(p.repandu || p.tag==='desabonne') { delete prospectsActifs[from]; continue }
+      // Ne pas retraiter si déjà marqué répondu
+      if(p.repandu) { delete prospectsActifs[from]; continue }
 
-      // Détecter STOP dans le sujet ou le corps
-      const sujet = (msg.subject||'').toUpperCase()
-      const corps = (msg.body?.content||'').toUpperCase()
-      const isStop = sujet.includes('STOP') || corps.includes('STOP') || 
-                     sujet.includes('DÉSABONNER') || sujet.includes('UNSUBSCRIBE')
-
-      if(isStop){
-        p.repandu=false; p.termine=true; p.prochainEnvoi=null; p.tag='desabonne'
-        nStop++
-        ajouterJournal(`🛑 STOP reçu de ${from} — désabonné définitivement`,'warn')
-      } else {
-        p.repandu=true; p.termine=true; p.prochainEnvoi=null; p.tag='repandu'
-        nRep++
-        ajouterJournal(`↩ Réponse de ${from} · "${msg.subject||'sans sujet'}" — séquence stoppée`,'warn')
-      }
-      delete prospectsActifs[from] // traité — retirer pour éviter doublon
+      // Réponse reçue → stopper la séquence, PAS de blacklist automatique
+      // La blacklist est manuelle uniquement
+      p.repandu=true; p.termine=true; p.prochainEnvoi=null; p.tag='repandu'
+      nRep++
+      ajouterJournal(`↩ Réponse de ${from} · "${msg.subject||'sans sujet'}" — séquence stoppée`,'warn')
+      delete prospectsActifs[from]
     }
 
     // ── RÉSUMÉ ──
-    if(!nRep&&!nStop) ajouterJournal('Synchronisation OK — aucun événement','info')
-    else ajouterJournal(`Synchro : ${nRep} réponse${nRep>1?'s':''}${nStop?' · '+nStop+' STOP':''}`, 'ok')
+    if(!nRep) ajouterJournal('Synchronisation OK — aucun événement','info')
+    else ajouterJournal(`Synchro : ${nRep} réponse${nRep>1?'s':''}`, 'ok')
     
     sauver()
     afficherTableau()
@@ -2017,7 +2012,7 @@ function afficherAnalytiques(){
       <div class="stat-card"><div class="stat-label">taux de réponse</div><div class="stat-value ${txRep>15?'c-ok':txRep>5?'c-warn':'c-err'}">${txRep}%</div><div class="stat-sub">${repTotal}/${envTotal} envoyés</div></div>
 
       <div class="stat-card"><div class="stat-label">blacklistés</div><div class="stat-value">${(S.blacklist||[]).length}</div><div class="stat-sub">jamais contactés</div></div>
-      <div class="stat-card"><div class="stat-label">STOP reçus</div><div class="stat-value">${S.prospects.filter(p=>p.tag==='desabonne').length}</div></div>
+
     </div>
     <div class="card">
       <div class="card-header"><div class="card-title">taux de réponse par séquence</div></div>
@@ -2602,7 +2597,7 @@ function afficherProspects() {
         <td style="color:var(--g500)">${p.societe||'—'}</td>
         <td><span class="badge bg-gray">étape_${p.etapeCourante||0}</span></td>
         <td style="font-size:12px;color:var(--g600)">${p.repandu||p.termine?'—':fmtProchainEnvoi(p.prochainEnvoi)}</td>
-        <td>${p.tag==='repandu'?badge('↩ répondu','green'):p.tag==='desabonne'||p.tag==='blackliste'?badge('🛑 stop','red'):p.tag==='erreur'?`<span class="badge bg-red" title="${p.erreurMsg||''}">✗ erreur</span>`:'—'}</td>
+        <td>${p.tag==='repandu'?badge('↩ répondu','green'):p.tag==='blackliste'?badge('🚫 blacklist','red'):p.tag==='erreur'?`<span class="badge bg-red" title="${p.erreurMsg||''}">✗ erreur</span>`:'—'}</td>
         <td style="display:flex;align-items:center;gap:6px">
           ${p.repandu?badge('répondu','green'):p.tag==='erreur'?badge('erreur','red'):p.termine?badge('terminé','gray'):badge('actif','amber')}
           ${p.tag==='erreur'?`<button class="btn btn-xs btn-ghost" onclick="relancerProspect('${p.id}')">↺</button>`:''}
