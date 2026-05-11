@@ -339,6 +339,11 @@ tr:hover td{background:var(--g50)}
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="5" r="3"/><path d="M1 14.5c0-2.5 2-4 5-4s5 1.5 5 4"/><path d="M12 7v4M10 9h4"/></svg>
         tous les prospects
       </div>
+      <div class="nav-item" onclick="aller('blacklist',this)">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M5 8h6"/></svg>
+        blacklist
+        <span class="nav-badge" id="blacklistBadge">0</span>
+      </div>
       <div class="nav-item" onclick="aller('journaux',this)">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M5 6h6M5 9h4"/></svg>
         journaux d'envoi
@@ -348,6 +353,8 @@ tr:hover td{background:var(--g50)}
 
   <!-- MAIN -->
   <main class="main">
+    <!-- Bannière expiration token -->
+    <div id="tokenBanner" style="display:none;background:#fef3c7;border-bottom:1px solid #fde68a;padding:10px 20px;font-size:12px;color:#92400e;align-items:center;gap:12px;flex-shrink:0"></div>
 
     <!-- TABLEAU DE BORD -->
     <div id="page-tableau" class="page">
@@ -522,6 +529,18 @@ tr:hover td{background:var(--g50)}
       <div class="content" id="contenu-listes"></div>
     </div>
 
+    <!-- BLACKLIST -->
+    <div id="page-blacklist" class="page" style="display:none">
+      <div class="topbar">
+        <div class="topbar-title">blacklist</div>
+        <button class="btn btn-primary btn-sm" onclick="ajouterBlacklist()">+ ajouter</button>
+      </div>
+      <div class="content">
+        <div class="info-box i-amber">Les emails de cette liste ne recevront <strong>jamais</strong> d'email, même s'ils sont présents dans une liste de prospects ou une campagne active.</div>
+        <div class="card" style="padding:0;overflow:hidden" id="blacklistTable"></div>
+      </div>
+    </div>
+
     <!-- JOURNAUX -->
     <div id="page-journaux" class="page" style="display:none">
       <div class="topbar"><div class="topbar-title">journaux d'envoi</div><button class="btn btn-danger btn-sm" onclick="S.journaux=[];sauver();afficherJournaux()">vider</button></div>
@@ -568,7 +587,10 @@ tr:hover td{background:var(--g50)}
         <div class="modal-title" id="titreModalSeq" style="margin-bottom:0">nouvelle séquence</div>
         <div style="font-size:12px;color:var(--g400);margin-top:3px">Rédigez vos emails · choisissez vos prospects · lancez</div>
       </div>
-      <button class="close-panel" onclick="fermerModal('modalSeq')">×</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost btn-sm" id="btnModeBuilder" onclick="basculerModeBuilder()">🔀 vue flow</button>
+        <button class="close-panel" onclick="fermerModal('modalSeq')">×</button>
+      </div>
     </div>
 
     <!-- LAYOUT 2 COLONNES : flow | config -->
@@ -721,7 +743,7 @@ tr:hover td{background:var(--g50)}
 <script>
 // ═══ ÉTAT ═══
 const S = (() => {
-  const d = { sequences:[], campagnes:[], prospects:[], listes:[], journaux:[], clientId:'', tenantId:'common', accessToken:null, userEmail:null, signature:'' }
+  const d = { sequences:[], campagnes:[], prospects:[], listes:[], blacklist:[], templates:[], journaux:[], clientId:'', tenantId:'common', accessToken:null, userEmail:null, signature:'' }
   try { return Object.assign(d, JSON.parse(localStorage.getItem('msp_v3')||'{}')) } catch { return d }
 })()
 
@@ -768,6 +790,7 @@ function aller(id, el) {
   if(id==='campagnes') { remplirSelectSeq(); remplirSelectListeCamp(); afficherListeCamp() }
   if(id==='signature') chargerSig()
   if(id==='listes') { afficherListes() }
+  if(id==='blacklist') { afficherBlacklist() }
   if(id==='prospects') { remplirSelectProspCamp(); afficherProspects() }
   if(id==='journaux') afficherJournaux()
 }
@@ -776,8 +799,8 @@ function mettreAJourBadges() {
   document.getElementById('seqBadge').textContent = S.sequences.length
   document.getElementById('campBadge').textContent = S.campagnes.length
   document.getElementById('campCount').textContent = S.campagnes.length
-  const lb = document.getElementById('listesBadge')
-  if(lb) lb.textContent = S.listes.length
+  const lb = document.getElementById('listesBadge'); if(lb) lb.textContent = S.listes.length
+  const bb = document.getElementById('blacklistBadge'); if(bb) bb.textContent = S.blacklist.length
 }
 
 function afficherOngletCamp(t) {
@@ -874,8 +897,10 @@ async function recupererProfil(token) {
     document.getElementById('statusDot').classList.add('on')
     document.getElementById('statusLabel').textContent='outlook · connecté'
     document.getElementById('statusEmail').textContent=S.userEmail
+    document.getElementById('tokenBanner').style.display='none'
     ajouterJournal(`Connecté : ${S.userEmail}`,'ok')
     setTimeout(()=>fermerModal('modalConnexion'),800)
+    noterExpirationToken()
     demarrerSynchroAuto()
   } catch(e){echec(e.message)}
 }
@@ -991,9 +1016,9 @@ function ouvrirModalSeq(seqId) {
     flowRoot = creerNode('pas_de_reponse', 0)
   }
   selectedNodeId = null
+  modeBuilder = 'lineaire'
   document.getElementById('editorPanel').style.display='none'
-  rendreFlow()
-  // Peupler le select de listes
+  rendreBuilderActif()
   remplirSelectListeSeq()
   document.getElementById('modalSeq').style.display='flex'
 }
@@ -1255,6 +1280,16 @@ function aplatiArbre(node, result=[]) {
 function sauvegarderSeq() {
   const nom = document.getElementById('nomSeq').value.trim()
   if(!nom) { alert('Nommez la séquence'); return }
+  // Sync contenu depuis le builder linéaire
+  aplatiArbre(flowRoot).forEach((et,i)=>{
+    const ce=document.getElementById(`lin-corps-${i}`)
+    const se=document.getElementById(`lin-sujet-${i}`)
+    const node=trouverNodeParIndex(flowRoot,i)
+    if(node){
+      if(ce) node.corps=ce.innerHTML
+      if(se) node.sujet=se.value
+    }
+  })
   if(!flowRoot.sujet.trim()) { alert("Complétez l'email initial"); return }
   const seq = { id: seqIdEnEdition||uid(), nom, flowRoot: JSON.parse(JSON.stringify(flowRoot)), etapes: aplatiArbre(flowRoot), creee: isoMaint() }
   if(seqIdEnEdition) {
@@ -1290,6 +1325,16 @@ function remplirSelectListeSeq() {
 async function sauvegarderEtLancer(statut='active') {
   const nom = document.getElementById('nomSeq').value.trim()
   if(!nom) { alert('Nommez la séquence'); return }
+  // Sync contenu depuis le builder linéaire
+  aplatiArbre(flowRoot).forEach((et,i)=>{
+    const ce=document.getElementById(`lin-corps-${i}`)
+    const se=document.getElementById(`lin-sujet-${i}`)
+    const node=trouverNodeParIndex(flowRoot,i)
+    if(node){
+      if(ce) node.corps=ce.innerHTML
+      if(se) node.sujet=se.value
+    }
+  })
   if(!flowRoot.sujet.trim()) { alert("Complétez l'email initial"); return }
 
   const lid = document.getElementById('seqListeSel')?.value
@@ -1847,203 +1892,244 @@ async function verifierReponses(){
   if(!S.accessToken){ajouterJournal('[DÉMO] Synchronisation ignorée','warn');return}
   ajouterJournal('Synchronisation boîte mail…','info')
   try{
-    const depuis=new Date(Date.now()-7*24*3600*1000).toISOString()
-
-    // Réponses reçues (boîte de réception)
-    const r=await fetch(`https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages?$filter=receivedDateTime ge ${depuis}&$select=from,receivedDateTime,subject&$top=50`,
-      {headers:{Authorization:'Bearer '+S.accessToken}})
-    if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session expirée','err');return}
-    const data=await r.json()
-    let nRep=0
-    for(const msg of data.value||[]){
-      const from=(msg.from?.emailAddress?.address||'').toLowerCase()
-      const matches=S.prospects.filter(p=>p.email.toLowerCase()===from&&!p.repandu&&!p.termine)
-      for(const p of matches){p.repandu=true;p.termine=true;p.prochainEnvoi=null;p.tag='repandu';nRep++;ajouterJournal(`↩ Réponse de ${from} — séquence stoppée`,'warn')}
+    // Prospects actifs indexés par email
+    const prospectsActifs = {}
+    S.prospects.filter(p=>!p.repandu&&!p.termine).forEach(p=>{
+      prospectsActifs[p.email.toLowerCase()] = p
+    })
+    
+    if(!Object.keys(prospectsActifs).length){
+      ajouterJournal('Aucun prospect actif à surveiller','info')
+      return
     }
 
-    // Détection ouvertures via éléments envoyés (approximation Graph)
-    const sr=await fetch(`https://graph.microsoft.com/v1.0/me/mailFolders/SentItems/messages?$select=toRecipients,isRead,lastModifiedDateTime&$top=50&$filter=lastModifiedDateTime ge ${depuis}`,
-      {headers:{Authorization:'Bearer '+S.accessToken}})
-    const sdata=await sr.json()
+    // ── 1. RÉPONSES — lire les 200 derniers emails reçus ──
+    const r = await fetch(
+      `https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages?$select=from,receivedDateTime,subject,body&$top=200&$orderby=receivedDateTime desc`,
+      {headers:{Authorization:'Bearer '+S.accessToken}}
+    )
+    if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session expirée — reconnectez-vous','err');return}
+    const data = await r.json()
+    
+    let nRep=0, nStop=0
+    for(const msg of data.value||[]){
+      const from=(msg.from?.emailAddress?.address||'').toLowerCase()
+      const p = prospectsActifs[from]
+      if(!p) continue
+
+      // Détecter STOP dans le sujet ou le corps
+      const sujet = (msg.subject||'').toUpperCase()
+      const corps = (msg.body?.content||'').toUpperCase()
+      const isStop = sujet.includes('STOP') || corps.includes('STOP') || 
+                     sujet.includes('DÉSABONNER') || sujet.includes('UNSUBSCRIBE')
+
+      if(isStop){
+        p.repandu=false; p.termine=true; p.prochainEnvoi=null; p.tag='desabonne'
+        nStop++
+        ajouterJournal(`🛑 STOP reçu de ${from} — désabonné définitivement`,'warn')
+        delete prospectsActifs[from] // éviter double traitement
+      } else {
+        p.repandu=true; p.termine=true; p.prochainEnvoi=null; p.tag='repandu'
+        nRep++
+        ajouterJournal(`↩ Réponse de ${from} · "${msg.subject||'sans sujet'}" — séquence stoppée`,'warn')
+        delete prospectsActifs[from]
+      }
+    }
+
+    // ── 2. OUVERTURES — lire les éléments envoyés récents ──
+    // On ne recheck que les prospects qui ont au moins 1 email envoyé
+    const prospectsEnvoyes = Object.values(prospectsActifs)
+      .filter(p=>p.etapeCourante>0&&p.historique?.length>0)
+    
     let nOuv=0
-    for(const msg of sdata.value||[]){
-      if(!msg.isRead)continue
-      for(const rec of msg.toRecipients||[]){
-        const addr=(rec.emailAddress?.address||'').toLowerCase()
-        const p=S.prospects.find(x=>x.email.toLowerCase()===addr&&!x.repandu&&!x.termine)
-        if(p){
-          p.ouvertures=(p.ouvertures||0)+1
-          nOuv++
-          // Appliquer les tags selon configuration de la séquence
-          const camp=S.campagnes.find(c=>c.id===p.campagneId)
-          const seq=camp?S.sequences.find(s=>s.id===camp.seqId):null
-          if(seq&&p.etapeCourante<seq.etapes.length){
-            const etCour=seq.etapes[Math.max(0,p.etapeCourante-1)]
-            if(etCour?.tagSiLu&&!p.repandu) p.tag='lu'
+    if(prospectsEnvoyes.length){
+      const sr = await fetch(
+        `https://graph.microsoft.com/v1.0/me/mailFolders/SentItems/messages?$select=toRecipients,isRead,lastModifiedDateTime,subject&$top=200&$orderby=lastModifiedDateTime desc`,
+        {headers:{Authorization:'Bearer '+S.accessToken}}
+      )
+      if(sr.ok){
+        const sdata = await sr.json()
+        // Index pour éviter les doublons par prospect
+        const dejaConte = new Set()
+        for(const msg of sdata.value||[]){
+          if(!msg.isRead) continue
+          for(const rec of msg.toRecipients||[]){
+            const addr=(rec.emailAddress?.address||'').toLowerCase()
+            if(dejaConte.has(addr)) continue
+            const p = prospectsActifs[addr]
+            if(!p) continue
+            // Vérifier que cet email correspond bien à un envoi de prospection
+            // (le message doit avoir été modifié après le premier envoi)
+            const premierEnvoi = p.historique[0]?.envoyeA
+            if(premierEnvoi && new Date(msg.lastModifiedDateTime) >= new Date(premierEnvoi)){
+              if(!p.tag || p.tag==='non_lu'){
+                p.ouvertures=(p.ouvertures||0)+1
+                p.tag='lu'
+                nOuv++
+                dejaConte.add(addr)
+                ajouterJournal(`👁 Ouverture détectée : ${addr}`,'info')
+              }
+            }
           }
         }
       }
     }
 
-    // Taguer "non lu" ceux dont l'étape précédente n'a pas été ouverte
-    for(const camp of S.campagnes){
-      const seq=S.sequences.find(s=>s.id===camp.seqId)
-      if(!seq)continue
-      S.prospects.filter(p=>p.campagneId===camp.id&&!p.repandu&&!p.termine&&p.etapeCourante>0).forEach(p=>{
-        const etCour=seq.etapes[Math.max(0,p.etapeCourante-1)]
-        if(etCour?.tagSiNonLu&&p.ouvertures===0&&!p.tag) p.tag='non_lu'
-      })
-    }
+    // ── 3. TAGUER "non lu" — envoyé depuis >24h sans ouverture ──
+    const hier = new Date(Date.now()-24*3600*1000)
+    Object.values(prospectsActifs).forEach(p=>{
+      if(p.tag && p.tag!=='non_lu') return // déjà tagué autrement
+      if(!p.historique?.length) return
+      const dernierEnvoi = p.historique[p.historique.length-1]
+      if(dernierEnvoi && new Date(dernierEnvoi.envoyeA) < hier && !p.ouvertures){
+        p.tag='non_lu'
+      }
+    })
 
-    if(!nRep&&!nOuv)ajouterJournal('Synchronisation OK — aucun événement','info')
-    else ajouterJournal(`Synchro : ${nRep} réponse${nRep>1?'s':''}, ${nOuv} ouverture${nOuv>1?'s':''}`,'ok')
-    sauver(); afficherTableau()
-  }catch(e){ajouterJournal('Erreur synchro : '+e.message,'err')}
+    // ── RÉSUMÉ ──
+    const parts = []
+    if(nRep) parts.push(`${nRep} réponse${nRep>1?'s':''}`)
+    if(nStop) parts.push(`${nStop} STOP`)
+    if(nOuv) parts.push(`${nOuv} ouverture${nOuv>1?'s':''}`)
+    
+    if(!parts.length) ajouterJournal('Synchronisation OK — aucun événement','info')
+    else ajouterJournal(`Synchro : ${parts.join(', ')}`,'ok')
+    
+    sauver()
+    afficherTableau()
+    
+  }catch(e){
+    ajouterJournal('Erreur synchro : '+e.message,'err')
+    console.error('Synchro error:', e)
+  }
 }
 
+
+
+// ═══ SYNCHRO AUTO ═══
 function demarrerSynchroAuto(){
-  if(intervalSynchro)clearInterval(intervalSynchro)
+  if(intervalSynchro) clearInterval(intervalSynchro)
   intervalSynchro=setInterval(()=>{lancerDeclencheurs();verifierReponses()},5*60*1000)
   ajouterJournal('Synchronisation automatique activée — toutes les 5 min','ok')
-}
-if(S.accessToken)setTimeout(demarrerSynchroAuto,2000)
-
-// ═══ FUNNEL DE CAMPAGNE ═══
-function rendreFunnel(campId) {
-  const camp=S.campagnes.find(c=>c.id===campId)
-  const seq=camp?S.sequences.find(s=>s.id===camp.seqId):null
-  const ps=S.prospects.filter(p=>p.campagneId===campId)
-  if(!camp||!seq||!ps.length) return ''
-  const etapesSeq=getEtapesSeq(seq)
-
-  const etapesStats=etapesSeq.map((et,i)=>{
-    const envoyes=ps.filter(p=>p.etapeCourante>i||p.termine).length
-    return {label:i===0?'initial':`relance_${i}`, sujet:et.sujet||'', envoyes, condition:et.condition||'pas_de_reponse', delaiJours:et.delaiJours||0}
-  })
-  const max=etapesStats[0]?.envoyes||1
-  const repandus=ps.filter(p=>p.repandu).length
-  const termines=ps.filter(p=>p.termine&&!p.repandu).length
-  const nonLus=ps.filter(p=>p.tag==='non_lu').length
-  const lus=ps.filter(p=>p.tag==='lu').length
-  const txRep=pct(repandus,max)
-
-  const couleurs=['rgba(10,10,10,0.85)','rgba(10,10,10,0.55)','rgba(10,10,10,0.3)','rgba(10,10,10,0.15)']
-
-  return `
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--g100)">
-      ${etapesStats.map((et,i)=>`
-        ${i>0?`<div class="funnel-conn">
-          <div class="funnel-conn-line"></div>
-          <div class="funnel-conn-pill">${(COND[et.condition]||COND.pas_de_reponse).short} · J+${et.delaiJours} · ${max-et.envoyes} sortis</div>
-          <div class="funnel-conn-line"></div>
-        </div>`:''}
-        <div class="funnel-step-row">
-          <div class="funnel-label">${et.label}</div>
-          <div class="funnel-bar-wrap">
-            <div class="funnel-bar-bg" style="width:${pct(et.envoyes,max)}%;background:${couleurs[i]||couleurs[3]};opacity:0.12"></div>
-            <div class="funnel-bar-bg" style="width:${pct(et.envoyes,max)}%;background:${couleurs[i]||couleurs[3]}"></div>
-            <div class="funnel-bar-content">
-              <div style="font-family:var(--mono);font-size:11px;font-weight:500">${et.sujet.slice(0,32)}${et.sujet.length>32?'…':''}</div>
-              <div style="text-align:right">
-                <div style="font-size:16px;font-weight:500;font-family:var(--mono);letter-spacing:-0.5px">${et.envoyes}</div>
-                <div style="font-size:10px;color:var(--g400);font-family:var(--mono)">${pct(et.envoyes,max)}%</div>
-              </div>
-            </div>
-          </div>
-        </div>`).join('')}
-      <div class="funnel-outcomes">
-        <div class="funnel-outcome">
-          <div class="funnel-outcome-val" style="color:var(--ok)">${repandus}</div>
-          <div class="funnel-outcome-lbl">réponses</div>
-        </div>
-        <div class="funnel-outcome">
-          <div class="funnel-outcome-val" style="color:var(--warn)">${termines}</div>
-          <div class="funnel-outcome-lbl">terminés</div>
-        </div>
-        <div class="funnel-outcome">
-          <div class="funnel-outcome-val" style="color:var(--info)">${lus}</div>
-          <div class="funnel-outcome-lbl">tagués lu</div>
-        </div>
-        <div class="funnel-outcome">
-          <div class="funnel-outcome-val" style="color:var(--g500)">${nonLus}</div>
-          <div class="funnel-outcome-lbl">tagués non lu</div>
-        </div>
-        <div class="funnel-outcome">
-          <div class="funnel-outcome-val">${txRep}%</div>
-          <div class="funnel-outcome-lbl">taux de réponse</div>
-        </div>
-      </div>
-    </div>`
 }
 
 // ═══ TABLEAU DE BORD ═══
 function afficherTableau(){
-  const envoyes=S.prospects.filter(p=>p.etapeCourante>0).length
-  const repandus=S.prospects.filter(p=>p.repandu).length
-  const enAttente=S.prospects.filter(p=>!p.termine&&!p.repandu&&p.prochainEnvoi).length
-  const actives=S.campagnes.filter(c=>c.statut==='active').length
-  const brouillons=S.campagnes.filter(c=>c.statut==='brouillon').length
+  const env=S.prospects.filter(p=>p.etapeCourante>0).length
+  const rep=S.prospects.filter(p=>p.repandu).length
+  const att=S.prospects.filter(p=>!p.termine&&!p.repandu&&p.prochainEnvoi).length
+  const act=S.campagnes.filter(c=>c.statut==='active').length
   const el=document.getElementById('contenu-tableau')
+  if(!el) return
   el.innerHTML=`
     <div class="stats-grid">
-      <div class="stat-card"><div class="stat-label">emails envoyés</div><div class="stat-value">${envoyes}</div><div class="stat-sub">toutes campagnes</div></div>
-      <div class="stat-card"><div class="stat-label">réponses</div><div class="stat-value c-ok">${repandus}</div><div class="stat-sub">${envoyes?pct(repandus,envoyes)+'% taux de réponse':'—'}</div></div>
-      <div class="stat-card"><div class="stat-label">en attente</div><div class="stat-value c-warn">${enAttente}</div><div class="stat-sub">envois planifiés</div></div>
-      <div class="stat-card"><div class="stat-label">campagnes actives</div><div class="stat-value c-info">${actives}</div></div>
+      <div class="stat-card"><div class="stat-label">emails envoyés</div><div class="stat-value">${env}</div><div class="stat-sub">toutes campagnes</div></div>
+      <div class="stat-card"><div class="stat-label">réponses</div><div class="stat-value c-ok">${rep}</div><div class="stat-sub">${env?pct(rep,env)+'% taux':'—'}</div></div>
+      <div class="stat-card"><div class="stat-label">en attente</div><div class="stat-value c-warn">${att}</div><div class="stat-sub">envois planifiés</div></div>
+      <div class="stat-card"><div class="stat-label">campagnes actives</div><div class="stat-value c-info">${act}</div></div>
     </div>
-    ${enAttente>0?`<div class="info-box i-green">✓ <strong>${enAttente}</strong> envoi${enAttente>1?'s':''} planifié${enAttente>1?'s':''} — partira automatiquement à la prochaine ouverture</div>`:''}
+    ${att>0?`<div class="info-box i-green">✓ <strong>${att}</strong> envoi${att>1?'s':''} planifié${att>1?'s':''} — partira automatiquement à la prochaine ouverture</div>`:''}
     <div class="card">
-      <div class="card-header">
-        <div class="card-title">campagnes récentes</div>
-        <button class="btn btn-ghost btn-sm" onclick="aller('campagnes',document.querySelector('[onclick*=campagnes]'))">voir tout →</button>
-      </div>
-      ${!S.campagnes.length?`<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">aucune campagne</div></div>`:
-      `<table><thead><tr><th>nom</th><th>envoyés</th><th>ouvertures</th><th>réponses</th><th>taux</th><th>statut</th></tr></thead><tbody>
+      <div class="card-header"><div class="card-title">campagnes récentes</div><button class="btn btn-ghost btn-sm" onclick="aller('campagnes',document.querySelector('[onclick*=campagnes]'))">voir tout →</button></div>
+      ${!S.campagnes.length?`<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">aucune campagne</div></div>`:`
+      <table><thead><tr><th>nom</th><th>envoyés</th><th>ouvertures</th><th>réponses</th><th>taux</th><th>statut</th></tr></thead><tbody>
         ${S.campagnes.slice(0,6).map(c=>{
           const ps=S.prospects.filter(p=>p.campagneId===c.id)
-          const env=ps.filter(p=>p.etapeCourante>0).length
+          const sent=ps.filter(p=>p.etapeCourante>0).length
           const rep=ps.filter(p=>p.repandu).length
           const ouv=ps.filter(p=>p.ouvertures>0).length
-          const tx=pct(rep,env)
+          const rr=pct(rep,sent)
           return `<tr>
             <td style="font-family:var(--mono);font-size:12px">${c.nom}</td>
-            <td>${env}</td><td>${ouv}</td><td>${rep}</td>
-            <td>${badge(tx+'%',tx>15?'green':tx>5?'amber':'gray')}</td>
-            <td>${badge(c.statut==='active'?'active':c.statut==='pause'?'pausée':'terminée',c.statut==='active'?'green':c.statut==='pause'?'amber':'gray')}</td>
+            <td>${sent}</td><td>${ouv}</td><td>${rep}</td>
+            <td><span class="badge ${rr>15?'bg-green':rr>5?'bg-amber':'bg-gray'}">${rr}%</span></td>
+            <td><span class="badge ${c.statut==='active'?'bg-green':c.statut==='pause'?'bg-amber':c.statut==='brouillon'?'bg-gray':'bg-gray'}">${c.statut==='brouillon'?'📝 brouillon':c.statut==='active'?'active':c.statut==='pause'?'pausée':'terminée'}</span></td>
           </tr>`}).join('')}
       </tbody></table>`}
     </div>`
 }
 
-// ═══ LISTE CAMPAGNES ═══
+// ═══ ANALYTIQUES ═══
+function afficherAnalytiques(){
+  const el=document.getElementById('contenu-analytiques')
+  if(!el) return
+  if(!S.campagnes.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">aucune donnée</div><p>Lancez une campagne pour voir les analytiques</p></div>`;return}
+  const envTotal=S.prospects.filter(p=>p.etapeCourante>0).length
+  const repTotal=S.prospects.filter(p=>p.repandu).length
+  const ouvTotal=S.prospects.filter(p=>p.ouvertures>0).length
+  const txRep=pct(repTotal,envTotal), txOuv=pct(ouvTotal,envTotal)
+  const statsSeq=S.sequences.map(seq=>{
+    const camps=S.campagnes.filter(c=>c.seqId===seq.id)
+    const ps=S.prospects.filter(p=>camps.some(c=>c.id===p.campagneId))
+    const env=ps.filter(p=>p.etapeCourante>0).length
+    const rep=ps.filter(p=>p.repandu).length
+    return {nom:seq.nom,env,rep,tx:pct(rep,env)}
+  }).sort((a,b)=>b.tx-a.tx)
+  el.innerHTML=`
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">taux de réponse</div><div class="stat-value ${txRep>15?'c-ok':txRep>5?'c-warn':'c-err'}">${txRep}%</div><div class="stat-sub">${repTotal}/${envTotal} envoyés</div></div>
+      <div class="stat-card"><div class="stat-label">taux d'ouverture</div><div class="stat-value c-info">${txOuv}%</div><div class="stat-sub">via Graph API</div></div>
+      <div class="stat-card"><div class="stat-label">tagués "lu"</div><div class="stat-value">${S.prospects.filter(p=>p.tag==='lu').length}</div></div>
+      <div class="stat-card"><div class="stat-label">tagués "non lu"</div><div class="stat-value">${S.prospects.filter(p=>p.tag==='non_lu').length}</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">taux de réponse par séquence</div></div>
+      <div class="chart-bar-wrap">
+        ${statsSeq.map(s=>`<div class="chart-bar-row">
+          <div class="chart-bar-label" title="${s.nom}">${s.nom}</div>
+          <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${s.tx}%;background:${s.tx>15?'var(--green)':s.tx>5?'var(--amber)':'var(--err)'}"></div></div>
+          <div class="chart-bar-val">${s.tx}%</div>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">performance par campagne</div></div>
+      <table><thead><tr><th>campagne</th><th>envoyés</th><th>ouvertures</th><th>réponses</th><th>taux</th></tr></thead><tbody>
+        ${S.campagnes.map(c=>{
+          const ps=S.prospects.filter(p=>p.campagneId===c.id)
+          const env=ps.filter(p=>p.etapeCourante>0).length
+          const ouv=ps.filter(p=>p.ouvertures>0).length
+          const rep=ps.filter(p=>p.repandu).length
+          const tx=pct(rep,env)
+          return `<tr><td style="font-family:var(--mono);font-size:12px">${c.nom}</td><td>${env}</td><td>${ouv}</td><td>${rep}</td><td><span class="badge ${tx>15?'bg-green':tx>5?'bg-amber':'bg-gray'}">${tx}%</span></td></tr>`
+        }).join('')}
+      </tbody></table>
+    </div>`
+}
+
+// ═══ CAMPAGNES LIST ═══
 function afficherListeCamp(){
   const el=document.getElementById('contenu-liste-camp')
+  if(!el) return
   if(!S.campagnes.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📂</div><div class="empty-title">aucune campagne</div></div>`;return}
   el.innerHTML=S.campagnes.map(c=>{
     const ps=S.prospects.filter(p=>p.campagneId===c.id)
-    const termine=ps.filter(p=>p.termine).length
+    const done=ps.filter(p=>p.done||p.termine).length
     const rep=ps.filter(p=>p.repandu).length
-    const env=ps.filter(p=>p.etapeCourante>0).length
+    const sent=ps.filter(p=>p.etapeCourante>0).length
+    const p=pct(done,ps.length)
     return `<div class="camp-card">
       <div style="display:flex;align-items:flex-start;justify-content:space-between">
         <div>
           <div style="font-family:var(--mono);font-size:13px;font-weight:500">${c.nom}</div>
-          <div class="camp-meta"><span>${ps.length} prospects</span><span>envoyés <strong>${env}</strong></span><span>réponses <strong style="color:var(--ok)">${rep}</strong></span><span>${fmtD(c.creee)}</span></div>
+          <div class="camp-meta"><span>${ps.length} prospects</span><span>envoyés <strong>${sent}</strong></span><span>réponses <strong style="color:var(--green)">${rep}</strong></span><span>${fmtD(c.creee)}</span></div>
         </div>
         <div style="display:flex;gap:6px;align-items:center">
-          ${badge(c.statut==='active'?'active':c.statut==='pause'?'pausée':'terminée',c.statut==='active'?'green':c.statut==='pause'?'amber':'gray')}
-          ${c.statut==='active'?`<button class="btn btn-ghost btn-sm" onclick="statutCamp('${c.id}','pause')">⏸ pause</button>`:''}
-          ${c.statut==='pause'?`<button class="btn btn-success btn-sm" onclick="statutCamp('${c.id}','active')">▶ reprendre</button>`:''}
+          <span class="badge ${c.statut==='active'?'bg-green':c.statut==='pause'?'bg-amber':c.statut==='brouillon'?'bg-gray':'bg-gray'}">${c.statut==='brouillon'?'📝 brouillon':c.statut==='active'?'active':c.statut==='pause'?'pausée':'terminée'}</span>
+          ${c.statut==='brouillon'?`<button class="btn btn-primary btn-sm" onclick="publierCamp('${c.id}')">🚀 Publier</button>`:''}
+          ${c.statut==='active'?`<button class="btn btn-ghost btn-sm" onclick="statutCamp('${c.id}','pause')">⏸</button>`:''}
+          ${c.statut==='pause'?`<button class="btn btn-success btn-sm" onclick="statutCamp('${c.id}','active')">▶</button>`:''}
           <button class="btn btn-ghost btn-sm" onclick="voirProspects('${c.id}')">prospects</button>
           <button class="btn btn-danger btn-sm" onclick="supprimerCamp('${c.id}')">✕</button>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
-        <div class="progress" style="flex:1"><div class="progress-fill" style="width:${pct(termine,ps.length)}%"></div></div>
-        <span style="font-size:10px;color:var(--g400);font-family:var(--mono)">${pct(termine,ps.length)}%</span>
+        <div class="progress" style="flex:1"><div class="progress-fill" style="width:${p}%"></div></div>
+        <span style="font-size:10px;color:var(--g400);font-family:var(--mono)">${p}%</span>
       </div>
       ${rendreFunnel(c.id)}
-    </div>`}).join('')
+    </div>`
+  }).join('')
 }
 
 function statutCamp(id,s){
@@ -2051,36 +2137,43 @@ function statutCamp(id,s){
   if(c){c.statut=s;sauver();afficherListeCamp();afficherTableau()}
 }
 
-async function publierCamp(id) {
-  const camp = S.campagnes.find(c=>c.id===id)
+async function publierCamp(id){
+  const camp=S.campagnes.find(c=>c.id===id)
   if(!camp) return
-  if(!S.accessToken && !confirm("Outlook non connecté. Mode démonstration ?")) return
-  camp.statut = 'active'
-  sauver()
-  ajouterJournal(`🚀 Campagne "${camp.nom}" publiée`, 'ok')
-  // Lancer les envois
-  const seq = S.sequences.find(s=>s.id===camp.seqId)
-  if(seq) {
-    seq._etapesFlat = getEtapesSeq(seq)
-    envoyerLot(camp.id, seq, camp.delai||45)
-  }
-  demarrerSynchroAuto()
-  afficherListeCamp()
-  afficherTableau()
+  if(!S.accessToken&&!confirm("Outlook non connecté. Mode démonstration ?")) return
+  camp.statut='active';sauver()
+  ajouterJournal(`🚀 Campagne "${camp.nom}" publiée`,'ok')
+  const seq=S.sequences.find(s=>s.id===camp.seqId)
+  if(seq){seq._etapesFlat=getEtapesSeq(seq);envoyerLot(camp.id,seq,camp.delai||45)}
+  demarrerSynchroAuto();afficherListeCamp();afficherTableau()
 }
-function supprimerCamp(id){if(!confirm('Supprimer cette campagne et tous ses prospects ?'))return;S.campagnes=S.campagnes.filter(c=>c.id!==id);S.prospects=S.prospects.filter(p=>p.campagneId!==id);sauver();afficherListeCamp();afficherTableau()}
-function voirProspects(campId){aller('prospects',document.querySelector('[onclick*=prospects]'));document.getElementById('prospCampSel').value=campId;afficherProspects()}
+
+function supprimerCamp(id){
+  if(!confirm('Supprimer cette campagne ?')) return
+  S.campagnes=S.campagnes.filter(c=>c.id!==id)
+  S.prospects=S.prospects.filter(p=>p.campagneId!==id)
+  sauver();afficherListeCamp();afficherTableau()
+}
+
+function voirProspects(campId){
+  aller('prospects',document.querySelector('[onclick*=prospects]'))
+  document.getElementById('prospCampSel').value=campId
+  afficherProspects()
+}
 
 // ═══ PROSPECTS ═══
 function remplirSelectProspCamp(){
-  const sel=document.getElementById('prospCampSel'),cur=sel.value
-  sel.innerHTML='<option value="">— sélectionner une campagne —</option>'+S.campagnes.map(c=>`<option value="${c.id}">${c.nom}</option>`).join('')
-  sel.value=cur
+  const sel=document.getElementById('prospCampSel'),cur=sel?.value
+  if(!sel) return
+  sel.innerHTML='<option value="">— sélectionner une campagne —</option>'+
+    S.campagnes.map(c=>`<option value="${c.id}">${c.nom}</option>`).join('')
+  if(cur) sel.value=cur
 }
 
 function afficherProspects(){
-  const cid=document.getElementById('prospCampSel').value
+  const cid=document.getElementById('prospCampSel')?.value
   const el=document.getElementById('tableau-prospects')
+  if(!el) return
   const ps=cid?S.prospects.filter(p=>p.campagneId===cid):[]
   if(!cid){el.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-title">sélectionner une campagne</div></div>`;return}
   if(!ps.length){el.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-title">aucun prospect</div></div>`;return}
@@ -2089,86 +2182,28 @@ function afficherProspects(){
       <td style="font-family:var(--mono);font-size:11.5px">${p.email}</td>
       <td>${p.prenom} ${p.nom}</td>
       <td style="color:var(--g500)">${p.societe||'—'}</td>
-      <td>${badge('étape_'+p.etapeCourante,'gray')}</td>
+      <td><span class="badge bg-gray">étape_${p.currentStep||p.etapeCourante||0}</span></td>
       <td style="font-family:var(--mono);font-size:11px">${p.ouvertures||0}</td>
-      <td>${p.tag==='lu'?badge('lu','blue'):p.tag==='non_lu'?badge('non lu','amber'):p.tag==='repandu'?badge('répondu','green'):'—'}</td>
+      <td>${p.tag==='repandu'?badge('↩ répondu','green'):p.tag==='desabonne'||p.tag==='blackliste'?badge('🛑 stop','red'):p.tag==='lu'?badge('👁 lu','blue'):p.tag==='non_lu'?badge('✗ non lu','amber'):'—'}</td>
       <td>${p.repandu?badge('répondu','green'):p.termine?badge('terminé','gray'):badge('actif','amber')}</td>
     </tr>`).join('')}
   </tbody></table>`
 }
 
 function exporterCSV(){
-  const cid=document.getElementById('prospCampSel').value
+  const cid=document.getElementById('prospCampSel')?.value
   const ps=cid?S.prospects.filter(p=>p.campagneId===cid):S.prospects
   if(!ps.length){alert('Aucun prospect à exporter');return}
-  const rows=[['email','prénom','nom','société','poste','étape','ouvertures','tag','répondu','terminé']]
-  ps.forEach(p=>rows.push([p.email,p.prenom,p.nom,p.societe,p.poste,p.etapeCourante,p.ouvertures||0,p.tag||'',p.repandu?'oui':'non',p.termine?'oui':'non']))
-  const csv='\uFEFF'+rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n')
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='prospects_mailseq.csv';a.click()
-}
-
-// ═══ ANALYTIQUES ═══
-function afficherAnalytiques(){
-  const el=document.getElementById('contenu-analytiques')
-  if(!S.campagnes.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">aucune donnée</div><p>Lancez une campagne pour voir les analytiques</p></div>`;return}
-
-  const envTotal=S.prospects.filter(p=>p.etapeCourante>0).length
-  const repTotal=S.prospects.filter(p=>p.repandu).length
-  const ouvTotal=S.prospects.filter(p=>p.ouvertures>0).length
-  const txRep=pct(repTotal,envTotal), txOuv=pct(ouvTotal,envTotal)
-
-  const statsSeq=S.sequences.map(seq=>{
-    const camps=S.campagnes.filter(c=>c.seqId===seq.id)
-    const ps=S.prospects.filter(p=>camps.some(c=>c.id===p.campagneId))
-    const env=ps.filter(p=>p.etapeCourante>0).length
-    const rep=ps.filter(p=>p.repandu).length
-    const tx=pct(rep,env)
-    return {nom:seq.nom,env,rep,tx}
-  }).sort((a,b)=>b.tx-a.tx)
-
-  el.innerHTML=`
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-label">taux de réponse</div><div class="stat-value ${txRep>15?'c-ok':txRep>5?'c-warn':'c-err'}">${txRep}%</div><div class="stat-sub">${repTotal} / ${envTotal} envoyés</div></div>
-      <div class="stat-card"><div class="stat-label">taux d'ouverture</div><div class="stat-value c-info">${txOuv}%</div><div class="stat-sub">via Graph API</div></div>
-      <div class="stat-card"><div class="stat-label">tagués "lu"</div><div class="stat-value">${S.prospects.filter(p=>p.tag==='lu').length}</div><div class="stat-sub">ouverts sans réponse</div></div>
-      <div class="stat-card"><div class="stat-label">tagués "non lu"</div><div class="stat-value">${S.prospects.filter(p=>p.tag==='non_lu').length}</div><div class="stat-sub">non ouverts</div></div>
-    </div>
-    <div class="card">
-      <div class="card-header"><div class="card-title">taux de réponse par séquence</div></div>
-      <div class="chart-bar-wrap">
-        ${statsSeq.map(s=>`<div class="chart-bar-row">
-          <div class="chart-bar-label" title="${s.nom}">${s.nom}</div>
-          <div class="chart-bar-track"><div class="chart-bar-fill" style="width:${s.tx}%;background:${s.tx>15?'var(--ok)':s.tx>5?'var(--warn)':'var(--err)'}"></div></div>
-          <div class="chart-bar-val">${s.tx}%</div>
-        </div>`).join('')}
-        ${!statsSeq.length?'<div style="color:var(--g400);font-size:12px;padding:8px 0">Aucune donnée</div>':''}
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header"><div class="card-title">performance par campagne</div></div>
-      ${S.campagnes.length?`<table><thead><tr><th>campagne</th><th>envoyés</th><th>ouvertures</th><th>réponses</th><th>taux</th><th>lus</th><th>non lus</th></tr></thead><tbody>
-        ${S.campagnes.map(c=>{
-          const ps=S.prospects.filter(p=>p.campagneId===c.id)
-          const env=ps.filter(p=>p.etapeCourante>0).length
-          const ouv=ps.filter(p=>p.ouvertures>0).length
-          const rep=ps.filter(p=>p.repandu).length
-          const lus=ps.filter(p=>p.tag==='lu').length
-          const nonLus=ps.filter(p=>p.tag==='non_lu').length
-          const tx=pct(rep,env)
-          return `<tr>
-            <td style="font-family:var(--mono);font-size:12px">${c.nom}</td>
-            <td>${env}</td><td>${ouv}</td><td>${rep}</td>
-            <td>${badge(tx+'%',tx>15?'green':tx>5?'amber':'gray')}</td>
-            <td>${badge(lus,'blue')}</td>
-            <td>${badge(nonLus,'amber')}</td>
-          </tr>`}).join('')}
-      </tbody></table>`:'<div style="color:var(--g400);font-size:12px">Aucune campagne</div>'}
-    </div>`
+  const header='email,prenom,nom,societe,poste,etape,ouvertures,tag,repandu,termine'
+  const body=ps.map(p=>[p.email,p.prenom||'',p.nom||'',p.societe||'',p.poste||'',p.etapeCourante||0,p.ouvertures||0,p.tag||'',p.repandu?'oui':'non',p.termine?'oui':'non'].map(v=>'"'+String(v)+'"').join(',')).join('\n')
+  const blob=new Blob([header+'\n'+body],{type:'text/csv'})
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='prospects.csv';a.click()
 }
 
 // ═══ JOURNAUX ═══
 function afficherJournaux(){
   const el=document.getElementById('contenu-journaux')
+  if(!el) return
   if(!S.journaux.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">aucun journal</div></div>`;return}
   el.innerHTML=S.journaux.map(l=>`<div class="log-entry">
     <span class="log-time">${l.heure}</span>
@@ -2177,10 +2212,260 @@ function afficherJournaux(){
   </div>`).join('')
 }
 
+// ═══ FUNNEL ═══
+function rendreFunnel(campId){
+  const camp=S.campagnes.find(c=>c.id===campId)
+  const seq=camp?S.sequences.find(s=>s.id===camp.seqId):null
+  const ps=S.prospects.filter(p=>p.campagneId===campId)
+  if(!camp||!seq||!ps.length) return ''
+  const etapes=getEtapesSeq(seq)
+  const max=ps.length||1
+  const rep=ps.filter(p=>p.repandu).length
+  const term=ps.filter(p=>p.termine&&!p.repandu).length
+  const lus=ps.filter(p=>p.tag==='lu').length
+  const nonLus=ps.filter(p=>p.tag==='non_lu').length
+  return `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--g100)">
+    ${etapes.map((et,i)=>{
+      const env=ps.filter(p=>p.etapeCourante>i).length
+      return `${i>0?`<div class="funnel-conn"><div class="funnel-conn-line"></div><div class="funnel-conn-pill">J+${et.delaiJours||0} · ${max-env} sortis</div><div class="funnel-conn-line"></div></div>`:''}
+      <div class="funnel-step-row">
+        <div class="funnel-label">${i===0?'initial':`relance_${i}`}</div>
+        <div class="funnel-bar-wrap">
+          <div class="funnel-bg" style="width:${pct(env,max)}%;background:rgba(10,10,10,${0.08*(3-i)+0.04});border-radius:4px"></div>
+          <div class="funnel-content">
+            <div style="font-family:var(--mono);font-size:11px;font-weight:500">${(et.sujet||'').replace(/<[^>]*>/g,'').slice(0,30)}</div>
+            <div style="font-size:14px;font-weight:500;font-family:var(--mono)">${env}</div>
+          </div>
+        </div>
+      </div>`}).join('')}
+    <div class="funnel-outcomes">
+      <div class="funnel-outcome"><div class="funnel-outcome-val" style="color:var(--green)">${rep}</div><div class="funnel-outcome-lbl">réponses</div></div>
+      <div class="funnel-outcome"><div class="funnel-outcome-val" style="color:var(--amber)">${term}</div><div class="funnel-outcome-lbl">terminés</div></div>
+      <div class="funnel-outcome"><div class="funnel-outcome-val" style="color:var(--info)">${lus}</div><div class="funnel-outcome-lbl">lus</div></div>
+      <div class="funnel-outcome"><div class="funnel-outcome-val">${pct(rep,max)}%</div><div class="funnel-outcome-lbl">taux réponse</div></div>
+    </div>
+  </div>`
+}
+
+// ═══ BLACKLIST ═══
+function estBlackliste(email) {
+  return (S.blacklist||[]).some(e=>e.toLowerCase()===email.toLowerCase())
+}
+
+function ajouterBlacklist() {
+  const email=prompt('Email à blacklister :')
+  if(!email||!email.includes('@')) return
+  const e=email.trim().toLowerCase()
+  S.blacklist=S.blacklist||[]
+  if(S.blacklist.includes(e)){alert('Déjà dans la blacklist');return}
+  S.blacklist.push(e)
+  S.prospects.filter(p=>p.email.toLowerCase()===e&&!p.termine).forEach(p=>{
+    p.termine=true;p.prochainEnvoi=null;p.tag='blackliste'
+  })
+  sauver();afficherBlacklist()
+  ajouterJournal(`🚫 ${e} ajouté à la blacklist`,'warn')
+}
+
+function retirerBlacklist(email) {
+  S.blacklist=(S.blacklist||[]).filter(e=>e!==email)
+  sauver();afficherBlacklist()
+  mettreAJourBadges()
+}
+
+function afficherBlacklist() {
+  const el=document.getElementById('blacklistTable')
+  if(!el) return
+  const bl=S.blacklist||[]
+  if(!bl.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🚫</div><div class="empty-title">blacklist vide</div><p>Aucun email bloqué</p></div>`
+  } else {
+    el.innerHTML=`<table><thead><tr><th>Email bloqué</th><th></th></tr></thead><tbody>
+      ${bl.map(e=>`<tr>
+        <td style="font-family:var(--mono);font-size:12px">${e}</td>
+        <td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick="retirerBlacklist('${e}')">retirer</button></td>
+      </tr>`).join('')}
+    </tbody></table>`
+  }
+  const bb=document.getElementById('blacklistBadge');if(bb)bb.textContent=bl.length
+}
+
+// ═══ TEMPLATES ═══
+function sauvegarderTemplate(sujet,corps) {
+  const nom=prompt('Nom du template :')
+  if(!nom) return
+  S.templates=S.templates||[]
+  S.templates.push({id:uid(),nom,sujet,corps,creee:isoMaint()})
+  sauver();ajouterJournal(`Template "${nom}" sauvegardé`,'ok');alert('Template sauvegardé ✓')
+}
+
+function supprimerTemplate(id) {
+  if(!confirm('Supprimer ?')) return
+  S.templates=(S.templates||[]).filter(t=>t.id!==id);sauver()
+}
+
+function appliquerTemplateLineaire(i,tplId) {
+  if(!tplId) return
+  const t=(S.templates||[]).find(t=>t.id===tplId)
+  if(!t) return
+  const node=trouverNodeParIndex(flowRoot,i)
+  if(node){node.sujet=t.sujet;node.corps=t.corps}
+  const se=document.getElementById(`lin-sujet-${i}`)
+  const ce=document.getElementById(`lin-corps-${i}`)
+  if(se) se.value=t.sujet
+  if(ce) ce.innerHTML=t.corps
+  ajouterJournal(`Template "${t.nom}" appliqué`,'ok')
+}
+
+function trouverNodeParIndex(node,idx,ctr={n:0}) {
+  if(ctr.n===idx) return node
+  ctr.n++
+  for(const b of node.branches||[]){const f=trouverNodeParIndex(b,idx,ctr);if(f)return f}
+  return null
+}
+
+function trouverDerniereNode(node) {
+  if(!node.branches||!node.branches.length) return node
+  return trouverDerniereNode(node.branches[node.branches.length-1])
+}
+
+function mettreAJourEtapeLineaire(i,champ,valeur) {
+  const node=trouverNodeParIndex(flowRoot,i)
+  if(node) node[champ]=valeur
+}
+
+function ajouterEtapeLineaire() {
+  const d=trouverDerniereNode(flowRoot)
+  if(d){d.branches=d.branches||[];d.branches.push(creerNode('pas_de_reponse',3));rendreBuilderActif()}
+}
+
+function supprimerEtapeLineaire(i) {
+  if(i===0){alert("Impossible de supprimer l'email initial");return}
+  if(!confirm('Supprimer ?')) return
+  const node=trouverNodeParIndex(flowRoot,i)
+  if(node){supprimerNodeDansParent(flowRoot,node.id);rendreBuilderActif()}
+}
+
+// ═══ BUILDER LINÉAIRE ═══
+let modeBuilder='lineaire'
+
+function basculerModeBuilder() {
+  modeBuilder=modeBuilder==='lineaire'?'flow':'lineaire'
+  const btn=document.getElementById('btnModeBuilder')
+  if(btn) btn.textContent=modeBuilder==='lineaire'?'🔀 vue flow':'📋 vue linéaire'
+  rendreBuilderActif()
+}
+
+function rendreBuilderActif() {
+  if(modeBuilder==='lineaire') rendreBuilderLineaire()
+  else rendreFlow()
+}
+
+function rendreBuilderLineaire() {
+  const canvas=document.getElementById('flowCanvas')
+  if(!canvas) return
+  const etapes=aplatiArbre(flowRoot)
+  const tplOpts=(S.templates||[]).length
+    ?`<select class="form-select" style="width:150px;height:28px;font-size:11px" onchange="appliquerTemplateLineaire(##IDX##,this.value);this.value=''">
+        <option value="">📄 template…</option>
+        ${(S.templates||[]).map(t=>`<option value="${t.id}">${t.nom}</option>`).join('')}
+      </select>`
+    :''
+
+  canvas.innerHTML=etapes.map((et,i)=>`
+    <div style="background:var(--w);border:1.5px solid ${i===0?'var(--accent)':'var(--g200)'};border-radius:var(--rm);padding:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <div style="width:22px;height:22px;border-radius:50%;background:${i===0?'var(--accent)':'var(--g200)'};color:${i===0?'#fff':'var(--g600)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i+1}</div>
+        <span style="font-size:12px;font-weight:600;font-family:var(--mono);flex:1;color:var(--g800)">${i===0?'email initial':`relance ${i}`}</span>
+        ${i>0?`<button class="btn btn-danger btn-xs" onclick="supprimerEtapeLineaire(${i})">✕</button>`:''}
+      </div>
+      ${i>0?`<div style="background:var(--g50);border:1px solid var(--g100);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:12px;color:var(--g500)">Envoyer si</span>
+        <select class="cond-select" onchange="mettreAJourEtapeLineaire(${i},'condition',this.value)">
+          <option value="pas_de_reponse" ${et.condition==='pas_de_reponse'?'selected':''}>pas de réponse</option>
+          <option value="non_lu" ${et.condition==='non_lu'?'selected':''}>non lu</option>
+          <option value="lu" ${et.condition==='lu'?'selected':''}>lu sans réponse</option>
+          <option value="delai" ${et.condition==='delai'?'selected':''}>délai fixe</option>
+        </select>
+        <span style="font-size:12px;color:var(--g500)">après</span>
+        <input type="number" class="cond-num" value="${et.delaiJours||2}" min="1" max="90" onchange="mettreAJourEtapeLineaire(${i},'delaiJours',+this.value)">
+        <span style="font-size:12px;color:var(--g500)">jours à</span>
+        <input type="time" class="cond-select" style="width:100px" value="${et.heureEnvoi||'09:00'}" onchange="mettreAJourEtapeLineaire(${i},'heureEnvoi',this.value)">
+      </div>`:''}
+      <div class="form-group" style="margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <label class="form-label" style="margin-bottom:0">Objet</label>
+          ${tplOpts.replace(/##IDX##/g,i)}
+        </div>
+        <input class="form-input" id="lin-sujet-${i}" value="${(et.sujet||'').replace(/"/g,'&quot;')}"
+          placeholder="Objet…" oninput="mettreAJourEtapeLineaire(${i},'sujet',this.value)"
+          onfocus="dernierEditeurFocus='lin-sujet-${i}'">
+      </div>
+      <div class="form-group" style="margin-bottom:8px">
+        <label class="form-label">Corps</label>
+        <div class="editor-wrap">
+          <div class="editor-toolbar">${outilsEditeur('lin-corps-'+i)}</div>
+          <div id="lin-corps-${i}" class="editor-body" contenteditable="true"
+            data-placeholder="Bonjour {{prenom}},&#10;&#10;..."
+            onfocus="dernierEditeurFocus='lin-corps-${i}'"
+            oninput="mettreAJourEtapeLineaire(${i},'corps',this.innerHTML)">${et.corps||''}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--g600);cursor:pointer">
+          <input type="checkbox" ${et.tagSiNonLu?'checked':''} onchange="mettreAJourEtapeLineaire(${i},'tagSiNonLu',this.checked)">
+          <span class="badge bg-amber" style="font-size:10px">non lu</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--g600);cursor:pointer">
+          <input type="checkbox" ${et.tagSiLu?'checked':''} onchange="mettreAJourEtapeLineaire(${i},'tagSiLu',this.checked)">
+          <span class="badge bg-blue" style="font-size:10px">lu</span>
+        </label>
+        <button class="btn btn-ghost btn-xs" style="margin-left:auto"
+          onclick="sauvegarderTemplate(document.getElementById('lin-sujet-${i}').value,document.getElementById('lin-corps-${i}').innerHTML)">
+          💾 sauver template
+        </button>
+      </div>
+    </div>
+    ${i<etapes.length-1?`<div style="padding:4px 0 0 20px"><div style="width:2px;height:20px;background:var(--g200);margin-left:9px"></div></div>`:''}`
+  ).join('')+`
+  <div style="padding:12px 0 4px">
+    <button class="btn btn-ghost btn-sm" style="width:100%" onclick="ajouterEtapeLineaire()">+ ajouter une relance</button>
+  </div>`
+}
+
+// ═══ TOKEN REFRESH ═══
+let tokenExpireAt=null
+
+function noterExpirationToken() {
+  tokenExpireAt=Date.now()+50*60*1000
+  setTimeout(alerterExpirationToken,50*60*1000)
+}
+
+function alerterExpirationToken() {
+  if(!S.accessToken) return
+  const banner=document.getElementById('tokenBanner')
+  if(banner){
+    banner.style.display='flex'
+    banner.innerHTML=`<span style="flex:1">⚠ Session Outlook expire dans 10 min — reconnectez-vous pour ne pas rater d'envois</span>
+      <button class="btn btn-primary btn-sm" onclick="ouvrirConnexion()">🔄 Reconnecter</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('tokenBanner').style.display='none'">✕</button>`
+  }
+  setTimeout(()=>{
+    if(!S.accessToken) return
+    S.accessToken=null;sauver()
+    document.getElementById('statusDot').classList.remove('on')
+    document.getElementById('statusLabel').textContent='session expirée'
+    document.getElementById('statusEmail').textContent='cliquer pour reconnecter →'
+    const b=document.getElementById('tokenBanner')
+    if(b){b.style.display='flex';b.innerHTML=`<span style="flex:1">🔴 Session expirée — envois en pause</span><button class="btn btn-primary btn-sm" onclick="ouvrirConnexion()">Reconnecter</button>`}
+    ajouterJournal('Session Outlook expirée','err')
+  },10*60*1000)
+}
+
+
 // ═══ INIT ═══
 mettreAJourBadges()
 afficherTableau()
-
+if(S.accessToken) { noterExpirationToken(); setTimeout(demarrerSynchroAuto,2000) }
 </script>
 </body>
 </html>
