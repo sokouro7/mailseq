@@ -1691,7 +1691,7 @@ async function envoyerLot(campId, seq, delaiMs) {
     sauver(); seq._etapesFlat = getEtapesSeq(seq)
     if(enAttente.indexOf(p)<enAttente.length-1)await new Promise(r=>setTimeout(r,delaiMs*1000))
   }
-  envoyant=false; mettreAJourBadges()
+  envoyant=false; mettreAJourBadges(); afficherSequences()
 }
 
 // ═══ VÉRIFICATION RÉPONSES + OUVERTURES (Tags) ═══
@@ -2142,6 +2142,7 @@ function rendreBuilderLineaire() {
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
         <div style="width:22px;height:22px;border-radius:50%;background:${i===0?'var(--accent)':'var(--g200)'};color:${i===0?'#fff':'var(--g600)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i+1}</div>
         <span style="font-size:12px;font-weight:600;font-family:var(--mono);flex:1;color:var(--g800)">${i===0?'email initial':`relance ${i}`}</span>
+        ${i===0?'<span style="font-size:11px;color:var(--green);background:var(--green-bg);border:1px solid var(--green-b);border-radius:20px;padding:2px 10px;font-weight:500">⚡ envoi immédiat à la publication</span>':''}
         ${i>0?`<button class="btn btn-danger btn-xs" onclick="supprimerEtapeLineaire(${i})">✕</button>`:''}
       </div>
       ${i>0?`<div style="background:var(--g50);border:1px solid var(--g100);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -2271,6 +2272,30 @@ function changerTagProspect(prospectId, tag) {
     ajouterJournal(`🚫 ${p.email} — blacklisté`,'warn')
   }
   sauver(); afficherProspects()
+}
+
+// ═══ FORCER ENVOI MAINTENANT ═══
+function forcerEnvoiSeq(seqId) {
+  const camps = S.campagnes.filter(c=>c.seqId===seqId&&c.statut==='active')
+  if(!camps.length) { alert('Aucune campagne active pour cette séquence'); return }
+  // Remettre le prochainEnvoi à maintenant pour tous les prospects en attente
+  let count = 0
+  camps.forEach(camp => {
+    const seq = S.sequences.find(s=>s.id===camp.seqId)
+    if(!seq) return
+    S.prospects.filter(p=>p.campagneId===camp.id&&!p.termine&&!p.repandu&&p.prochainEnvoi).forEach(p=>{
+      p.prochainEnvoi = new Date().toISOString()
+      count++
+    })
+    seq._etapesFlat = getEtapesSeq(seq)
+    envoyerLot(camp.id, seq, camp.delai||45)
+  })
+  if(count > 0) {
+    ajouterJournal(`⚡ Envoi forcé — ${count} prospect${count>1?'s':''} traités maintenant`,'ok')
+    afficherSequences()
+  } else {
+    alert('Aucun envoi en attente pour cette séquence')
+  }
 }
 
 // ═══ RELANCER PROSPECT EN ERREUR ═══
