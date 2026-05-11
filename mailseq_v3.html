@@ -2419,9 +2419,16 @@ function rendreBuilderLineaire() {
           <option value="delai" ${et.condition==='delai'?'selected':''}>délai fixe (toujours)</option>
         </select>
         <span style="font-size:12px;color:var(--g500)">après</span>
-        <input type="number" class="cond-num" value="${et.delaiJours||2}" min="1" max="90" onchange="mettreAJourEtapeLineaire(${i},'delaiJours',+this.value)">
-        <span style="font-size:12px;color:var(--g500)">jours à</span>
-        <input type="time" class="cond-select" style="width:100px" value="${et.heureEnvoi||'09:00'}" onchange="mettreAJourEtapeLineaire(${i},'heureEnvoi',this.value)">
+        <input type="number" class="cond-num" value="${et.delaiVal||et.delaiJours||2}" min="1" max="999" onchange="mettreAJourEtapeLineaire(${i},'delaiVal',+this.value)">
+        <select class="cond-select" style="width:90px" id="unite-sel-${i}" onchange="mettreAJourEtapeLineaire(${i},'delaiUnite',this.value);const hw=document.getElementById('heure-wrap-${i}');if(hw)hw.style.display=this.value==='jours'?'flex':'none'">
+          <option value="jours" ${(et.delaiUnite||'jours')==='jours'?'selected':''}>jours</option>
+          <option value="heures" ${et.delaiUnite==='heures'?'selected':''}>heures</option>
+          <option value="minutes" ${et.delaiUnite==='minutes'?'selected':''}>minutes</option>
+        </select>
+        <span id="heure-wrap-${i}" style="display:${(et.delaiUnite||'jours')==='jours'?'flex':'none'};align-items:center;gap:8px">
+          <span style="font-size:12px;color:var(--g500)">à</span>
+          <input type="time" class="cond-select" style="width:100px" value="${et.heureEnvoi||'09:00'}" onchange="mettreAJourEtapeLineaire(${i},'heureEnvoi',this.value)">
+        </span>
       </div>`:''}
       <div class="form-group" style="margin-bottom:8px">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
