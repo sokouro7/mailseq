@@ -387,7 +387,13 @@ tr:hover td{background:var(--g50)}
 
     <!-- CAMPAGNES -->
     <div id="page-campagnes" class="page" style="display:none">
-      <div class="topbar"><div class="topbar-title">campagnes</div></div>
+      <div class="topbar">
+        <div class="topbar-title">campagnes</div>
+        <div id="progressEnvoi" style="display:none;align-items:center;gap:10px;flex:1;max-width:300px;margin-left:16px">
+          <div style="font-size:11px;color:var(--g500);font-family:var(--mono);white-space:nowrap" id="progressLabel">Envoi en cours…</div>
+          <div class="progress" style="flex:1"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        </div>
+      </div>
       <div class="content">
         <div class="tabs">
           <div class="tab active" id="ctab-nouvelle" onclick="afficherOngletCamp('nouvelle')">nouvelle campagne</div>
@@ -755,6 +761,19 @@ function sauver() {
 const uid = () => Math.random().toString(36).slice(2)+Date.now().toString(36)
 const isoMaint = () => new Date().toISOString()
 const fmt = d => d ? new Date(d).toLocaleString('fr-FR') : '—'
+const fmtProchainEnvoi = d => {
+  if(!d) return '—'
+  const date = new Date(d)
+  const maint = new Date()
+  const diff = Math.round((date - maint) / 3600000)
+  const jours = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi']
+  const mois = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc']
+  if(diff < 0) return '⚡ dû maintenant'
+  if(diff < 1) return `dans moins d'1h`
+  if(diff < 24) return `aujourd'hui à ${date.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`
+  if(diff < 48) return `demain à ${date.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`
+  return `${jours[date.getDay()]} ${date.getDate()} ${mois[date.getMonth()]} à ${date.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`
+}
 const fmtD = d => d ? new Date(d).toLocaleDateString('fr-FR') : '—'
 const pct = (n,d) => d ? Math.round(n/d*100) : 0
 
@@ -1403,6 +1422,7 @@ function afficherSequences() {
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-ghost btn-sm" onclick="ouvrirModalSeq('${s.id}')">✏ modifier</button>
+          <button class="btn btn-ghost btn-sm" onclick="dupliquerSeq('${s.id}')">⎘ dupliquer</button>
           <button class="btn btn-danger btn-sm" onclick="supprimerSeq('${s.id}')">supprimer</button>
         </div>
       </div>
@@ -1804,6 +1824,9 @@ async function envoyerLot(campId, seq, delaiMs) {
   envoyant=true
   const maint=new Date()
   const enAttente=S.prospects.filter(p=>p.campagneId===campId&&!p.termine&&!p.repandu&&p.prochainEnvoi&&new Date(p.prochainEnvoi)<=maint)
+  let nbEnvoyes=0
+  const camp=S.campagnes.find(c=>c.id===campId)
+  afficherProgressionEnvoi(0, enAttente.length, camp?.nom||'')
 
   for(const p of enAttente){
     const etapesFlat = seq._etapesFlat || getEtapesSeq(seq)
@@ -1823,6 +1846,8 @@ async function envoyerLot(campId, seq, delaiMs) {
     const etape=etapesFlat[p.etapeCourante]
     const ok=await envoyerUn(p,etape.sujet,etape.corps)
     if(ok){
+      nbEnvoyes++
+      afficherProgressionEnvoi(nbEnvoyes, enAttente.length, camp?.nom||'')
       p.historique=p.historique||[]
       p.historique.push({etape:p.etapeCourante,envoyeA:isoMaint(),condition:etape.condition})
       p.etapeCourante++
@@ -2101,7 +2126,10 @@ function afficherProspects(){
       <td><span class="badge bg-gray">étape_${p.currentStep||p.etapeCourante||0}</span></td>
 
       <td>${p.tag==='repandu'?badge('↩ répondu','green'):p.tag==='desabonne'||p.tag==='blackliste'?badge('🛑 stop','red'):p.tag==='lu'?badge('👁 lu','blue'):p.tag==='non_lu'?badge('✗ non lu','amber'):'—'}</td>
-      <td>${p.repandu?badge('répondu','green'):p.termine?badge('terminé','gray'):badge('actif','amber')}</td>
+      <td>
+        ${p.repandu?badge('↩ répondu','green'):p.tag==='erreur'?`<span class="badge bg-red" title="${p.erreurMsg||''}">✗ erreur</span>`:p.termine?badge('terminé','gray'):badge('actif','amber')}
+        ${p.tag==='erreur'?`<button class="btn btn-xs btn-ghost" style="margin-left:4px" onclick="relancerProspect('${p.id}')">↺ relancer</button>`:''}
+      </td>
     </tr>`).join('')}
   </tbody></table>`
 }
@@ -2306,9 +2334,11 @@ function rendreBuilderLineaire() {
         <input type="time" class="cond-select" style="width:100px" value="${et.heureEnvoi||'09:00'}" onchange="mettreAJourEtapeLineaire(${i},'heureEnvoi',this.value)">
       </div>`:''}
       <div class="form-group" style="margin-bottom:8px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <label class="form-label" style="margin-bottom:0">Objet</label>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <label class="form-label" style="margin-bottom:0;flex:1">Objet</label>
           ${tplOpts.replace(/##IDX##/g,i)}
+          <button class="btn btn-ghost btn-xs" onclick="ouvrirApercu(${i})">👁 aperçu</button>
+          <button class="btn btn-ghost btn-xs" onclick="envoyerEmailTest(${i})">📧 test</button>
         </div>
         <input class="form-input" id="lin-sujet-${i}" value="${(et.sujet||'').replace(/"/g,'&quot;')}"
           placeholder="Objet…" oninput="mettreAJourEtapeLineaire(${i},'sujet',this.value)"
@@ -2367,6 +2397,219 @@ function alerterExpirationToken() {
   },10*60*1000)
 }
 
+
+// ═══ RELANCER PROSPECT EN ERREUR ═══
+async function relancerProspect(prospectId) {
+  const p = S.prospects.find(x=>x.id===prospectId)
+  if(!p) return
+  if(!S.accessToken && !confirm("Outlook non connecté. Mode démonstration ?")) return
+  const camp = S.campagnes.find(c=>c.id===p.campagneId)
+  const seq = camp ? S.sequences.find(s=>s.id===camp.seqId) : null
+  if(!seq) { alert('Séquence introuvable'); return }
+  const etapes = getEtapesSeq(seq)
+  const etape = etapes[Math.max(0, p.etapeCourante-1)]
+  if(!etape) return
+  p.tag = null; p.erreurMsg = null
+  const ok = await envoyerUn(p, etape.sujet, etape.corps)
+  if(ok) ajouterJournal(`↺ Relance manuelle réussie → ${p.email}`,'ok')
+  sauver(); afficherProspects()
+}
+
+// ═══ DUPLICATION DE SÉQUENCE ═══
+function dupliquerSeq(id) {
+  const seq = S.sequences.find(s=>s.id===id)
+  if(!seq) return
+  const nom = prompt('Nom de la copie :', seq.nom+' (copie)')
+  if(!nom) return
+  const copie = JSON.parse(JSON.stringify(seq))
+  copie.id = uid()
+  copie.nom = nom
+  copie.creee = isoMaint()
+  S.sequences.push(copie)
+  sauver(); afficherSequences()
+  ajouterJournal(`Séquence "${nom}" dupliquée`,'ok')
+}
+
+// ═══ EMAIL DE TEST ═══
+async function envoyerEmailTest(stepIndex) {
+  const emailTest = prompt('Adresse email pour le test :')
+  if(!emailTest || !emailTest.includes('@')) return
+  
+  // Récupérer l'étape depuis le builder linéaire actuel
+  const etapes = aplatiArbre(flowRoot)
+  const etape = etapes[stepIndex]
+  if(!etape) return
+
+  // Prospect fictif pour les variables
+  const prospectTest = {
+    email: emailTest,
+    prenom: 'Prénom',
+    nom: 'Nom',
+    societe: 'Société',
+    poste: 'Poste'
+  }
+
+  if(!S.accessToken) {
+    alert(`[DÉMO] Email test simulé vers ${emailTest}
+
+Objet: ${etape.sujet}
+
+Les variables seraient remplacées par des valeurs d'exemple.`)
+    return
+  }
+
+  const sujetTest = `[TEST] ${interp(etape.sujet, prospectTest)}`
+  const ok = await envoyerUn(prospectTest, sujetTest, etape.corps)
+  if(ok) {
+    ajouterJournal(`📧 Email test envoyé → ${emailTest}`,'ok')
+    alert(`✓ Email test envoyé à ${emailTest}`)
+  }
+}
+
+// ═══ APERÇU EMAIL ═══
+function ouvrirApercu(stepIndex) {
+  // Récupérer un prospect exemple de la liste sélectionnée
+  const lid = document.getElementById('seqListeSel')?.value
+  const liste = lid ? S.listes.find(l=>l.id===lid) : null
+  const exempleProspect = liste?.contacts?.[0] || {
+    email: 'jean.dupont@exemple.fr',
+    prenom: 'Jean',
+    nom: 'Dupont',
+    societe: 'Acme Corp',
+    poste: 'Directeur Commercial'
+  }
+
+  const etapes = aplatiArbre(flowRoot)
+  const etape = etapes[stepIndex]
+  if(!etape) return
+
+  const sujetRendu = interp(etape.sujet, exempleProspect)
+  const corpsRendu = interp(etape.corps, exempleProspect)
+  const signature = S.signature ? `<br><br><hr style="border:none;border-top:1px solid #eee;margin:16px 0">${S.signature}` : ''
+
+  // Créer modal d'aperçu
+  const overlay = document.createElement('div')
+  overlay.className = 'overlay'
+  overlay.onclick = e => { if(e.target===overlay) document.body.removeChild(overlay) }
+  overlay.innerHTML = `
+    <div class="modal" style="width:680px;max-height:85vh">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--g100)">
+        <div>
+          <div class="modal-title" style="margin-bottom:0">Aperçu — ${stepIndex===0?'Email initial':`Relance ${stepIndex}`}</div>
+          <div style="font-size:11px;color:var(--g400);margin-top:3px">Variables remplacées avec : ${exempleProspect.prenom} ${exempleProspect.nom} · ${exempleProspect.societe}</div>
+        </div>
+        <button class="close-panel" onclick="this.closest('.overlay').remove()">×</button>
+      </div>
+      
+      <!-- Infos email -->
+      <div style="background:var(--g50);border:1px solid var(--g100);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;font-size:12px">
+        <div style="display:flex;gap:8px;margin-bottom:6px">
+          <span style="color:var(--g400);width:50px;flex-shrink:0">De :</span>
+          <span style="color:var(--g700)">${S.userEmail||'votre@email.fr'}</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:6px">
+          <span style="color:var(--g400);width:50px;flex-shrink:0">À :</span>
+          <span style="color:var(--g700)">${exempleProspect.email}</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <span style="color:var(--g400);width:50px;flex-shrink:0">Objet :</span>
+          <span style="color:var(--g900);font-weight:500">${sujetRendu||'(sans objet)'}</span>
+        </div>
+      </div>
+
+      <!-- Corps rendu -->
+      <div style="border:1px solid var(--g200);border-radius:var(--r);padding:16px 18px;font-size:13px;line-height:1.7;color:var(--g800);max-height:320px;overflow-y:auto;background:var(--w)">
+        ${corpsRendu+signature || '<span style="color:var(--g300)">(corps vide)</span>'}
+      </div>
+
+      <!-- Vérification variables non remplacées -->
+      ${(sujetRendu+corpsRendu).includes('{{') ? `
+      <div class="info-box i-amber" style="margin-top:12px;margin-bottom:0">
+        ⚠ Des variables n'ont pas été remplacées : ${[...new Set((sujetRendu+corpsRendu).match(/\{\{[^}]+\}\}/g)||[])].join(', ')}
+        <br>Vérifiez que vos colonnes Excel correspondent exactement.
+      </div>` : `
+      <div class="info-box i-green" style="margin-top:12px;margin-bottom:0">
+        ✓ Toutes les variables sont remplacées correctement
+      </div>`}
+
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="envoyerEmailTest(${stepIndex})">📧 Envoyer un email test</button>
+        <button class="btn btn-primary" onclick="this.closest('.overlay').remove()">Fermer</button>
+      </div>
+    </div>`
+  document.body.appendChild(overlay)
+}
+
+// ═══ PROGRESSION ENVOI EN TEMPS RÉEL ═══
+function afficherProgressionEnvoi(envoyes, total, nomCamp) {
+  const el = document.getElementById('progressEnvoi')
+  const label = document.getElementById('progressLabel')
+  const fill = document.getElementById('progressFill')
+  if(!el) return
+  if(total===0) { el.style.display='none'; return }
+  el.style.display='flex'
+  const pct = Math.round(envoyes/total*100)
+  if(label) label.textContent = `${envoyes}/${total} envoyés`
+  if(fill) fill.style.width = pct+'%'
+  if(envoyes>=total) setTimeout(()=>{ if(el) el.style.display='none' }, 3000)
+}
+
+// ═══ PAGINATION PROSPECTS ═══
+let pageProspects = 1
+const PAGE_SIZE = 50
+
+function afficherProspects() {
+  const cid = document.getElementById('prospCampSel')?.value
+  const recherche = document.getElementById('rechercheProspects')?.value?.toLowerCase()||''
+  const el = document.getElementById('tableau-prospects')
+  if(!el) return
+
+  let ps = cid ? S.prospects.filter(p=>p.campagneId===cid) : []
+  if(!cid) { el.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-title">sélectionner une campagne</div></div>`; return }
+  if(!ps.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-title">aucun prospect</div></div>`; return }
+
+  // Filtrer par recherche
+  if(recherche) {
+    ps = ps.filter(p =>
+      (p.email||'').toLowerCase().includes(recherche) ||
+      (p.prenom||'').toLowerCase().includes(recherche) ||
+      (p.nom||'').toLowerCase().includes(recherche) ||
+      (p.societe||'').toLowerCase().includes(recherche)
+    )
+  }
+
+  const total = ps.length
+  const totalPages = Math.ceil(total/PAGE_SIZE)
+  if(pageProspects > totalPages) pageProspects = 1
+  const slice = ps.slice((pageProspects-1)*PAGE_SIZE, pageProspects*PAGE_SIZE)
+
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--g100);background:var(--g50)">
+      <input class="form-input" id="rechercheProspects" placeholder="Rechercher…" style="height:28px;font-size:12px;max-width:220px" 
+        value="${recherche}" oninput="pageProspects=1;afficherProspects()">
+      <span style="font-size:11px;color:var(--g400);margin-left:auto">${total} prospect${total>1?'s':''}</span>
+    </div>
+    <table><thead><tr><th>email</th><th>prénom</th><th>société</th><th>étape</th><th>prochain envoi</th><th>tag</th><th>statut</th></tr></thead><tbody>
+      ${slice.map(p=>`<tr>
+        <td style="font-family:var(--mono);font-size:11.5px">${p.email}</td>
+        <td>${p.prenom||''} ${p.nom||''}</td>
+        <td style="color:var(--g500)">${p.societe||'—'}</td>
+        <td><span class="badge bg-gray">étape_${p.etapeCourante||0}</span></td>
+        <td style="font-size:12px;color:var(--g600)">${p.repandu||p.termine?'—':fmtProchainEnvoi(p.prochainEnvoi)}</td>
+        <td>${p.tag==='repandu'?badge('↩ répondu','green'):p.tag==='desabonne'||p.tag==='blackliste'?badge('🛑 stop','red'):p.tag==='erreur'?`<span class="badge bg-red" title="${p.erreurMsg||''}">✗ erreur</span>`:'—'}</td>
+        <td style="display:flex;align-items:center;gap:6px">
+          ${p.repandu?badge('répondu','green'):p.tag==='erreur'?badge('erreur','red'):p.termine?badge('terminé','gray'):badge('actif','amber')}
+          ${p.tag==='erreur'?`<button class="btn btn-xs btn-ghost" onclick="relancerProspect('${p.id}')">↺</button>`:''}
+        </td>
+      </tr>`).join('')}
+    </tbody></table>
+    ${totalPages>1?`<div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-top:1px solid var(--g100)">
+      <button class="btn btn-ghost btn-sm" onclick="pageProspects=Math.max(1,pageProspects-1);afficherProspects()" ${pageProspects<=1?'disabled':''}>←</button>
+      <span style="font-size:12px;color:var(--g500);font-family:var(--mono)">${pageProspects} / ${totalPages}</span>
+      <button class="btn btn-ghost btn-sm" onclick="pageProspects=Math.min(${totalPages},pageProspects+1);afficherProspects()" ${pageProspects>=totalPages?'disabled':''}>→</button>
+    </div>`:''}
+  `
+}
 
 // ═══ INIT ═══
 mettreAJourBadges()
