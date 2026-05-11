@@ -244,10 +244,7 @@ tr:hover td{background:var(--g50)}
       <div class="nav-step-num">3</div>
       <div class="nav-item" id="nav-sequences" onclick="aller('sequences',this)">Séquences <span class="nav-badge" id="seqBadge">0</span></div>
     </div>
-    <div class="nav-step">
-      <div class="nav-step-num">4</div>
-      <div class="nav-item" id="nav-campagnes" onclick="aller('campagnes',this)">Campagnes <span class="nav-badge" id="campBadge">0</span></div>
-    </div>
+
 
     <div class="nav-divider"></div>
 
@@ -294,16 +291,10 @@ tr:hover td{background:var(--g50)}
     <div class="content" id="contenu-sequences"></div>
   </div>
 
-  <!-- 4. CAMPAGNES -->
-  <div id="page-campagnes" class="page" style="display:none;flex-direction:column">
-    <div class="topbar">
-      <div class="topbar-title">4 — Campagnes</div>
-      <div id="progressEnvoi" style="display:none;align-items:center;gap:10px;flex:1;max-width:280px;margin-left:16px">
-        <span style="font-size:11px;color:var(--g500);font-family:var(--mono);white-space:nowrap" id="progressLabel">Envoi…</span>
-        <div class="progress" style="flex:1"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-      </div>
-    </div>
-    <div class="content" id="contenu-campagnes"></div>
+  <!-- Barre de progression globale (flottante) -->
+  <div id="progressEnvoi" style="display:none;position:fixed;bottom:20px;right:20px;background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:12px 16px;box-shadow:var(--shadow-md);z-index:100;min-width:240px">
+    <div style="font-size:12px;color:var(--g600);margin-bottom:6px" id="progressLabel">Envoi en cours…</div>
+    <div class="progress"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
   </div>
 
   <!-- TABLEAU DE BORD -->
@@ -311,7 +302,7 @@ tr:hover td{background:var(--g50)}
     <div class="topbar">
       <div class="topbar-title">Tableau de bord</div>
       <button class="btn btn-ghost btn-sm" onclick="lancerDeclencheurs();verifierReponses()">↻ synchroniser</button>
-      <button class="btn btn-primary btn-sm" onclick="aller('sequences',document.getElementById('nav-sequences'))">+ nouvelle séquence</button>
+      <button class="btn btn-primary btn-sm" onclick="ouvrirModalSeq(null)">+ nouvelle séquence</button>
     </div>
     <div class="content" id="contenu-tableau"></div>
   </div>
@@ -533,18 +524,18 @@ function badge(libelle, cls, icone='') {
 // ═══ NAVIGATION ═══
 function aller(id, el) {
   document.querySelectorAll('.page').forEach(p=>p.style.display='none')
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'))
+  document.querySelectorAll('.nav-item,.nav-item-sm').forEach(n=>n.classList.remove('active'))
   const pg=document.getElementById('page-'+id)
-  pg.style.display='flex'; pg.style.flexDirection='column'
+  if(pg){pg.style.display='flex';pg.style.flexDirection='column'}
   if(el) el.classList.add('active')
+  const navEl=document.getElementById('nav-'+id); if(navEl) navEl.classList.add('active')
   if(id==='tableau') afficherTableau()
   if(id==='analytiques') afficherAnalytiques()
   if(id==='sequences') afficherSequences()
-  if(id==='campagnes') { remplirSelectSeq(); remplirSelectListeCamp(); afficherListeCamp() }
+  if(id==='campagnes') afficherCampagnes()
   if(id==='signature') chargerSig()
-  if(id==='listes') { afficherListes() }
-  if(id==='blacklist') { afficherBlacklist() }
-  if(id==='prospects') { remplirSelectProspCamp(); afficherProspects() }
+  if(id==='blacklist') afficherBlacklist()
+  if(id==='prospects') afficherProspects()
   if(id==='journaux') afficherJournaux()
 }
 
@@ -1148,37 +1139,118 @@ Confirmer le lancement ?`
 function afficherSequences() {
   const el = document.getElementById('contenu-sequences')
   if(!S.sequences.length){
-    el.innerHTML=`<div class="empty"><div class="empty-icon">🔗</div><div class="empty-title">aucune séquence</div><p>Créez votre première séquence de prospection</p></div>`
+    el.innerHTML=`<div class="empty">
+      <div class="empty-icon">✉</div>
+      <div class="empty-title">Aucune séquence</div>
+      <p style="margin-bottom:16px;color:var(--g400)">Créez votre première séquence d'emails</p>
+      <button class="btn btn-primary" onclick="ouvrirModalSeq(null)">+ créer une séquence</button>
+    </div>`
     return
   }
   el.innerHTML = S.sequences.map(s => {
     const etapes = s.etapes || aplatiArbre(s.flowRoot||creerNode())
-    const branches = compterBranches(s.flowRoot)
-    return `<div class="card">
-      <div class="card-header">
+    const camps = S.campagnes.filter(c=>c.seqId===s.id)
+    const ps = S.prospects.filter(p=>camps.some(c=>c.id===p.campagneId))
+    const sent = ps.filter(p=>p.etapeCourante>0).length
+    const rep = ps.filter(p=>p.repandu).length
+    const actives = camps.filter(c=>c.statut==='active').length
+    return `<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px;margin-bottom:10px;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
         <div>
-          <div class="card-title">${s.nom}</div>
-          <div class="card-sub">${etapes.length} email${etapes.length>1?'s':''} · ${branches>1?branches+' branches · ':''} créée ${fmtD(s.creee)}</div>
+          <div style="font-size:15px;font-weight:600;color:var(--g900);margin-bottom:4px">${s.nom}</div>
+          <div style="font-size:12px;color:var(--g400);display:flex;gap:10px;flex-wrap:wrap">
+            <span>${etapes.length} email${etapes.length>1?'s':''}</span>
+            ${actives>0?`<span style="color:var(--green)">● ${actives} campagne${actives>1?'s':''} active${actives>1?'s':''}</span>`:''}
+            <span>créée ${fmtD(s.creee)}</span>
+          </div>
         </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-ghost btn-sm" onclick="ouvrirModalSeq('${s.id}')">✏ modifier</button>
+        <div style="display:flex;gap:6px">
+          ${sent>0?`<button class="btn btn-ghost btn-sm" onclick="ouvrirSuiviSeq('${s.id}')">📊 suivi</button>`:''}
+          <button class="btn btn-primary btn-sm" onclick="ouvrirModalSeq('${s.id}')">✏ modifier</button>
           <button class="btn btn-ghost btn-sm" onclick="dupliquerSeq('${s.id}')">⎘ dupliquer</button>
-          <button class="btn btn-danger btn-sm" onclick="supprimerSeq('${s.id}')">supprimer</button>
+          <button class="btn btn-danger btn-sm" onclick="supprimerSeq('${s.id}')">✕</button>
         </div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        ${etapes.slice(0,6).map((et,i)=>`
-          <span style="display:flex;align-items:center;gap:6px">
-            ${i>0?`<span style="font-size:11px;color:${condColor(et.condition)};font-weight:500">→ ${(COND[et.condition]||COND.pas_de_reponse).short} J+${et.delaiJours}</span>`:''}
-            <span style="background:var(--g50);border:1px solid var(--g100);border-radius:var(--r);padding:6px 10px;border-left:3px solid ${i===0?'var(--accent)':condColor(et.condition)}">
-              <div style="font-size:11px;font-weight:600;color:var(--g700)">${i===0?'Initial':`Relance ${i}`}</div>
-              <div style="font-size:11px;color:var(--g400)">${(et.sujet||'').slice(0,28)}${et.sujet?.length>28?'…':''}</div>
-            </span>
-          </span>`).join('')}
-        ${etapes.length>6?`<span style="font-size:11px;color:var(--g400)">+${etapes.length-6} autres</span>`:''}
+      <div style="display:flex;align-items:center;gap:0;overflow-x:auto;padding-bottom:4px">
+        ${etapes.map((et,i)=>`
+          <div style="display:flex;align-items:center;flex-shrink:0">
+            ${i>0?`<div style="display:flex;align-items:center;gap:6px;padding:0 10px">
+              <div style="width:20px;height:1.5px;background:var(--g200)"></div>
+              <span style="font-size:10px;color:var(--g400);white-space:nowrap;background:var(--g50);border:1px solid var(--g100);border-radius:20px;padding:2px 8px">J+${et.delaiJours}</span>
+              <div style="width:20px;height:1.5px;background:var(--g200)"></div>
+            </div>`:''}
+            <div style="background:var(--g50);border:1.5px solid ${i===0?'var(--accent)':'var(--g200)'};border-radius:var(--rm);padding:10px 14px;min-width:150px;max-width:200px;flex-shrink:0">
+              <div style="font-size:10px;font-weight:600;color:${i===0?'var(--accent)':'var(--g500)'};text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">${i===0?'Email initial':`Relance ${i}`}</div>
+              <div style="font-size:12px;font-weight:500;color:var(--g900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${et.sujet||''}">${et.sujet||'(sans objet)'}</div>
+              ${i>0?`<div style="font-size:10px;color:var(--g400);margin-top:3px">si pas de réponse</div>`:''}
+            </div>
+          </div>`).join('')}
       </div>
+      ${sent>0?`<div style="display:flex;gap:16px;margin-top:14px;padding-top:12px;border-top:1px solid var(--g50);font-size:12px;color:var(--g400)">
+        <span>📤 <strong style="color:var(--g700)">${sent}</strong> envoyés</span>
+        <span>↩ <strong style="color:var(--green)">${rep}</strong> réponses</span>
+        <span>📊 <strong style="color:var(--accent)">${pct(rep,sent)}%</strong> taux de réponse</span>
+      </div>`:''}
     </div>`
   }).join('')
+}
+
+function ouvrirSuiviSeq(seqId) {
+  const s = S.sequences.find(x=>x.id===seqId)
+  if(!s) return
+  const camps = S.campagnes.filter(c=>c.seqId===seqId)
+  const ps = S.prospects.filter(p=>camps.some(c=>c.id===p.campagneId))
+  const sent = ps.filter(p=>p.etapeCourante>0).length
+  const rep = ps.filter(p=>p.repandu).length
+  const actifs = ps.filter(p=>!p.repandu&&!p.termine).length
+  const txRep = pct(rep,sent)
+  const overlay = document.createElement('div')
+  overlay.className='overlay'
+  overlay.onclick=e=>{if(e.target===overlay)document.body.removeChild(overlay)}
+  overlay.innerHTML=`<div class="modal" style="width:560px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div><div class="modal-title">${s.nom}</div><div style="font-size:12px;color:var(--g400);margin-top:3px">${camps.length} campagne${camps.length>1?'s':''} · ${ps.length} prospects</div></div>
+      <button class="close-btn" onclick="this.closest('.overlay').remove()">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">
+      <div style="background:var(--g50);border:1px solid var(--g100);border-radius:var(--rm);padding:14px;text-align:center">
+        <div style="font-size:26px;font-weight:300;font-family:var(--mono)">${sent}</div>
+        <div style="font-size:10px;color:var(--g400);text-transform:uppercase;margin-top:4px">Envoyés</div>
+      </div>
+      <div style="background:var(--green-bg);border:1px solid var(--green-b);border-radius:var(--rm);padding:14px;text-align:center">
+        <div style="font-size:26px;font-weight:300;font-family:var(--mono);color:var(--green)">${rep}</div>
+        <div style="font-size:10px;color:var(--g400);text-transform:uppercase;margin-top:4px">Réponses</div>
+      </div>
+      <div style="background:var(--accent-l);border:1px solid var(--accent-m);border-radius:var(--rm);padding:14px;text-align:center">
+        <div style="font-size:26px;font-weight:300;font-family:var(--mono);color:var(--accent)">${txRep}%</div>
+        <div style="font-size:10px;color:var(--g400);text-transform:uppercase;margin-top:4px">Taux réponse</div>
+      </div>
+      <div style="background:var(--amber-bg);border:1px solid var(--amber-b);border-radius:var(--rm);padding:14px;text-align:center">
+        <div style="font-size:26px;font-weight:300;font-family:var(--mono);color:var(--amber)">${actifs}</div>
+        <div style="font-size:10px;color:var(--g400);text-transform:uppercase;margin-top:4px">En cours</div>
+      </div>
+    </div>
+    ${camps.length?`<div style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:600;color:var(--g700);margin-bottom:8px">Campagnes</div>
+      ${camps.map(c=>{
+        const cps=ps.filter(p=>p.campagneId===c.id)
+        const cr=cps.filter(p=>p.repandu).length
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--g50);border:1px solid var(--g100);border-radius:var(--r);margin-bottom:6px">
+          <div><div style="font-size:13px;font-weight:500">${c.nom}</div><div style="font-size:11px;color:var(--g400);margin-top:2px">${cps.length} prospects · ${cr} réponses</div></div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="badge ${c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray'}">${c.statut==='active'?'active':c.statut==='pause'?'pausée':'brouillon'}</span>
+            ${c.statut==='active'?`<button class="btn btn-xs btn-ghost" onclick="statutCamp('${c.id}','pause');this.closest('.overlay').remove();ouvrirSuiviSeq('${seqId}')">⏸</button>`:''}
+            ${c.statut==='pause'?`<button class="btn btn-xs btn-success" onclick="statutCamp('${c.id}','active');this.closest('.overlay').remove();ouvrirSuiviSeq('${seqId}')">▶</button>`:''}
+            <button class="btn btn-xs btn-ghost" onclick="voirProspectsCamp('${c.id}')">prospects</button>
+          </div>
+        </div>`}).join('')}
+    </div>`:''}
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="this.closest('.overlay').remove()">Fermer</button>
+      <button class="btn btn-primary" onclick="this.closest('.overlay').remove();ouvrirModalSeq('${seqId}')">✏ Modifier</button>
+    </div>
+  </div>`
+  document.body.appendChild(overlay)
 }
 
 function compterBranches(node) {
@@ -1542,7 +1614,9 @@ async function envoyerUn(prospect, sujet, corpsHtml) {
     ajouterJournal(`🚫 ${prospect.email} — blacklisté, envoi ignoré`,'warn')
     return false
   }
-  const corpsComplet=corpsHtml+(S.signature?`<br><br><hr style="border:none;border-top:1px solid #eee;margin:16px 0">${S.signature}`:'')
+  // Recharger la signature depuis localStorage à chaque envoi (évite les bugs de cache)
+  const sigFraiche = JSON.parse(localStorage.getItem('msp_v3')||'{}').signature || S.signature || ''
+  const corpsComplet=corpsHtml+(sigFraiche?`<br><br><hr style="border:none;border-top:1px solid #eee;margin:16px 0">${sigFraiche}`:'')
   if(!S.accessToken){
     ajouterJournal(`🔴 Outlook non connecté — reconnectez-vous pour envoyer les emails`,'err')
     // Afficher bannière
