@@ -656,7 +656,6 @@ tr:hover td{background:var(--g50)}
           <div id="seqListeApercu" style="margin-top:6px"></div>
         </div>
         <div style="height:1px;background:var(--g100);margin:14px 0"></div>
-        <div class="form-group"><label class="label">Heure d'envoi</label><input type="time" class="input" id="seqHeure" value="09:00"></div>
         <div class="form-group"><label class="label">Jours actifs</label>
           <select class="select" id="seqJours"><option value="semaine">Lun → Ven uniquement</option><option value="tous">Tous les jours</option></select>
         </div>
@@ -729,7 +728,7 @@ function badge(libelle, cls, icone='') {
 // ═══ NAVIGATION ═══
 function aller(id, el) {
   document.querySelectorAll('.page').forEach(p=>p.style.display='none')
-  document.querySelectorAll('.nav-item,.nav-item-sm').forEach(n=>n.classList.remove('active'))
+  document.querySelectorAll('.nav-item,.nav-item-sm,.nav-sm').forEach(n=>n.classList.remove('active'))
   const pg=document.getElementById('page-'+id)
   if(pg){pg.style.display='flex';pg.style.flexDirection='column'}
   if(el) el.classList.add('active')
@@ -944,30 +943,52 @@ function supprimerNodeDansParent(parent, id) {
 
 function ouvrirModalSeq(seqId) {
   seqIdEnEdition = seqId
-  const seq = seqId ? S.sequences.find(s=>s.id===seqId) : null
-  document.getElementById('titreModalSeq').textContent = seq ? 'modifier la séquence' : 'nouvelle séquence'
-  document.getElementById('nomSeq').value = seq?.nom || ''
-  // Migrer ancien format (tableau) → nouveau format (arbre)
-  if(seq?.etapes && Array.isArray(seq.etapes)) {
-    flowRoot = creerNode('pas_de_reponse', 0)
-    flowRoot.sujet = seq.etapes[0]?.sujet || ''
-    flowRoot.corps = seq.etapes[0]?.corps || ''
-    let cur = flowRoot
-    for(let i=1;i<seq.etapes.length;i++){
-      const n=creerNode(seq.etapes[i].condition||'pas_de_reponse', seq.etapes[i].delaiJours||3)
-      n.sujet=seq.etapes[i].sujet||''; n.corps=seq.etapes[i].corps||''
-      cur.branches=[n]; cur=n
-    }
-  } else if(seq?.flowRoot) {
-    flowRoot = JSON.parse(JSON.stringify(seq.flowRoot))
+  const campActive = seqId ? S.campagnes.find(c=>c.seqId===seqId&&c.statut==='active') : null
+  if(seqId) {
+    const seq = S.sequences.find(s=>s.id===seqId)
+    if(!seq) return
+    document.getElementById('nomSeq').value = seq.nom
+    flowRoot = JSON.parse(JSON.stringify(seq.flowRoot || creerNode()))
   } else {
-    flowRoot = creerNode('pas_de_reponse', 0)
+    document.getElementById('nomSeq').value = ''
+    flowRoot = creerNode()
   }
-  selectedNodeId = null
-  modeBuilder = 'lineaire'
+  modeBuilder='lineaire'
+  document.getElementById('btnModeBuilder').textContent='🔀 vue flow'
   document.getElementById('editorPanel').style.display='none'
   rendreBuilderActif()
   remplirSelectListeSeq()
+  document.getElementById('seqListeSel').value=''
+  document.getElementById('seqListeApercu').innerHTML=''
+  document.getElementById('titreModalSeq').textContent = seqId ? 'modifier la séquence' : 'nouvelle séquence'
+  if(campActive) {
+    // Stocker les IDs pour les boutons du bandeau
+    window._lockCampId = campActive.id
+    window._lockSeqId = seqId
+    document.getElementById('seqLancementStatus').innerHTML=
+      '<div style="background:var(--amber-bg);border:1px solid var(--amber-b);border-radius:var(--r);padding:12px 14px;margin-bottom:0">'
+      +'<div style="font-size:12px;color:var(--amber);font-weight:500;margin-bottom:8px">⚠ Campagne en cours — lecture seule</div>'
+      +'<div style="font-size:12px;color:var(--g600);margin-bottom:8px"><strong>'+campActive.nom+'</strong></div>'
+      +'<div style="display:flex;gap:8px">'
+      +'<button class="btn btn-ghost btn-sm" id="lockBtnPause">⏸ Pause</button>'
+      +'<button class="btn btn-danger btn-sm" id="lockBtnStop">✕ Arrêter</button>'
+      +'<button class="btn btn-ghost btn-sm" id="lockBtnDup">⎘ Dupliquer</button>'
+      +'</div></div>'
+    setTimeout(()=>{
+      document.querySelectorAll('#flowCanvas input,#flowCanvas select,#flowCanvas button').forEach(el=>el.disabled=true)
+      document.querySelectorAll('#flowCanvas [contenteditable]').forEach(el=>el.contentEditable='false')
+      document.querySelectorAll('#modalSeq .btn-primary').forEach(b=>{if(b.textContent.includes('Publier'))b.disabled=true})
+      const cid=window._lockCampId, sid=window._lockSeqId
+      const bp=document.getElementById('lockBtnPause')
+      const bs=document.getElementById('lockBtnStop')
+      const bd=document.getElementById('lockBtnDup')
+      if(bp) bp.onclick=()=>{statutCamp(cid,'pause');fermerModal('modalSeq');afficherSequences()}
+      if(bs) bs.onclick=()=>{if(confirm('Arrêter définitivement ?')){supprimerCamp(cid);fermerModal('modalSeq');afficherSequences()}}
+      if(bd) bd.onclick=()=>{dupliquerSeq(sid);fermerModal('modalSeq')}
+    },100)
+  } else {
+    document.getElementById('seqLancementStatus').innerHTML=''
+  }
   document.getElementById('modalSeq').style.display='flex'
 }
 
@@ -1204,7 +1225,7 @@ function insererVar(v) {
 
 // Convertir l'arbre en tableau plat pour l'envoi
 function aplatiArbre(node, result=[]) {
-  result.push({ sujet:node.sujet, corps:node.corps, condition:node.condition, delaiJours:node.delaiJours, heureEnvoi:node.heureEnvoi })
+  result.push({ sujet:node.sujet, corps:node.corps, condition:node.condition, delaiJours:node.delaiVal||node.delaiJours, delaiVal:node.delaiVal||node.delaiJours, delaiUnite:node.delaiUnite||'jours', heureEnvoi:node.heureEnvoi, envoisImmediat:node.envoisImmediat, dateEnvoi:node.dateEnvoi })
   for(const b of node.branches||[]) aplatiArbre(b, result)
   return result
 }
@@ -2012,46 +2033,28 @@ function afficherTableau(){
   const el=document.getElementById('contenu-tableau')
   if(!el) return
   el.innerHTML=`
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">
-      <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:18px 20px;box-shadow:var(--shadow)">
-        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--g400);margin-bottom:10px">Emails envoyés</div>
-        <div style="font-size:34px;font-weight:300;letter-spacing:-2px;color:var(--g900);line-height:1">${env}</div>
-        <div style="font-size:11px;color:var(--g400);margin-top:6px">toutes campagnes</div>
-      </div>
-      <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:18px 20px;box-shadow:var(--shadow)">
-        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--g400);margin-bottom:10px">Réponses</div>
-        <div style="font-size:34px;font-weight:300;letter-spacing:-2px;color:var(--green);line-height:1">${rep}</div>
-        <div style="font-size:11px;color:var(--g400);margin-top:6px">${env?pct(rep,env)+'% taux de réponse':'—'}</div>
-      </div>
-      <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:18px 20px;box-shadow:var(--shadow)">
-        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--g400);margin-bottom:10px">En attente</div>
-        <div style="font-size:34px;font-weight:300;letter-spacing:-2px;color:${att>0?'var(--amber)':'var(--g300)'};line-height:1">${att}</div>
-        <div style="font-size:11px;color:var(--g400);margin-top:6px">envois planifiés</div>
-      </div>
-      <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:18px 20px;box-shadow:var(--shadow)">
-        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--g400);margin-bottom:10px">Campagnes actives</div>
-        <div style="font-size:34px;font-weight:300;letter-spacing:-2px;color:var(--accent);line-height:1">${act}</div>
-        <div style="font-size:11px;color:var(--g400);margin-top:6px">${S.campagnes.filter(c=>c.statut==='brouillon').length} en brouillon</div>
-      </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">emails envoyés</div><div class="stat-value">${env}</div><div class="stat-sub">toutes campagnes</div></div>
+      <div class="stat-card"><div class="stat-label">réponses</div><div class="stat-value c-ok">${rep}</div><div class="stat-sub">${env?pct(rep,env)+'% taux':'—'}</div></div>
+      <div class="stat-card"><div class="stat-label">en attente</div><div class="stat-value c-warn">${att}</div><div class="stat-sub">envois planifiés</div></div>
+      <div class="stat-card"><div class="stat-label">campagnes actives</div><div class="stat-value c-info">${act}</div></div>
     </div>
-    ${att>0?`<div style="background:var(--green-bg);border:1px solid var(--green-b);border-radius:var(--r);padding:10px 14px;font-size:12.5px;color:#065F46;margin-bottom:16px">✓ <strong>${att}</strong> envoi${att>1?'s':''} planifié${att>1?'s':''} — partira automatiquement</div>`:''}
-    <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);overflow:hidden;box-shadow:var(--shadow)">
-      <div style="padding:14px 18px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:13px;font-weight:600;color:var(--g900)">Campagnes récentes</div>
-        <button class="btn btn-ghost btn-sm" onclick="aller('sequences',document.getElementById('nav-sequences'))">voir tout →</button>
-      </div>
-      ${!S.campagnes.length?`<div style="text-align:center;padding:36px;color:var(--g400)"><div style="font-size:22px;margin-bottom:8px;opacity:.3">📭</div><div style="font-size:13px;font-weight:500;color:var(--g500);margin-bottom:4px">Aucune campagne</div><p style="font-size:12px">Créez une séquence et publiez-la</p></div>`:`<table><thead><tr><th>Nom</th><th>Envoyés</th><th>Réponses</th><th>Taux</th><th>Statut</th></tr></thead><tbody>
+    ${att>0?`<div class="info-box i-green">✓ <strong>${att}</strong> envoi${att>1?'s':''} planifié${att>1?'s':''} — partira automatiquement à la prochaine ouverture</div>`:''}
+    <div class="card">
+      <div class="card-header"><div class="card-title">campagnes récentes</div><button class="btn btn-ghost btn-sm" onclick="aller('sequences',document.getElementById('nav-sequences'))">voir tout →</button></div>
+      ${!S.campagnes.length?`<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">aucune campagne</div></div>`:`
+      <table><thead><tr><th>nom</th><th>envoyés</th><th>réponses</th><th>taux</th><th>statut</th></tr></thead><tbody>
         ${S.campagnes.slice(0,6).map(c=>{
           const ps=S.prospects.filter(p=>p.campagneId===c.id)
           const sent=ps.filter(p=>p.etapeCourante>0).length
           const rep=ps.filter(p=>p.repandu).length
+          const ouv=0
           const rr=pct(rep,sent)
           return `<tr>
-            <td style="font-weight:500;color:var(--g900)">${c.nom}</td>
-            <td>${sent}</td>
-            <td style="color:var(--green);font-weight:500">${rep}</td>
-            <td><span class="badge ${rr>15?'b-green':rr>5?'b-amber':'b-gray'}">${rr}%</span></td>
-            <td><span class="badge ${c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray'}">${c.statut==='brouillon'?'brouillon':c.statut==='active'?'active':c.statut==='pause'?'pausée':'terminée'}</span></td>
+            <td style="font-family:var(--mono);font-size:12px">${c.nom}</td>
+            <td>${sent}</td><td>${rep}</td>
+            <td><span class="badge ${rr>15?'bg-green':rr>5?'bg-amber':'bg-gray'}">${rr}%</span></td>
+            <td><span class="badge ${c.statut==='active'?'bg-green':c.statut==='pause'?'bg-amber':c.statut==='brouillon'?'bg-gray':'bg-gray'}">${c.statut==='brouillon'?'📝 brouillon':c.statut==='active'?'active':c.statut==='pause'?'pausée':'terminée'}</span></td>
           </tr>`}).join('')}
       </tbody></table>`}
     </div>`
@@ -2349,7 +2352,7 @@ function trouverDerniereNode(node) {
 
 function mettreAJourEtapeLineaire(i,champ,valeur) {
   const node=trouverNodeParIndex(flowRoot,i)
-  if(node) node[champ]=valeur
+  if(node){ node[champ]=valeur; if(champ==='delaiVal') node.delaiJours=valeur }
 }
 
 function ajouterEtapeLineaire() {
@@ -2396,12 +2399,12 @@ function rendreBuilderLineaire() {
         <div style="width:22px;height:22px;border-radius:50%;background:${i===0?'var(--accent)':'var(--g200)'};color:${i===0?'#fff':'var(--g600)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i+1}</div>
         <span style="font-size:12px;font-weight:600;font-family:var(--mono);flex:1;color:var(--g800)">${i===0?'email initial':`relance ${i}`}</span>
         ${i===0?`<div style="display:flex;align-items:center;gap:6px">
-            <select class="cond-select" style="font-size:11px;height:26px" onchange="mettreAJourEtapeLineaire(0,'envoisImmediat',this.value==='immediat');this.closest('[style*=border-radius]').querySelector('.seq-cond-wrap').style.display=this.value==='planifie'?'flex':'none'">
+            <select class="cond-select" style="font-size:11px;height:26px" onchange="mettreAJourEtapeLineaire(0,'envoisImmediat',this.value==='immediat');this.previousElementSibling&&(this.previousElementSibling.style.display=this.value==='immediat'?'none':'flex')">
               <option value="immediat" ${!(et.envoisImmediat===false)?'selected':''}>⚡ Envoi immédiat à la publication</option>
               <option value="planifie" ${et.envoisImmediat===false?'selected':''}>📅 Planifier une date</option>
             </select>
           </div>`:''}
-        ${i===0?`<div class="seq-cond-wrap" style="margin-top:8px;display:${et.envoisImmediat===false?'flex':'none'}">
+        ${i===0&&et.envoisImmediat===false?`<div class="seq-cond-wrap" style="margin-top:8px">
           <span style="font-size:12px;color:var(--g500)">Envoyer le</span>
           <input type="date" class="cond-select" style="width:150px" value="${et.dateEnvoi||''}" onchange="mettreAJourEtapeLineaire(0,'dateEnvoi',this.value)">
           <span style="font-size:12px;color:var(--g500)">à</span>
@@ -2416,16 +2419,9 @@ function rendreBuilderLineaire() {
           <option value="delai" ${et.condition==='delai'?'selected':''}>délai fixe (toujours)</option>
         </select>
         <span style="font-size:12px;color:var(--g500)">après</span>
-        <input type="number" class="cond-num" value="${et.delaiVal||et.delaiJours||2}" min="1" max="999" onchange="mettreAJourEtapeLineaire(${i},'delaiVal',+this.value)">
-        <select class="cond-select" style="width:90px" id="unite-sel-${i}" onchange="mettreAJourEtapeLineaire(${i},'delaiUnite',this.value);const h=document.getElementById('heure-wrap-${i}');if(h)h.style.display=this.value==='jours'?'flex':'none'">
-          <option value="jours" ${(et.delaiUnite||'jours')==='jours'?'selected':''}>jours</option>
-          <option value="heures" ${et.delaiUnite==='heures'?'selected':''}>heures</option>
-          <option value="minutes" ${et.delaiUnite==='minutes'?'selected':''}>minutes</option>
-        </select>
-        <span id="heure-wrap-${i}" style="display:${(et.delaiUnite||'jours')==='jours'?'flex':'none'};align-items:center;gap:8px">
-          <span style="font-size:12px;color:var(--g500)">à</span>
-          <input type="time" class="cond-select" style="width:100px" value="${et.heureEnvoi||'09:00'}" onchange="mettreAJourEtapeLineaire(${i},'heureEnvoi',this.value)">
-        </span>
+        <input type="number" class="cond-num" value="${et.delaiJours||2}" min="1" max="90" onchange="mettreAJourEtapeLineaire(${i},'delaiJours',+this.value)">
+        <span style="font-size:12px;color:var(--g500)">jours à</span>
+        <input type="time" class="cond-select" style="width:100px" value="${et.heureEnvoi||'09:00'}" onchange="mettreAJourEtapeLineaire(${i},'heureEnvoi',this.value)">
       </div>`:''}
       <div class="form-group" style="margin-bottom:8px">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
@@ -2567,53 +2563,6 @@ function forcerEnvoiSeq(seqId) {
   } else {
     alert('Aucun envoi en attente pour cette séquence')
   }
-}
-
-// ═══ VOIR PROSPECTS D'UNE CAMPAGNE ═══
-function voirProspectsCamp(campId) {
-  const ps = S.prospects.filter(p=>p.campagneId===campId)
-  const camp = S.campagnes.find(c=>c.id===campId)
-  const overlay = document.createElement('div')
-  overlay.className='overlay'
-  overlay.onclick=e=>{if(e.target===overlay)document.body.removeChild(overlay)}
-  let rows=''
-  for(const p of ps){
-    const statut=p.repandu?'<span class="badge b-green">répondu</span>':p.tag==='erreur'?'<span class="badge b-red">erreur</span>':p.termine?'<span class="badge b-gray">terminé</span>':'<span class="badge b-amber">actif</span>'
-    const tag=p.tag==='repandu'?'<span class="badge b-green">↩ répondu</span>':p.tag==='blackliste'?'<span class="badge b-red">🚫</span>':p.tag==='erreur'?`<span class="badge b-red" title="${p.erreurMsg||''}">✗</span>`:'—'
-    rows+=`<tr>
-      <td style="font-family:var(--mono);font-size:11.5px">${p.email}</td>
-      <td>${[p.prenom,p.nom].filter(Boolean).join(' ')||'—'}</td>
-      <td style="color:var(--g400)">${p.societe||'—'}</td>
-      <td><span class="badge b-gray">étape_${p.etapeCourante||0}</span></td>
-      <td style="font-size:12px">${p.repandu||p.termine?'—':fmtProchainEnvoi(p.prochainEnvoi)}</td>
-      <td>${tag}</td>
-      <td style="display:flex;align-items:center;gap:4px">${statut}
-        ${p.tag==='erreur'?`<button class="btn btn-xs btn-ghost" onclick="relancerProspect('${p.id}');this.closest('.overlay').remove()">↺</button>`:''}
-        ${!p.repandu&&p.tag!=='blackliste'?`<button class="btn btn-xs btn-danger" onclick="blacklisterDepuisProspect('${p.id}');this.closest('.overlay').remove()">🚫</button>`:''}
-      </td>
-      <td><select style="height:22px;font-size:11px;border:1px solid var(--g200);border-radius:5px;background:var(--w);cursor:pointer;padding:0 4px" onchange="changerTagProspect('${p.id}',this.value);this.value='';this.closest('.overlay').remove();voirProspectsCamp('${campId}')">
-        <option value="">✏</option>
-        <option value="repandu">↩ répondu</option>
-        <option value="actif">↺ reset</option>
-        <option value="blackliste">🚫 blacklister</option>
-      </select></td>
-    </tr>`
-  }
-  overlay.innerHTML=`<div class="modal modal-wide">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div><div class="modal-title">${camp?.nom||'Prospects'}</div><div style="font-size:12px;color:var(--g400);margin-top:2px">${ps.length} prospects</div></div>
-      <button class="close-btn" onclick="this.closest('.overlay').remove()">×</button>
-    </div>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Email</th><th>Prénom / Nom</th><th>Société</th><th>Étape</th><th>Prochain envoi</th><th>Tag</th><th>Statut</th><th></th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost btn-sm" onclick="exporterCSVCamp('${campId}')">↓ CSV</button>
-      <button class="btn btn-ghost" onclick="this.closest('.overlay').remove()">Fermer</button>
-    </div>
-  </div>`
-  document.body.appendChild(overlay)
 }
 
 // ═══ RELANCER PROSPECT EN ERREUR ═══
