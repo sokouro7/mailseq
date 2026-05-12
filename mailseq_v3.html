@@ -2453,12 +2453,12 @@ function rendreBuilderLineaire() {
         <div style="width:22px;height:22px;border-radius:50%;background:${i===0?'var(--accent)':'var(--g200)'};color:${i===0?'#fff':'var(--g600)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i+1}</div>
         <span style="font-size:12px;font-weight:600;font-family:var(--mono);flex:1;color:var(--g800)">${i===0?'email initial':`relance ${i}`}</span>
         ${i===0?`<div style="display:flex;align-items:center;gap:6px">
-            <select class="cond-select" style="font-size:11px;height:26px" onchange="mettreAJourEtapeLineaire(0,'envoisImmediat',this.value==='immediat');this.previousElementSibling&&(this.previousElementSibling.style.display=this.value==='immediat'?'none':'flex')">
+            <select class="cond-select" style="font-size:11px;height:26px" id="sel-email0-mode" onchange="mettreAJourEtapeLineaire(0,'envoisImmediat',this.value==='immediat');const ep=document.getElementById('email0-planif');if(ep)ep.style.display=this.value==='planifie'?'flex':'none'">
               <option value="immediat" ${!(et.envoisImmediat===false)?'selected':''}>⚡ Envoi immédiat à la publication</option>
               <option value="planifie" ${et.envoisImmediat===false?'selected':''}>📅 Planifier une date</option>
             </select>
           </div>`:''}
-        ${i===0&&et.envoisImmediat===false?`<div class="seq-cond-wrap" style="margin-top:8px">
+        ${i===0?`<div id="email0-planif" class="seq-cond-wrap" style="margin-top:8px;display:${et.envoisImmediat===false?'flex':'none'}">
           <span style="font-size:12px;color:var(--g500)">Envoyer le</span>
           <input type="date" class="cond-select" style="width:150px" value="${et.dateEnvoi||''}" onchange="mettreAJourEtapeLineaire(0,'dateEnvoi',this.value)">
           <span style="font-size:12px;color:var(--g500)">à</span>
@@ -2473,9 +2473,16 @@ function rendreBuilderLineaire() {
           <option value="delai" ${et.condition==='delai'?'selected':''}>délai fixe (toujours)</option>
         </select>
         <span style="font-size:12px;color:var(--g500)">après</span>
-        <input type="number" class="cond-num" value="${et.delaiJours||2}" min="1" max="90" onchange="mettreAJourEtapeLineaire(${i},'delaiJours',+this.value)">
-        <span style="font-size:12px;color:var(--g500)">jours à</span>
-        <input type="time" class="cond-select" style="width:100px" value="${et.heureEnvoi||'09:00'}" onchange="mettreAJourEtapeLineaire(${i},'heureEnvoi',this.value)">
+        <input type="number" class="cond-num" value="${et.delaiVal||et.delaiJours||2}" min="1" max="999" onchange="mettreAJourEtapeLineaire(${i},'delaiVal',+this.value)">
+        <select class="cond-select" style="width:90px" id="unite-sel-${i}" onchange="mettreAJourEtapeLineaire(${i},'delaiUnite',this.value);const hw=document.getElementById('heure-wrap-${i}');if(hw)hw.style.display=this.value==='jours'?'flex':'none'">
+          <option value="jours" ${(et.delaiUnite||'jours')==='jours'?'selected':''}>jours</option>
+          <option value="heures" ${et.delaiUnite==='heures'?'selected':''}>heures</option>
+          <option value="minutes" ${et.delaiUnite==='minutes'?'selected':''}>minutes</option>
+        </select>
+        <span id="heure-wrap-${i}" style="display:${(et.delaiUnite||'jours')==='jours'?'flex':'none'};align-items:center;gap:8px">
+          <span style="font-size:12px;color:var(--g500)">à</span>
+          <input type="time" class="cond-select" style="width:100px" value="${et.heureEnvoi||'09:00'}" onchange="mettreAJourEtapeLineaire(${i},'heureEnvoi',this.value)">
+        </span>
       </div>`:''}
       <div class="form-group" style="margin-bottom:8px">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
@@ -2487,6 +2494,7 @@ function rendreBuilderLineaire() {
         <input class="form-input" id="lin-sujet-${i}" value="${(et.sujet||'').replace(/"/g,'&quot;')}"
           placeholder="Objet…" oninput="mettreAJourEtapeLineaire(${i},'sujet',this.value)"
           onfocus="dernierEditeurFocus='lin-sujet-${i}'">
+      </div>
       </div>
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label">Corps</label>
