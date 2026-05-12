@@ -932,7 +932,7 @@ const COND = {
 }
 
 function creerNode(condition='pas_de_reponse', delaiJours=3) {
-  return { id:uid(), sujet:'', corps:'', condition, delaiJours, heureEnvoi:'09:00', branches:[] }
+  return { id:uid(), sujet:'', corps:'', condition, delaiJours, delaiVal:delaiJours, delaiUnite:'jours', heureEnvoi:'09:00', envoisImmediat:true, branches:[] }
 }
 
 function trouverNode(node, id) {
@@ -1505,8 +1505,23 @@ function compterBranches(node) {
 }
 
 function supprimerSeq(id){
-  if(!confirm('Supprimer cette séquence ?'))return
-  S.sequences=S.sequences.filter(s=>s.id!==id);sauver();afficherSequences()
+  const seq = S.sequences.find(s=>s.id===id)
+  if(!seq) return
+  const camps = S.campagnes.filter(c=>c.seqId===id)
+  const nbProspects = S.prospects.filter(p=>camps.some(c=>c.id===p.campagneId)).length
+  let msg = `Supprimer la séquence "${seq.nom}" ?`
+  if(camps.length) msg += `\n\nCela supprimera aussi ${camps.length} campagne${camps.length>1?'s':''} et ${nbProspects} prospect${nbProspects>1?'s':''} associés.`
+  if(!confirm(msg)) return
+  // Supprimer séquence + campagnes + prospects associés
+  const campIds = camps.map(c=>c.id)
+  S.sequences = S.sequences.filter(s=>s.id!==id)
+  S.campagnes = S.campagnes.filter(c=>c.seqId!==id)
+  S.prospects = S.prospects.filter(p=>!campIds.includes(p.campagneId))
+  sauver()
+  mettreAJourBadges()
+  afficherSequences()
+  afficherTableau()
+  ajouterJournal(`Séquence "${seq.nom}" supprimée (${camps.length} campagne${camps.length>1?'s':''}, ${nbProspects} prospect${nbProspects>1?'s':''})`,'warn')
 }
 
 // Ancien format compat : si la séquence a etapes[], les utiliser pour envoyer
@@ -2707,6 +2722,8 @@ function dupliquerSeq(id) {
   S.sequences.push(copie)
   sauver(); afficherSequences()
   ajouterJournal(`Séquence "${nom}" dupliquée`,'ok')
+  // Ouvrir directement la copie pour modification
+  setTimeout(()=>ouvrirModalSeq(copie.id), 100)
 }
 
 // ═══ EMAIL DE TEST ═══
