@@ -993,12 +993,6 @@ function ouvrirModalSeq(seqId) {
     },100)
   } else {
     document.getElementById('seqLancementStatus').innerHTML=''
-    // Toujours réactiver les boutons (cas d'une nouvelle séquence ou après unlock)
-    setTimeout(()=>{
-      document.querySelectorAll('#flowCanvas input,#flowCanvas select,#flowCanvas button').forEach(el=>el.disabled=false)
-      document.querySelectorAll('#flowCanvas [contenteditable]').forEach(el=>el.contentEditable='true')
-      document.querySelectorAll('#modalSeq .btn-primary').forEach(b=>{b.disabled=false})
-    },150)
   }
   document.getElementById('modalSeq').style.display='flex'
 }
@@ -1219,19 +1213,40 @@ function supprimerBranche(nodeId) {
   rendreFlow()
 }
 
+let _savedRange=null,_savedEl=null
+document.addEventListener('selectionchange',()=>{
+  const sel=window.getSelection()
+  if(!sel||!sel.rangeCount) return
+  const node=sel.getRangeAt(0).commonAncestorContainer
+  const ed=node.nodeType===3?node.parentElement?.closest('[contenteditable]'):node.closest?.('[contenteditable]')
+  if(ed){_savedRange=sel.getRangeAt(0).cloneRange();_savedEl=ed}
+})
+
 function insererVar(v) {
-  if(!dernierEditeurFocus) return
-  const el = document.getElementById(dernierEditeurFocus)
-  if(!el) return
-  if(el.tagName === 'INPUT') {
-    const pos = el.selectionStart, cur = el.value
-    el.value = cur.slice(0,pos) + v + cur.slice(el.selectionEnd)
-    if(selectedNodeId) mettreAJourNode(selectedNodeId, 'sujet', el.value)
-    el.focus(); el.setSelectionRange(pos+v.length, pos+v.length)
-  } else {
-    el.focus(); document.execCommand('insertText', false, v)
-    if(selectedNodeId) mettreAJourNode(selectedNodeId, 'corps', el.innerHTML)
+  // Input (champ objet)
+  if(dernierEditeurFocus){
+    const el=document.getElementById(dernierEditeurFocus)
+    if(el&&el.tagName==='INPUT'&&document.activeElement===el){
+      const pos=el.selectionStart,cur=el.value
+      el.value=cur.slice(0,pos)+v+cur.slice(el.selectionEnd)
+      if(selectedNodeId) mettreAJourNode(selectedNodeId,'sujet',el.value)
+      el.focus();el.setSelectionRange(pos+v.length,pos+v.length)
+      return
+    }
   }
+  // Contenteditable (corps) - insertion à la position du curseur
+  if(_savedRange&&_savedEl){
+    _savedEl.focus()
+    const sel=window.getSelection()
+    sel.removeAllRanges();sel.addRange(_savedRange)
+    document.execCommand('insertText',false,v)
+    const id=_savedEl.id
+    if(id.startsWith('lin-corps-')) mettreAJourEtapeLineaire(parseInt(id.replace('lin-corps-','')),'corps',_savedEl.innerHTML)
+    else if(selectedNodeId) mettreAJourNode(selectedNodeId,'corps',_savedEl.innerHTML)
+    _savedRange=null;return
+  }
+  // Fallback
+  if(dernierEditeurFocus){const el=document.getElementById(dernierEditeurFocus);if(el){el.focus();document.execCommand('insertText',false,v)}}
 }
 
 // Convertir l'arbre en tableau plat pour l'envoi
@@ -1419,11 +1434,11 @@ function afficherSequences() {
           <div style="display:flex;align-items:center;flex-shrink:0">
             ${i>0?`<div style="display:flex;align-items:center;gap:6px;padding:0 10px">
               <div style="width:20px;height:1.5px;background:var(--g200)"></div>
-              <span style="font-size:10px;color:var(--g400);white-space:nowrap;background:var(--g50);border:1px solid var(--g100);border-radius:20px;padding:2px 8px">${et.delaiUnite==='minutes'?'M':et.delaiUnite==='heures'?'H':'J'}+${et.delaiVal||et.delaiJours}</span>
+              <span style="font-size:10px;color:var(--g400);white-space:nowrap;background:var(--g50);border:1px solid var(--g100);border-radius:20px;padding:2px 8px">J+${et.delaiJours}</span>
               <div style="width:20px;height:1.5px;background:var(--g200)"></div>
             </div>`:''}
             <div style="background:var(--g50);border:1.5px solid ${i===0?'var(--accent)':'var(--g200)'};border-radius:var(--rm);padding:10px 14px;min-width:150px;max-width:200px;flex-shrink:0">
-              <div style="font-size:10px;font-weight:600;color:${i===0?'var(--accent)':'var(--g500)'};text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">${i===0?'Email initial':`Relance ${i}`}</div>
+              <div style="font-size:10px;font-weight:600;color:${ps.filter(p=>p.etapeCourante===i&&!p.termine&&!p.repandu).length>0?'var(--accent)':i===0?'var(--accent)':'var(--g500)'};text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">${i===0?'Email initial':`Relance ${i}`}${ps.filter(p=>p.etapeCourante===i&&!p.termine&&!p.repandu).length>0?` · ${ps.filter(p=>p.etapeCourante===i&&!p.termine&&!p.repandu).length} en cours`:''}</div>
               <div style="font-size:12px;font-weight:500;color:var(--g900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${et.sujet||''}">${et.sujet||'(sans objet)'}</div>
               ${i>0?`<div style="font-size:10px;color:var(--g400);margin-top:3px">si pas de réponse</div>`:''}
             </div>
@@ -1452,8 +1467,9 @@ function ouvrirSuiviSeq(seqId) {
     const csent=cps.filter(p=>p.etapeCourante>0).length
     const crep=cps.filter(p=>p.repandu).length
     const ctx=pct(crep,csent)
-    const badgeCls=c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray'
-    const badgeTxt=c.statut==='active'?'active':c.statut==='pause'?'pausée':'brouillon'
+    const campTerminee=c.statut==='active'&&cps.filter(p=>!p.termine&&!p.repandu).length===0
+    const badgeCls=campTerminee?'b-gray':c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray'
+    const badgeTxt=campTerminee?'✓ terminée':c.statut==='active'?'active':c.statut==='pause'?'pausée':'brouillon'
     const cid=c.id
     let btns=''
     if(c.statut==='brouillon') btns+='<button class="btn btn-xs btn-primary" data-action="publier" data-id="'+cid+'">🚀 Publier</button>'
@@ -1985,7 +2001,8 @@ async function verifierReponses(){
     // Surveiller tous les prospects ayant reçu au moins 1 email, même terminés (ils peuvent répondre après)
     const prospectsActifs = {}
     S.prospects.filter(p=>!p.repandu && p.etapeCourante>0).forEach(p=>{
-      prospectsActifs[p.email.toLowerCase()] = p
+      const camp=S.campagnes.find(c=>c.id===p.campagneId)
+      if(camp&&camp.statut==='active') prospectsActifs[p.email.toLowerCase()] = p
     })
     
     if(!Object.keys(prospectsActifs).length){
@@ -2052,6 +2069,8 @@ function reprendreApresConnexion(){
   noterExpirationToken()
   demarrerSynchroAuto()
   setTimeout(()=>{
+    const campIds2=new Set(S.campagnes.map(c=>c.id))
+    S.prospects=S.prospects.filter(p=>campIds2.has(p.campagneId));sauver()
     const enRetard=S.prospects.filter(p=>!p.termine&&!p.repandu&&p.prochainEnvoi&&new Date(p.prochainEnvoi)<=new Date())
     if(enRetard.length){
       ajouterJournal(`⏰ ${enRetard.length} envoi${enRetard.length>1?'s':''} en retard — relance automatique`,'ok')
@@ -2083,13 +2102,15 @@ function afficherTableau(){
           const ps=S.prospects.filter(p=>p.campagneId===c.id)
           const sent=ps.filter(p=>p.etapeCourante>0).length
           const rep=ps.filter(p=>p.repandu).length
-          const ouv=0
           const rr=pct(rep,sent)
+          const fin=c.statut==='active'&&sent>0&&ps.filter(p=>!p.termine&&!p.repandu).length===0
           return `<tr>
-            <td style="font-family:var(--mono);font-size:12px">${c.nom}</td>
-            <td>${sent}</td><td>${rep}</td>
-            <td><span class="badge ${rr>15?'bg-green':rr>5?'bg-amber':'bg-gray'}">${rr}%</span></td>
-            <td><span class="badge ${c.statut==='active'?'bg-green':c.statut==='pause'?'bg-amber':c.statut==='brouillon'?'bg-gray':'bg-gray'}">${c.statut==='brouillon'?'📝 brouillon':c.statut==='active'?'active':c.statut==='pause'?'pausée':'terminée'}</span></td>
+            <td style="font-weight:500;color:var(--g900)">${c.nom}</td>
+            <td>${sent}</td>
+            <td style="color:var(--green);font-weight:500">${rep}</td>
+            <td><span class="badge ${rr>15?'b-green':rr>5?'b-amber':'b-gray'}">${rr}%</span></td>
+            <td><span class="badge ${fin?'b-gray':c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray'}">${fin?'✓ terminée':c.statut==='brouillon'?'brouillon':c.statut==='active'?'active':'pausée'}</span></td>
+            <td><button class="btn btn-xs btn-danger" onclick="supprimerCamp('${c.id}');afficherAnalytiques()">✕</button></td>
           </tr>`}).join('')}
       </tbody></table>`}
     </div>`
@@ -2432,12 +2453,12 @@ function rendreBuilderLineaire() {
         <div style="width:22px;height:22px;border-radius:50%;background:${i===0?'var(--accent)':'var(--g200)'};color:${i===0?'#fff':'var(--g600)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i+1}</div>
         <span style="font-size:12px;font-weight:600;font-family:var(--mono);flex:1;color:var(--g800)">${i===0?'email initial':`relance ${i}`}</span>
         ${i===0?`<div style="display:flex;align-items:center;gap:6px">
-            <select class="cond-select" style="font-size:11px;height:26px" id="sel-email0-mode" onchange="mettreAJourEtapeLineaire(0,'envoisImmediat',this.value==='immediat');const ep=document.getElementById('email0-planif');if(ep)ep.style.display=this.value==='planifie'?'flex':'none'">
+            <select class="cond-select" style="font-size:11px;height:26px" onchange="mettreAJourEtapeLineaire(0,'envoisImmediat',this.value==='immediat');this.previousElementSibling&&(this.previousElementSibling.style.display=this.value==='immediat'?'none':'flex')">
               <option value="immediat" ${!(et.envoisImmediat===false)?'selected':''}>⚡ Envoi immédiat à la publication</option>
               <option value="planifie" ${et.envoisImmediat===false?'selected':''}>📅 Planifier une date</option>
             </select>
           </div>`:''}
-        ${i===0?`<div id="email0-planif" class="seq-cond-wrap" style="margin-top:8px;display:${et.envoisImmediat===false?'flex':'none'}">
+        ${i===0&&et.envoisImmediat===false?`<div class="seq-cond-wrap" style="margin-top:8px">
           <span style="font-size:12px;color:var(--g500)">Envoyer le</span>
           <input type="date" class="cond-select" style="width:150px" value="${et.dateEnvoi||''}" onchange="mettreAJourEtapeLineaire(0,'dateEnvoi',this.value)">
           <span style="font-size:12px;color:var(--g500)">à</span>
@@ -2452,16 +2473,9 @@ function rendreBuilderLineaire() {
           <option value="delai" ${et.condition==='delai'?'selected':''}>délai fixe (toujours)</option>
         </select>
         <span style="font-size:12px;color:var(--g500)">après</span>
-        <input type="number" class="cond-num" value="${et.delaiVal||et.delaiJours||2}" min="1" max="999" onchange="mettreAJourEtapeLineaire(${i},'delaiVal',+this.value)">
-        <select class="cond-select" style="width:90px" id="unite-sel-${i}" onchange="mettreAJourEtapeLineaire(${i},'delaiUnite',this.value);const hw=document.getElementById('heure-wrap-${i}');if(hw)hw.style.display=this.value==='jours'?'flex':'none'">
-          <option value="jours" ${(et.delaiUnite||'jours')==='jours'?'selected':''}>jours</option>
-          <option value="heures" ${et.delaiUnite==='heures'?'selected':''}>heures</option>
-          <option value="minutes" ${et.delaiUnite==='minutes'?'selected':''}>minutes</option>
-        </select>
-        <span id="heure-wrap-${i}" style="display:${(et.delaiUnite||'jours')==='jours'?'flex':'none'};align-items:center;gap:8px">
-          <span style="font-size:12px;color:var(--g500)">à</span>
-          <input type="time" class="cond-select" style="width:100px" value="${et.heureEnvoi||'09:00'}" onchange="mettreAJourEtapeLineaire(${i},'heureEnvoi',this.value)">
-        </span>
+        <input type="number" class="cond-num" value="${et.delaiJours||2}" min="1" max="90" onchange="mettreAJourEtapeLineaire(${i},'delaiJours',+this.value)">
+        <span style="font-size:12px;color:var(--g500)">jours à</span>
+        <input type="time" class="cond-select" style="width:100px" value="${et.heureEnvoi||'09:00'}" onchange="mettreAJourEtapeLineaire(${i},'heureEnvoi',this.value)">
       </div>`:''}
       <div class="form-group" style="margin-bottom:8px">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
@@ -2691,7 +2705,6 @@ function dupliquerSeq(id) {
   S.sequences.push(copie)
   sauver(); afficherSequences()
   ajouterJournal(`Séquence "${nom}" dupliquée`,'ok')
-  setTimeout(()=>ouvrirModalSeq(copie.id), 150)
 }
 
 // ═══ EMAIL DE TEST ═══
@@ -2922,6 +2935,8 @@ mettreAJourBadges()
 afficherTableau()
 if(S.accessToken) {
   setTimeout(()=>{
+    const campIds2=new Set(S.campagnes.map(c=>c.id))
+    S.prospects=S.prospects.filter(p=>campIds2.has(p.campagneId));sauver()
     const enRetard=S.prospects.filter(p=>!p.termine&&!p.repandu&&p.prochainEnvoi&&new Date(p.prochainEnvoi)<=new Date())
     if(enRetard.length){
       ajouterJournal(`⏰ ${enRetard.length} envoi${enRetard.length>1?'s':''} en retard détecté${enRetard.length>1?'s':''} — envoi immédiat`,'ok')
