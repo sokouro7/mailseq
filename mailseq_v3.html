@@ -629,6 +629,7 @@ tr:hover td{background:var(--g50)}
       <div><div class="modal-title" id="titreModalSeq">nouvelle séquence</div><div style="font-size:12px;color:var(--g400);margin-top:3px">Rédigez vos emails · choisissez vos prospects · publiez</div></div>
       <div style="display:flex;gap:8px;align-items:center">
         <button class="btn btn-ghost btn-sm" id="btnModeBuilder" onclick="basculerModeBuilder()">🔀 vue flow</button>
+        <button class="btn btn-ghost btn-sm" id="btnDupliquerSeq" style="display:none" onclick="dupliquerSeq(seqIdEnEdition);fermerModal('modalSeq')">⎘ dupliquer</button>
         <button class="close-btn" onclick="fermerModal('modalSeq')">×</button>
       </div>
     </div>
@@ -756,7 +757,6 @@ function mettreAJourBadges() {
   set('blacklistBadge', (S.blacklist||[]).length)
   set('prospBadge', S.listes.length)
 }
-
 function afficherOngletCamp(t) {
   document.getElementById('ctab-nouvelle').classList.toggle('active', t==='nouvelle')
   document.getElementById('ctab-liste').classList.toggle('active', t==='liste')
@@ -966,14 +966,14 @@ function ouvrirModalSeq(seqId) {
   document.getElementById('seqListeSel').value=''
   document.getElementById('seqListeApercu').innerHTML=''
   document.getElementById('titreModalSeq').textContent = seqId ? 'modifier la séquence' : 'nouvelle séquence'
+  // Bouton dupliquer visible seulement pour séquences existantes
+  const btnDupEl=document.getElementById('btnDupliquerSeq')
+  if(btnDupEl) btnDupEl.style.display=seqId?'inline-flex':'none'
   if(campActive) {
-    // Stocker les IDs pour les boutons du bandeau
-    window._lockCampId = campActive.id
-    window._lockSeqId = seqId
     document.getElementById('seqLancementStatus').innerHTML=
       '<div style="background:var(--amber-bg);border:1px solid var(--amber-b);border-radius:var(--r);padding:12px 14px;margin-bottom:0">'
       +'<div style="font-size:12px;color:var(--amber);font-weight:500;margin-bottom:8px">⚠ Campagne en cours — lecture seule</div>'
-      +'<div style="font-size:12px;color:var(--g600);margin-bottom:8px"><strong>'+campActive.nom+'</strong></div>'
+      +'<div style="font-size:12px;color:var(--g600);margin-bottom:10px"><strong>'+campActive.nom+'</strong></div>'
       +'<div style="display:flex;gap:8px">'
       +'<button class="btn btn-ghost btn-sm" id="lockBtnPause">⏸ Pause</button>'
       +'<button class="btn btn-danger btn-sm" id="lockBtnStop">✕ Arrêter</button>'
@@ -983,16 +983,22 @@ function ouvrirModalSeq(seqId) {
       document.querySelectorAll('#flowCanvas input,#flowCanvas select,#flowCanvas button').forEach(el=>el.disabled=true)
       document.querySelectorAll('#flowCanvas [contenteditable]').forEach(el=>el.contentEditable='false')
       document.querySelectorAll('#modalSeq .btn-primary').forEach(b=>{if(b.textContent.includes('Publier'))b.disabled=true})
-      const cid=window._lockCampId, sid=window._lockSeqId
+      window._lockCampId=campActive.id; window._lockSeqId=seqId
       const bp=document.getElementById('lockBtnPause')
       const bs=document.getElementById('lockBtnStop')
       const bd=document.getElementById('lockBtnDup')
-      if(bp) bp.onclick=()=>{statutCamp(cid,'pause');fermerModal('modalSeq');afficherSequences()}
-      if(bs) bs.onclick=()=>{if(confirm('Arrêter définitivement ?')){supprimerCamp(cid);fermerModal('modalSeq');afficherSequences()}}
-      if(bd) bd.onclick=()=>{dupliquerSeq(sid);fermerModal('modalSeq')}
+      if(bp) bp.onclick=()=>{statutCamp(window._lockCampId,'pause');fermerModal('modalSeq');afficherSequences()}
+      if(bs) bs.onclick=()=>{if(confirm('Arrêter définitivement ?')){supprimerCamp(window._lockCampId);fermerModal('modalSeq');afficherSequences()}}
+      if(bd) bd.onclick=()=>{dupliquerSeq(window._lockSeqId)}
     },100)
   } else {
     document.getElementById('seqLancementStatus').innerHTML=''
+    // Toujours réactiver les boutons (cas d'une nouvelle séquence ou après unlock)
+    setTimeout(()=>{
+      document.querySelectorAll('#flowCanvas input,#flowCanvas select,#flowCanvas button').forEach(el=>el.disabled=false)
+      document.querySelectorAll('#flowCanvas [contenteditable]').forEach(el=>el.contentEditable='true')
+      document.querySelectorAll('#modalSeq .btn-primary').forEach(b=>{b.disabled=false})
+    },150)
   }
   document.getElementById('modalSeq').style.display='flex'
 }
@@ -1413,7 +1419,7 @@ function afficherSequences() {
           <div style="display:flex;align-items:center;flex-shrink:0">
             ${i>0?`<div style="display:flex;align-items:center;gap:6px;padding:0 10px">
               <div style="width:20px;height:1.5px;background:var(--g200)"></div>
-              <span style="font-size:10px;color:var(--g400);white-space:nowrap;background:var(--g50);border:1px solid var(--g100);border-radius:20px;padding:2px 8px">${et.delaiUnite==='minutes'?'M':et.delaiUnite==='heures'?'H':'J'}+${et.delaiVal||et.delaiJours}</span>
+              <span style="font-size:10px;color:var(--g400);white-space:nowrap;background:var(--g50);border:1px solid var(--g100);border-radius:20px;padding:2px 8px">J+${et.delaiJours}</span>
               <div style="width:20px;height:1.5px;background:var(--g200)"></div>
             </div>`:''}
             <div style="background:var(--g50);border:1.5px solid ${i===0?'var(--accent)':'var(--g200)'};border-radius:var(--rm);padding:10px 14px;min-width:150px;max-width:200px;flex-shrink:0">
@@ -1505,26 +1511,19 @@ function compterBranches(node) {
 }
 
 function supprimerSeq(id){
-  const seq = S.sequences.find(s=>s.id===id)
+  const seq=S.sequences.find(s=>s.id===id)
   if(!seq) return
-  const camps = S.campagnes.filter(c=>c.seqId===id)
-  const nbProspects = S.prospects.filter(p=>camps.some(c=>c.id===p.campagneId)).length
-  let msg = `Supprimer la séquence "${seq.nom}" ?`
-  if(camps.length) msg += `\n\nCela supprimera aussi ${camps.length} campagne${camps.length>1?'s':''} et ${nbProspects} prospect${nbProspects>1?'s':''} associés.`
+  const camps=S.campagnes.filter(c=>c.seqId===id)
+  const nbP=S.prospects.filter(p=>camps.some(c=>c.id===p.campagneId)).length
+  let msg=`Supprimer "${seq.nom}" ?`
+  if(camps.length) msg+=`\n\n⚠ Supprime aussi ${camps.length} campagne${camps.length>1?'s':''} et ${nbP} prospect${nbP>1?'s':''}.`
   if(!confirm(msg)) return
-  // Supprimer séquence + campagnes + prospects associés
-  const campIds = camps.map(c=>c.id)
-  S.sequences = S.sequences.filter(s=>s.id!==id)
-  S.campagnes = S.campagnes.filter(c=>c.seqId!==id)
-  S.prospects = S.prospects.filter(p=>!campIds.includes(p.campagneId))
-  sauver()
-  mettreAJourBadges()
-  afficherSequences()
-  afficherTableau()
-  ajouterJournal(`Séquence "${seq.nom}" supprimée (${camps.length} campagne${camps.length>1?'s':''}, ${nbProspects} prospect${nbProspects>1?'s':''})`,'warn')
+  const campIds=camps.map(c=>c.id)
+  S.sequences=S.sequences.filter(s=>s.id!==id)
+  S.campagnes=S.campagnes.filter(c=>c.seqId!==id)
+  S.prospects=S.prospects.filter(p=>!campIds.includes(p.campagneId))
+  sauver(); mettreAJourBadges(); afficherSequences(); afficherTableau()
 }
-
-// Ancien format compat : si la séquence a etapes[], les utiliser pour envoyer
 function getEtapesSeq(seq) {
   if(seq.flowRoot) return aplatiArbre(seq.flowRoot)
   return seq.etapes || []
@@ -1940,12 +1939,12 @@ async function envoyerLot(campId, seq, delaiMs) {
       if(p.etapeCourante<etapesFlat.length){
         const prochaineEtape=etapesFlat[p.etapeCourante]
         const nd=new Date()
-        const delaiVal=prochaineEtape.delaiVal||prochaineEtape.delaiJours||2
-        const delaiUnite=prochaineEtape.delaiUnite||'jours'
-        if(delaiUnite==='minutes') nd.setMinutes(nd.getMinutes()+delaiVal)
-        else if(delaiUnite==='heures') nd.setHours(nd.getHours()+delaiVal)
+        const dVal=prochaineEtape.delaiVal||prochaineEtape.delaiJours||2
+        const dUnit=prochaineEtape.delaiUnite||'jours'
+        if(dUnit==='minutes') nd.setMinutes(nd.getMinutes()+dVal)
+        else if(dUnit==='heures') nd.setHours(nd.getHours()+dVal)
         else {
-          nd.setDate(nd.getDate()+delaiVal)
+          nd.setDate(nd.getDate()+dVal)
           const camp2=S.campagnes.find(c=>c.id===campId)
           if(camp2?.joursOuvres){const d=nd.getDay();if(d===0)nd.setDate(nd.getDate()+1);if(d===6)nd.setDate(nd.getDate()+2)}
           const [h,m]=(prochaineEtape.heureEnvoi||'09:00').split(':')
@@ -2044,26 +2043,23 @@ async function verifierReponses(){
 
 // ═══ SYNCHRO AUTO ═══
 function demarrerSynchroAuto(){
-  if(intervalSynchro) return // déjà actif — ne pas créer un 2ème intervalle
+  if(intervalSynchro) return
   intervalSynchro=setInterval(()=>{lancerDeclencheurs();verifierReponses()},5*60*1000)
   ajouterJournal('Synchronisation automatique activée — toutes les 5 min','ok')
 }
 
-// Appelé aussi après reconnexion Outlook
 function reprendreApresConnexion(){
   noterExpirationToken()
   demarrerSynchroAuto()
   setTimeout(()=>{
-    const enRetard = S.prospects.filter(p=>!p.termine&&!p.repandu&&p.prochainEnvoi&&new Date(p.prochainEnvoi)<=new Date())
+    const enRetard=S.prospects.filter(p=>!p.termine&&!p.repandu&&p.prochainEnvoi&&new Date(p.prochainEnvoi)<=new Date())
     if(enRetard.length){
       ajouterJournal(`⏰ ${enRetard.length} envoi${enRetard.length>1?'s':''} en retard — relance automatique`,'ok')
       lancerDeclencheurs()
     }
     verifierReponses()
-  }, 1000)
+  },1000)
 }
-
-// ═══ TABLEAU DE BORD ═══
 function afficherTableau(){
   const env=S.prospects.filter(p=>p.etapeCourante>0).length
   const rep=S.prospects.filter(p=>p.repandu).length
@@ -2072,52 +2068,34 @@ function afficherTableau(){
   const el=document.getElementById('contenu-tableau')
   if(!el) return
   el.innerHTML=`
-    <div class="stats-row">
-      <div class="stat">
-        <div class="stat-label">Emails envoyés</div>
-        <div class="stat-value">${env}</div>
-        <div class="stat-sub">toutes campagnes</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Réponses</div>
-        <div class="stat-value c-green">${rep}</div>
-        <div class="stat-sub">${env?pct(rep,env)+'% taux de réponse':'—'}</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">En attente</div>
-        <div class="stat-value ${att>0?'c-amber':''}">${att}</div>
-        <div class="stat-sub">envois planifiés</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Campagnes actives</div>
-        <div class="stat-value c-accent">${act}</div>
-        <div class="stat-sub">${S.campagnes.filter(c=>c.statut==='brouillon').length} en brouillon</div>
-      </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">emails envoyés</div><div class="stat-value">${env}</div><div class="stat-sub">toutes campagnes</div></div>
+      <div class="stat-card"><div class="stat-label">réponses</div><div class="stat-value c-ok">${rep}</div><div class="stat-sub">${env?pct(rep,env)+'% taux':'—'}</div></div>
+      <div class="stat-card"><div class="stat-label">en attente</div><div class="stat-value c-warn">${att}</div><div class="stat-sub">envois planifiés</div></div>
+      <div class="stat-card"><div class="stat-label">campagnes actives</div><div class="stat-value c-info">${act}</div></div>
     </div>
-    ${att>0?`<div class="info-box i-green" style="margin-bottom:16px">✓ <strong>${att}</strong> envoi${att>1?'s':''} planifié${att>1?'s':''} — partira automatiquement à la prochaine ouverture</div>`:''}
-    <div class="table-wrap">
-      <div style="padding:14px 18px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:13px;font-weight:600;color:var(--g900)">Campagnes récentes</div>
-        <button class="btn btn-ghost btn-sm" onclick="aller('sequences',document.getElementById('nav-sequences'))">voir tout →</button>
-      </div>
-      ${!S.campagnes.length?`<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">Aucune campagne</div><p>Créez une séquence et publiez-la</p></div>`:`
-      <table><thead><tr><th>Nom</th><th>Envoyés</th><th>Réponses</th><th>Taux</th><th>Statut</th></tr></thead><tbody>
-        ${S.campagnes.slice(0,8).map(c=>{
+    ${att>0?`<div class="info-box i-green">✓ <strong>${att}</strong> envoi${att>1?'s':''} planifié${att>1?'s':''} — partira automatiquement à la prochaine ouverture</div>`:''}
+    <div class="card">
+      <div class="card-header"><div class="card-title">campagnes récentes</div><button class="btn btn-ghost btn-sm" onclick="aller('sequences',document.getElementById('nav-sequences'))">voir tout →</button></div>
+      ${!S.campagnes.length?`<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">aucune campagne</div></div>`:`
+      <table><thead><tr><th>nom</th><th>envoyés</th><th>réponses</th><th>taux</th><th>statut</th></tr></thead><tbody>
+        ${S.campagnes.slice(0,6).map(c=>{
           const ps=S.prospects.filter(p=>p.campagneId===c.id)
           const sent=ps.filter(p=>p.etapeCourante>0).length
           const rep=ps.filter(p=>p.repandu).length
+          const ouv=0
           const rr=pct(rep,sent)
           return `<tr>
-            <td style="font-weight:500;color:var(--g900)">${c.nom}</td>
-            <td>${sent}</td>
-            <td style="color:var(--green);font-weight:500">${rep}</td>
-            <td><span class="badge ${rr>15?'b-green':rr>5?'b-amber':'b-gray'}">${rr}%</span></td>
-            <td><span class="badge ${c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray'}">${c.statut}</span></td>
+            <td style="font-family:var(--mono);font-size:12px">${c.nom}</td>
+            <td>${sent}</td><td>${rep}</td>
+            <td><span class="badge ${rr>15?'bg-green':rr>5?'bg-amber':'bg-gray'}">${rr}%</span></td>
+            <td><span class="badge ${c.statut==='active'?'bg-green':c.statut==='pause'?'bg-amber':c.statut==='brouillon'?'bg-gray':'bg-gray'}">${c.statut==='brouillon'?'📝 brouillon':c.statut==='active'?'active':c.statut==='pause'?'pausée':'terminée'}</span></td>
           </tr>`}).join('')}
       </tbody></table>`}
     </div>`
 }
 
+// ═══ ANALYTIQUES ═══
 function afficherAnalytiques(){
   const el=document.getElementById('contenu-analytiques')
   if(!el) return
@@ -2232,13 +2210,11 @@ ${ps.length} prospect${ps.length>1?'s':''} vont recevoir des emails.`)) return
 }
 
 function supprimerCamp(id){
-  if(!confirm('Supprimer cette campagne et tous ses prospects ?')) return
+  if(!confirm('Supprimer cette campagne et ses prospects ?')) return
   S.campagnes=S.campagnes.filter(c=>c.id!==id)
   S.prospects=S.prospects.filter(p=>p.campagneId!==id)
   sauver(); mettreAJourBadges(); afficherSequences(); afficherTableau()
 }
-
-
 function voirProspects(campId){
   aller('prospects',document.querySelector('[onclick*=prospects]'))
   document.getElementById('prospCampSel').value=campId
@@ -2456,12 +2432,12 @@ function rendreBuilderLineaire() {
         <div style="width:22px;height:22px;border-radius:50%;background:${i===0?'var(--accent)':'var(--g200)'};color:${i===0?'#fff':'var(--g600)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i+1}</div>
         <span style="font-size:12px;font-weight:600;font-family:var(--mono);flex:1;color:var(--g800)">${i===0?'email initial':`relance ${i}`}</span>
         ${i===0?`<div style="display:flex;align-items:center;gap:6px">
-            <select class="cond-select" style="font-size:11px;height:26px" onchange="mettreAJourEtapeLineaire(0,'envoisImmediat',this.value==='immediat');this.previousElementSibling&&(this.previousElementSibling.style.display=this.value==='immediat'?'none':'flex')">
+            <select class="cond-select" style="font-size:11px;height:26px" id="sel-email0-mode" onchange="mettreAJourEtapeLineaire(0,'envoisImmediat',this.value==='immediat');const ep=document.getElementById('email0-planif');if(ep)ep.style.display=this.value==='planifie'?'flex':'none'">
               <option value="immediat" ${!(et.envoisImmediat===false)?'selected':''}>⚡ Envoi immédiat à la publication</option>
               <option value="planifie" ${et.envoisImmediat===false?'selected':''}>📅 Planifier une date</option>
             </select>
           </div>`:''}
-        ${i===0&&et.envoisImmediat===false?`<div class="seq-cond-wrap" style="margin-top:8px">
+        ${i===0?`<div id="email0-planif" class="seq-cond-wrap" style="margin-top:8px;display:${et.envoisImmediat===false?'flex':'none'}">
           <span style="font-size:12px;color:var(--g500)">Envoyer le</span>
           <input type="date" class="cond-select" style="width:150px" value="${et.dateEnvoi||''}" onchange="mettreAJourEtapeLineaire(0,'dateEnvoi',this.value)">
           <span style="font-size:12px;color:var(--g500)">à</span>
@@ -2476,16 +2452,9 @@ function rendreBuilderLineaire() {
           <option value="delai" ${et.condition==='delai'?'selected':''}>délai fixe (toujours)</option>
         </select>
         <span style="font-size:12px;color:var(--g500)">après</span>
-        <input type="number" class="cond-num" value="${et.delaiVal||et.delaiJours||2}" min="1" max="999" onchange="mettreAJourEtapeLineaire(${i},'delaiVal',+this.value)">
-        <select class="cond-select" style="width:90px" id="unite-sel-${i}" onchange="mettreAJourEtapeLineaire(${i},'delaiUnite',this.value);const hw=document.getElementById('heure-wrap-${i}');if(hw)hw.style.display=this.value==='jours'?'flex':'none'">
-          <option value="jours" ${(et.delaiUnite||'jours')==='jours'?'selected':''}>jours</option>
-          <option value="heures" ${et.delaiUnite==='heures'?'selected':''}>heures</option>
-          <option value="minutes" ${et.delaiUnite==='minutes'?'selected':''}>minutes</option>
-        </select>
-        <span id="heure-wrap-${i}" style="display:${(et.delaiUnite||'jours')==='jours'?'flex':'none'};align-items:center;gap:8px">
-          <span style="font-size:12px;color:var(--g500)">à</span>
-          <input type="time" class="cond-select" style="width:100px" value="${et.heureEnvoi||'09:00'}" onchange="mettreAJourEtapeLineaire(${i},'heureEnvoi',this.value)">
-        </span>
+        <input type="number" class="cond-num" value="${et.delaiJours||2}" min="1" max="90" onchange="mettreAJourEtapeLineaire(${i},'delaiJours',+this.value)">
+        <span style="font-size:12px;color:var(--g500)">jours à</span>
+        <input type="time" class="cond-select" style="width:100px" value="${et.heureEnvoi||'09:00'}" onchange="mettreAJourEtapeLineaire(${i},'heureEnvoi',this.value)">
       </div>`:''}
       <div class="form-group" style="margin-bottom:8px">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
@@ -2593,11 +2562,10 @@ function changerTagProspect(prospectId, tag) {
     p.prochainEnvoi=new Date().toISOString()
     ajouterJournal(`↺ ${p.email} — remis en actif (étape 1)`,'ok')
     sauver()
-    // Proposer envoi immédiat
     if(confirm(`✓ ${p.email} remis à l'étape 1.\n\nEnvoyer l'email 1 maintenant ?`)) {
-      const camp = S.campagnes.find(c=>c.id===p.campagneId)
-      const seq = camp ? S.sequences.find(s=>s.id===camp.seqId) : null
-      if(seq) envoyerLot(camp.id, seq, camp.delai||45)
+      const camp=S.campagnes.find(c=>c.id===p.campagneId)
+      const seq=camp?S.sequences.find(s=>s.id===camp.seqId):null
+      if(seq) envoyerLot(camp.id,seq,camp.delai||45)
     }
   } else if(tag==='repandu') {
     p.tag='repandu'; p.repandu=true; p.termine=true; p.prochainEnvoi=null
@@ -2638,54 +2606,48 @@ function forcerEnvoiSeq(seqId) {
 
 // ═══ VOIR PROSPECTS D'UNE CAMPAGNE ═══
 function voirProspectsCamp(campId) {
-  const camp = S.campagnes.find(c=>c.id===campId)
-  const ps = S.prospects.filter(p=>p.campagneId===campId)
-  const overlay = document.createElement('div')
+  const camp=S.campagnes.find(c=>c.id===campId)
+  const ps=S.prospects.filter(p=>p.campagneId===campId)
+  const overlay=document.createElement('div')
   overlay.className='overlay'
   overlay.onclick=e=>{if(e.target===overlay)document.body.removeChild(overlay)}
   let rows=''
   for(const p of ps){
-    const statut = p.repandu?'<span class="badge b-green">répondu</span>':p.tag==='erreur'?'<span class="badge b-red">erreur</span>':p.termine?'<span class="badge b-gray">terminé</span>':'<span class="badge b-amber">actif</span>'
-    const tag = p.tag==='repandu'?'<span class="badge b-green">↩</span>':p.tag==='blackliste'?'<span class="badge b-red">🚫</span>':p.tag==='erreur'?'<span class="badge b-red">✗</span>':'—'
-    rows += '<tr>'
+    const statut=p.repandu?'<span class="badge b-green">répondu</span>':p.tag==='erreur'?'<span class="badge b-red">erreur</span>':p.termine?'<span class="badge b-gray">terminé</span>':'<span class="badge b-amber">actif</span>'
+    rows+='<tr>'
       +'<td style="font-family:var(--mono);font-size:11.5px">'+p.email+'</td>'
       +'<td>'+([p.prenom,p.nom].filter(Boolean).join(' ')||'—')+'</td>'
-      +'<td style="color:var(--g400)">'+( p.societe||'—')+'</td>'
+      +'<td style="color:var(--g400)">'+(p.societe||'—')+'</td>'
       +'<td><span class="badge b-gray">étape_'+(p.etapeCourante||0)+'</span></td>'
       +'<td style="font-size:12px">'+(p.repandu||p.termine?'—':fmtProchainEnvoi(p.prochainEnvoi))+'</td>'
-      +'<td>'+tag+'</td>'
       +'<td>'+statut+'</td>'
-      +'<td><select style="height:22px;font-size:11px;border:1px solid var(--g200);border-radius:5px;background:var(--w);cursor:pointer;padding:0 4px" data-pid="'+p.id+'" data-cid="'+campId+'" class="prospect-tag-sel">'
+      +'<td><select style="height:22px;font-size:11px;border:1px solid var(--g200);border-radius:5px;background:var(--w);cursor:pointer;padding:0 4px" data-pid="'+p.id+'" data-cid="'+campId+'" class="ptagsel">'
       +'<option value="">✏</option>'
       +'<option value="repandu">↩ répondu</option>'
-      +'<option value="actif">↺ reset étape 1</option>'
+      +'<option value="actif">↺ reset</option>'
       +'<option value="blackliste">🚫 blacklister</option>'
       +'</select></td>'
       +'</tr>'
   }
-  overlay.innerHTML = '<div class="modal modal-wide">'
+  overlay.innerHTML='<div class="modal modal-wide">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
     +'<div><div class="modal-title">'+(camp?.nom||'Prospects')+'</div>'
     +'<div style="font-size:12px;color:var(--g400);margin-top:2px">'+ps.length+' prospect'+(ps.length>1?'s':'')+'</div></div>'
-    +'<button class="close-btn" data-close>×</button>'
-    +'</div>'
+    +'<button class="close-btn" data-close>×</button></div>'
     +'<div class="table-wrap"><table>'
-    +'<thead><tr><th>Email</th><th>Prénom</th><th>Société</th><th>Étape</th><th>Prochain envoi</th><th>Tag</th><th>Statut</th><th></th></tr></thead>'
-    +'<tbody>'+rows+'</tbody>'
-    +'</table></div>'
+    +'<thead><tr><th>Email</th><th>Prénom</th><th>Société</th><th>Étape</th><th>Prochain envoi</th><th>Statut</th><th></th></tr></thead>'
+    +'<tbody>'+rows+'</tbody></table></div>'
     +'<div class="modal-footer">'
     +'<button class="btn btn-ghost btn-sm" data-csv="'+campId+'">↓ CSV</button>'
-    +'<button class="btn btn-ghost" data-close>Fermer</button>'
-    +'</div>'
-    +'</div>'
-  overlay.addEventListener('click', e=>{
-    if(e.target.dataset.close!==undefined || e.target===overlay) document.body.removeChild(overlay)
+    +'<button class="btn btn-ghost" data-close>Fermer</button></div></div>'
+  overlay.addEventListener('click',e=>{
+    if(e.target.dataset.close!==undefined||e.target===overlay) document.body.removeChild(overlay)
     if(e.target.dataset.csv) exporterCSVCamp(e.target.dataset.csv)
   })
-  overlay.addEventListener('change', e=>{
-    const sel=e.target.closest('.prospect-tag-sel')
+  overlay.addEventListener('change',e=>{
+    const sel=e.target.closest('.ptagsel')
     if(!sel||!sel.value) return
-    changerTagProspect(sel.dataset.pid, sel.value)
+    changerTagProspect(sel.dataset.pid,sel.value)
     document.body.removeChild(overlay)
     voirProspectsCamp(sel.dataset.cid)
   })
@@ -2722,8 +2684,6 @@ function dupliquerSeq(id) {
   S.sequences.push(copie)
   sauver(); afficherSequences()
   ajouterJournal(`Séquence "${nom}" dupliquée`,'ok')
-  // Ouvrir directement la copie pour modification
-  setTimeout(()=>ouvrirModalSeq(copie.id), 100)
 }
 
 // ═══ EMAIL DE TEST ═══
@@ -2953,18 +2913,15 @@ function afficherProspects() {
 mettreAJourBadges()
 afficherTableau()
 if(S.accessToken) {
-  noterExpirationToken()
-  // Au chargement : déclencher immédiatement les envois en retard + vérifier les réponses
-  // (rattrape les jours passés si l'onglet était fermé)
   setTimeout(()=>{
-    const enRetard = S.prospects.filter(p=>!p.termine&&!p.repandu&&p.prochainEnvoi&&new Date(p.prochainEnvoi)<=new Date())
-    if(enRetard.length) {
+    const enRetard=S.prospects.filter(p=>!p.termine&&!p.repandu&&p.prochainEnvoi&&new Date(p.prochainEnvoi)<=new Date())
+    if(enRetard.length){
       ajouterJournal(`⏰ ${enRetard.length} envoi${enRetard.length>1?'s':''} en retard détecté${enRetard.length>1?'s':''} — envoi immédiat`,'ok')
       lancerDeclencheurs()
     }
     verifierReponses()
-  }, 1000)
-  setTimeout(demarrerSynchroAuto, 6000)
+  },1000)
+  setTimeout(reprendreApresConnexion,3000)
 }
 </script>
 </body>
