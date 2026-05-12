@@ -854,8 +854,7 @@ async function recupererProfil(token) {
     document.getElementById('tokenBanner').style.display='none'
     ajouterJournal(`Connecté : ${S.userEmail}`,'ok')
     setTimeout(()=>fermerModal('modalConnexion'),800)
-    noterExpirationToken()
-    demarrerSynchroAuto()
+    reprendreApresConnexion()
   } catch(e){echec(e.message)}
 }
 
@@ -2035,6 +2034,20 @@ function demarrerSynchroAuto(){
   ajouterJournal('Synchronisation automatique activée — toutes les 5 min','ok')
 }
 
+// Appelé aussi après reconnexion Outlook
+function reprendreApresConnexion(){
+  noterExpirationToken()
+  demarrerSynchroAuto()
+  setTimeout(()=>{
+    const enRetard = S.prospects.filter(p=>!p.termine&&!p.repandu&&p.prochainEnvoi&&new Date(p.prochainEnvoi)<=new Date())
+    if(enRetard.length){
+      ajouterJournal(`⏰ ${enRetard.length} envoi${enRetard.length>1?'s':''} en retard — relance automatique`,'ok')
+      lancerDeclencheurs()
+    }
+    verifierReponses()
+  }, 1000)
+}
+
 // ═══ TABLEAU DE BORD ═══
 function afficherTableau(){
   const env=S.prospects.filter(p=>p.etapeCourante>0).length
@@ -2564,6 +2577,13 @@ function changerTagProspect(prospectId, tag) {
     p.etapeCourante=0; p.historique=[]; p.ouvertures=0
     p.prochainEnvoi=new Date().toISOString()
     ajouterJournal(`↺ ${p.email} — remis en actif (étape 1)`,'ok')
+    sauver()
+    // Proposer envoi immédiat
+    if(confirm(`✓ ${p.email} remis à l'étape 1.\n\nEnvoyer l'email 1 maintenant ?`)) {
+      const camp = S.campagnes.find(c=>c.id===p.campagneId)
+      const seq = camp ? S.sequences.find(s=>s.id===camp.seqId) : null
+      if(seq) envoyerLot(camp.id, seq, camp.delai||45)
+    }
   } else if(tag==='repandu') {
     p.tag='repandu'; p.repandu=true; p.termine=true; p.prochainEnvoi=null
     ajouterJournal(`↩ ${p.email} — marqué comme répondu`,'ok')
@@ -2915,7 +2935,20 @@ function afficherProspects() {
 // ═══ INIT ═══
 mettreAJourBadges()
 afficherTableau()
-if(S.accessToken) { noterExpirationToken(); setTimeout(demarrerSynchroAuto,2000) }
+if(S.accessToken) {
+  noterExpirationToken()
+  // Au chargement : déclencher immédiatement les envois en retard + vérifier les réponses
+  // (rattrape les jours passés si l'onglet était fermé)
+  setTimeout(()=>{
+    const enRetard = S.prospects.filter(p=>!p.termine&&!p.repandu&&p.prochainEnvoi&&new Date(p.prochainEnvoi)<=new Date())
+    if(enRetard.length) {
+      ajouterJournal(`⏰ ${enRetard.length} envoi${enRetard.length>1?'s':''} en retard détecté${enRetard.length>1?'s':''} — envoi immédiat`,'ok')
+      lancerDeclencheurs()
+    }
+    verifierReponses()
+  }, 1000)
+  setTimeout(demarrerSynchroAuto, 6000)
+}
 </script>
 </body>
 </html>
