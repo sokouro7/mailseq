@@ -1495,10 +1495,7 @@ function afficherSequences() {
           <div style="font-size:15px;font-weight:600;color:var(--g900);margin-bottom:4px">${s.nom}</div>
           <div style="font-size:12px;color:var(--g400);display:flex;gap:10px;flex-wrap:wrap">
             <span>${etapes.length} email${etapes.length>1?'s':''}</span>
-            ${(()=>{
-      const fin=actives>0&&ps.filter(p=>!p.termine&&!p.repandu).length===0
-      return actives>0?`<span style="color:\${fin?'var(--g400)':'var(--green)'}">\${fin?'✓':'●'} \${actives} campagne\${actives>1?'s':''} \${fin?'terminée':'active'}\${actives>1?'s':''}</span>`:''
-    })()}
+            ${(()=>{const fin=actives>0&&ps.filter(p=>!p.termine&&!p.repandu).length===0;return actives>0?('<span style="color:'+(fin?'var(--g400)':'var(--green)')+'">'+(fin?'✓':'●')+' '+actives+' campagne'+(actives>1?'s':'')+' '+(fin?'terminée':'active')+(actives>1?'s':'')+'</span>'):'';})()}
             <span>créée ${fmtD(s.creee)}</span>
           </div>
         </div>
