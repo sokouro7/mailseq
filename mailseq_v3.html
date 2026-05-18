@@ -1429,7 +1429,10 @@ function afficherSequences() {
           <div style="font-size:15px;font-weight:600;color:var(--g900);margin-bottom:4px">${s.nom}</div>
           <div style="font-size:12px;color:var(--g400);display:flex;gap:10px;flex-wrap:wrap">
             <span>${etapes.length} email${etapes.length>1?'s':''}</span>
-            ${actives>0?`<span style="color:var(--green)">● ${actives} campagne${actives>1?'s':''} active${actives>1?'s':''}</span>`:''}
+            ${(()=>{
+      const fin=actives>0&&ps.filter(p=>!p.termine&&!p.repandu).length===0
+      return actives>0?`<span style="color:\${fin?'var(--g400)':'var(--green)'}">\${fin?'✓':'●'} \${actives} campagne\${actives>1?'s':''} \${fin?'terminée':'active'}\${actives>1?'s':''}</span>`:''
+    })()}
             <span>créée ${fmtD(s.creee)}</span>
           </div>
         </div>
@@ -1448,7 +1451,7 @@ function afficherSequences() {
               <span style="font-size:10px;color:var(--g400);white-space:nowrap;background:var(--g50);border:1px solid var(--g100);border-radius:20px;padding:2px 8px">J+${et.delaiJours}</span>
               <div style="width:20px;height:1.5px;background:var(--g200)"></div>
             </div>`:''}
-            <div style="background:var(--g50);border:1.5px solid ${i===0?'var(--accent)':'var(--g200)'};border-radius:var(--rm);padding:10px 14px;min-width:150px;max-width:200px;flex-shrink:0">
+            <div style="background:var(--g50);border:1.5px solid ${(()=>{const n=ps.filter(p=>p.etapeCourante===i&&!p.termine&&!p.repandu).length;const fin=ps.length>0&&ps.filter(p=>!p.termine&&!p.repandu).length===0;return n>0?'var(--accent)':fin?'var(--green)':'var(--g200)'})()};border-radius:var(--rm);padding:10px 14px;min-width:150px;max-width:200px;flex-shrink:0">
               <div style="font-size:10px;font-weight:600;color:${i===0?'var(--accent)':'var(--g500)'};text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">${i===0?'Email initial':`Relance ${i}`}</div>
               <div style="font-size:12px;font-weight:500;color:var(--g900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${et.sujet||''}">${et.sujet||'(sans objet)'}</div>
               ${i>0?`<div style="font-size:10px;color:var(--g400);margin-top:3px">si pas de réponse</div>`:''}
@@ -2181,7 +2184,14 @@ function afficherAnalytiques(){
           const ouv=0
           const rep=ps.filter(p=>p.repandu).length
           const tx=pct(rep,env)
-          return `<tr><td style="font-family:var(--mono);font-size:12px">${c.nom}</td><td>${env}</td><td>${rep}</td><td><span class="badge ${tx>15?'bg-green':tx>5?'bg-amber':'bg-gray'}">${tx}%</span></td></tr>`
+          const fin=c.statut==='active'&&env>0&&ps.filter(p=>!p.termine&&!p.repandu).length===0
+          return `<tr>
+            <td style="font-weight:500;color:var(--g900)">${c.nom}</td>
+            <td>${env}</td><td style="color:var(--green);font-weight:500">${rep}</td>
+            <td><span class="badge ${tx>15?'b-green':tx>5?'b-amber':'b-gray'}">${tx}%</span></td>
+            <td><span class="badge ${fin?'b-gray':c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray'}">${fin?'✓ terminée':c.statut==='active'?'active':c.statut==='pause'?'pausée':'brouillon'}</span></td>
+            <td><button class="btn btn-xs btn-danger" onclick="supprimerCamp('${c.id}');afficherAnalytiques()">✕</button></td>
+          </tr>`
         }).join('')}
       </tbody></table>
     </div>`
@@ -2472,7 +2482,7 @@ function rendreBuilderLineaire() {
     :''
 
   canvas.innerHTML=etapes.map((et,i)=>`
-    <div style="background:var(--w);border:1.5px solid ${i===0?'var(--accent)':'var(--g200)'};border-radius:var(--rm);padding:16px">
+    <div style="background:var(--w);border:1.5px solid ${i===0?'var(--accent-m)':'var(--g100)'};border-radius:var(--rm);padding:16px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
         <div style="width:22px;height:22px;border-radius:50%;background:${i===0?'var(--accent)':'var(--g200)'};color:${i===0?'#fff':'var(--g600)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i+1}</div>
         <span style="font-size:12px;font-weight:600;font-family:var(--mono);flex:1;color:var(--g800)">${i===0?'email initial':`relance ${i}`}</span>
