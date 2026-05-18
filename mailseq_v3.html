@@ -583,13 +583,36 @@ tr:hover td{background:var(--g50)}
 <div class="overlay" id="modalConnexion" style="display:none">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
-      <div><div class="modal-title">Connexion Outlook</div><div class="modal-sub">Microsoft Graph API — vos emails partent depuis votre vrai compte</div></div>
+      <div><div class="modal-title" id="connModalTitle">Connexion</div><div class="modal-sub" id="connModalSub">Choisissez votre fournisseur email</div></div>
       <button class="close-btn" onclick="fermerModal('modalConnexion')">×</button>
     </div>
     <div id="conn-etape1">
-      <div class="form-group"><label class="label">ID client (Azure)</label><input class="input mono" id="clientIdInput" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>
-      <div class="form-group"><label class="label">ID de locataire</label><input class="input mono" id="tenantIdInput" placeholder="common" value="common"></div>
-      <div class="info-box i-gray" style="font-size:11.5px">URI de redirection à enregistrer dans Azure :<br><strong id="uriRedir" style="font-family:var(--mono);font-size:11px"></strong></div>
+      <!-- Sélecteur provider -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px" id="conn-provider-sel">
+        <button id="btn-prov-microsoft" onclick="selectionnerProvider('microsoft')"
+          style="padding:14px;border:2px solid var(--accent);border-radius:var(--rm);background:var(--accent-l);cursor:pointer;text-align:left">
+          <div style="font-size:18px;margin-bottom:4px">🪟</div>
+          <div style="font-size:13px;font-weight:600;color:var(--g900)">Microsoft</div>
+          <div style="font-size:11px;color:var(--g400)">Outlook · Office 365</div>
+        </button>
+        <button id="btn-prov-google" onclick="selectionnerProvider('google')"
+          style="padding:14px;border:2px solid var(--g200);border-radius:var(--rm);background:var(--w);cursor:pointer;text-align:left">
+          <div style="font-size:18px;margin-bottom:4px">📬</div>
+          <div style="font-size:13px;font-weight:600;color:var(--g900)">Google</div>
+          <div style="font-size:11px;color:var(--g400)">Gmail · Workspace</div>
+        </button>
+      </div>
+      <!-- Champs Microsoft -->
+      <div id="conn-fields-microsoft">
+        <div class="form-group"><label class="label">ID client (Azure)</label><input class="input mono" id="clientIdInput" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>
+        <div class="form-group"><label class="label">ID de locataire</label><input class="input mono" id="tenantIdInput" placeholder="common" value="common"></div>
+        <div class="info-box i-gray" style="font-size:11.5px">URI de redirection à enregistrer dans Azure :<br><strong id="uriRedir" style="font-family:var(--mono);font-size:11px"></strong></div>
+      </div>
+      <!-- Champs Google -->
+      <div id="conn-fields-google" style="display:none">
+        <div class="form-group"><label class="label">Client ID (Google Cloud Console)</label><input class="input mono" id="googleClientIdInput" placeholder="xxxxxxxxxxxx-xxxx.apps.googleusercontent.com"></div>
+        <div class="info-box i-gray" style="font-size:11.5px">URI de redirection à enregistrer dans Google Cloud Console :<br><strong id="uriRedirGoogle" style="font-family:var(--mono);font-size:11px"></strong><br><br>Scopes requis : Gmail API (send + readonly)</div>
+      </div>
     </div>
     <div id="conn-etape2" style="display:none;text-align:center;padding:20px 0">
       <div style="font-size:24px;margin-bottom:10px">🔐</div>
@@ -709,7 +732,7 @@ tr:hover td{background:var(--g50)}
 <script>
 // ═══ ÉTAT ═══
 const S = (() => {
-  const d = { sequences:[], campagnes:[], prospects:[], listes:[], blacklist:[], templates:[], journaux:[], clientId:'', tenantId:'common', accessToken:null, userEmail:null, signature:'' }
+  const d = { sequences:[], campagnes:[], prospects:[], listes:[], blacklist:[], templates:[], journaux:[], clientId:'', tenantId:'common', accessToken:null, userEmail:null, signature:'', provider:'microsoft' }
   try { return Object.assign(d, JSON.parse(localStorage.getItem('msp_v3')||'{}')) } catch { return d }
 })()
 
@@ -822,10 +845,31 @@ function aperçuListeCamp() {
 }
 
 // ═══ CONNEXION OUTLOOK ═══
+let _connProvider = 'microsoft' // provider sélectionné dans la modal
+
+function selectionnerProvider(p) {
+  _connProvider = p
+  const ms = document.getElementById('conn-fields-microsoft')
+  const gg = document.getElementById('conn-fields-google')
+  const bms = document.getElementById('btn-prov-microsoft')
+  const bgg = document.getElementById('btn-prov-google')
+  if(ms) ms.style.display = p==='microsoft' ? 'block' : 'none'
+  if(gg) gg.style.display = p==='google' ? 'block' : 'none'
+  if(bms) { bms.style.borderColor = p==='microsoft' ? 'var(--accent)' : 'var(--g200)'; bms.style.background = p==='microsoft' ? 'var(--accent-l)' : 'var(--w)' }
+  if(bgg) { bgg.style.borderColor = p==='google' ? 'var(--accent)' : 'var(--g200)'; bgg.style.background = p==='google' ? 'var(--accent-l)' : 'var(--w)' }
+}
+
 function ouvrirConnexion() {
-  document.getElementById('uriRedir').textContent = window.location.href.split('?')[0].split('#')[0]
+  const uri = window.location.href.split('?')[0].split('#')[0]
+  const uriEl = document.getElementById('uriRedir')
+  const uriGEl = document.getElementById('uriRedirGoogle')
+  if(uriEl) uriEl.textContent = uri
+  if(uriGEl) uriGEl.textContent = uri
   document.getElementById('clientIdInput').value = S.clientId||''
   document.getElementById('tenantIdInput').value = S.tenantId||'common'
+  // Pré-sélectionner le provider actuel
+  _connProvider = S.provider||'microsoft'
+  selectionnerProvider(_connProvider)
   document.getElementById('conn-etape1').style.display='block'
   document.getElementById('conn-etape2').style.display='none'
   document.getElementById('btnConnecter').disabled=false
@@ -835,10 +879,7 @@ function ouvrirConnexion() {
 function fermerModal(id) { document.getElementById(id).style.display='none' }
 
 async function connecter() {
-  const cid=document.getElementById('clientIdInput').value.trim()
-  const tid=document.getElementById('tenantIdInput').value.trim()||'common'
-  if(!cid) { alert('Veuillez entrer votre ID client'); return }
-  S.clientId=cid; S.tenantId=tid; sauver()
+  const provider = _connProvider || 'microsoft'
   document.getElementById('conn-etape1').style.display='none'
   document.getElementById('conn-etape2').style.display='block'
   document.getElementById('btnConnecter').disabled=true
@@ -846,8 +887,23 @@ async function connecter() {
   let prog=0; const pi=setInterval(()=>{ prog=Math.min(prog+4,88); barre.style.width=prog+'%' },200)
 
   const redir=encodeURIComponent(window.location.href.split('?')[0].split('#')[0])
-  const scopes=encodeURIComponent('openid profile email Mail.Send Mail.Read User.Read offline_access')
-  const url=`https://login.microsoftonline.com/${tid}/oauth2/v2.0/authorize?client_id=${cid}&response_type=token&redirect_uri=${redir}&scope=${scopes}&response_mode=fragment&nonce=${uid()}&prompt=select_account`
+  let url, cid
+
+  if(provider==='google') {
+    cid=document.getElementById('googleClientIdInput').value.trim()
+    if(!cid){ clearInterval(pi); echec('Veuillez entrer votre Client ID Google'); return }
+    const scopes=encodeURIComponent('openid email profile https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly')
+    url=`https://accounts.google.com/o/oauth2/v2/auth?client_id=${cid}&response_type=token&redirect_uri=${redir}&scope=${scopes}&prompt=select_account`
+    S.googleClientId=cid
+  } else {
+    cid=document.getElementById('clientIdInput').value.trim()
+    const tid=document.getElementById('tenantIdInput').value.trim()||'common'
+    if(!cid){ clearInterval(pi); echec('Veuillez entrer votre ID client'); return }
+    S.clientId=cid; S.tenantId=tid
+    const scopes=encodeURIComponent('openid profile email Mail.Send Mail.Read User.Read offline_access')
+    url=`https://login.microsoftonline.com/${tid}/oauth2/v2.0/authorize?client_id=${cid}&response_type=token&redirect_uri=${redir}&scope=${scopes}&response_mode=fragment&nonce=${uid()}&prompt=select_account`
+  }
+  sauver()
 
   const popup=window.open(url,'msp_auth','width=520,height=660,menubar=no,toolbar=no')
   const poll=setInterval(()=>{
@@ -857,7 +913,7 @@ async function connecter() {
         clearInterval(poll); clearInterval(pi)
         const params=new URLSearchParams(hash.substring(1))
         const token=params.get('access_token')
-        if(token){ barre.style.width='100%'; recupererProfil(token) }
+        if(token){ barre.style.width='100%'; recupererProfil(token, provider) }
         else{ echec(params.get('error_description')||'annulé') }
       }
     } catch(e){}
@@ -867,17 +923,27 @@ async function connecter() {
 
 function gererRetourOAuth() {}
 
-async function recupererProfil(token) {
+async function recupererProfil(token, provider='microsoft') {
   try {
-    const r=await fetch('https://graph.microsoft.com/v1.0/me',{headers:{Authorization:'Bearer '+token}})
-    if(!r.ok) throw new Error()
-    const u=await r.json()
-    S.accessToken=token; S.userEmail=u.mail||u.userPrincipalName; sauver()
+    let email
+    if(provider==='google') {
+      const r=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+token}})
+      if(!r.ok) throw new Error('Erreur profil Google')
+      const u=await r.json()
+      email=u.email
+    } else {
+      const r=await fetch('https://graph.microsoft.com/v1.0/me',{headers:{Authorization:'Bearer '+token}})
+      if(!r.ok) throw new Error('Erreur profil Microsoft')
+      const u=await r.json()
+      email=u.mail||u.userPrincipalName
+    }
+    S.accessToken=token; S.userEmail=email; S.provider=provider; sauver()
+    const label=provider==='google'?'gmail · connecté':'outlook · connecté'
     document.getElementById('statusDot').classList.add('on')
-    document.getElementById('statusLabel').textContent='outlook · connecté'
+    document.getElementById('statusLabel').textContent=label
     document.getElementById('statusEmail').textContent=S.userEmail
     document.getElementById('tokenBanner').style.display='none'
-    ajouterJournal(`Connecté : ${S.userEmail}`,'ok')
+    ajouterJournal(`Connecté : ${S.userEmail} (${provider})`,'ok')
     setTimeout(()=>fermerModal('modalConnexion'),800)
     reprendreApresConnexion()
   } catch(e){echec(e.message)}
@@ -892,7 +958,7 @@ function echec(msg) {
 
 if(S.accessToken&&S.userEmail){
   document.getElementById('statusDot').classList.add('on')
-  document.getElementById('statusLabel').textContent='outlook · connecté'
+  document.getElementById('statusLabel').textContent=(S.provider==='google'?'gmail':'outlook')+' · connecté'
   document.getElementById('statusEmail').textContent=S.userEmail
 }
 
@@ -1897,40 +1963,55 @@ function reinitialiserFormCamp(){
 let envoyant=false
 
 async function envoyerUn(prospect, sujet, corpsHtml) {
-  // Vérification blacklist avant chaque envoi
   if(estBlackliste(prospect.email)){
     ajouterJournal(`🚫 ${prospect.email} — blacklisté, envoi ignoré`,'warn')
     return false
   }
-  // Recharger la signature depuis localStorage à chaque envoi (évite les bugs de cache)
   const sigFraiche = JSON.parse(localStorage.getItem('msp_v3')||'{}').signature || S.signature || ''
   const corpsComplet=corpsHtml+(sigFraiche?`<br><br><hr style="border:none;border-top:1px solid #eee;margin:16px 0">${sigFraiche}`:'')
   if(!S.accessToken){
-    ajouterJournal(`🔴 Outlook non connecté — reconnectez-vous pour envoyer les emails`,'err')
-    // Afficher bannière
+    ajouterJournal(`🔴 Non connecté — reconnectez-vous pour envoyer les emails`,'err')
     const b=document.getElementById('tokenBanner')
-    if(b){b.style.display='flex';b.innerHTML='<span style="flex:1">🔴 Session expirée — reconnectez-vous pour reprendre les envois</span><button class="btn btn-primary btn-sm" onclick="ouvrirConnexion()">Reconnecter</button>'}
+    if(b){b.style.display='flex';b.innerHTML='<span style="flex:1">🔴 Session expirée — reconnectez-vous</span><button class="btn btn-primary btn-sm" onclick="ouvrirConnexion()">Reconnecter</button>'}
     return false
   }
   try{
-    const r=await fetch('https://graph.microsoft.com/v1.0/me/sendMail',{
-      method:'POST',
-      headers:{Authorization:'Bearer '+S.accessToken,'Content-Type':'application/json'},
-      body:JSON.stringify({
-        message:{
-          subject:interp(sujet,prospect),
-          body:{contentType:'HTML',content:interp(corpsComplet,prospect)},
-          toRecipients:[{emailAddress:{address:prospect.email}}]
-        },
-        saveToSentItems:true
+    if((S.provider||'microsoft')==='google') {
+      const subjectRendu=interp(sujet,prospect)
+      const bodyRendu=interp(corpsComplet,prospect)
+      const rawLines=['From: '+S.userEmail,'To: '+prospect.email,'Subject: '+subjectRendu,'MIME-Version: 1.0','Content-Type: text/html; charset=UTF-8','',bodyRendu]
+      const raw=rawLines.join('\r\n')
+      const b64=btoa(unescape(encodeURIComponent(raw))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')
+      const r=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{
+        method:'POST',
+        headers:{Authorization:'Bearer '+S.accessToken,'Content-Type':'application/json'},
+        body:JSON.stringify({raw:b64})
       })
-    })
-    if(r.ok||r.status===202){ajouterJournal(`✓ ${prospect.email} · étape ${prospect.etapeCourante+1} · "${sujet}"`,'ok');return true}
-    if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session expirée — reconnectez-vous','err');return false}
-    const err=await r.json().catch(()=>({}))
-    ajouterJournal(`✗ ${prospect.email} · ${err.error?.message||r.status}`,'err');return false
+      if(r.ok||r.status===200){ajouterJournal(`✓ ${prospect.email} · étape ${prospect.etapeCourante+1} · "${sujet}"`,'ok');return true}
+      if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session Gmail expirée — reconnectez-vous','err');return false}
+      const err=await r.json().catch(()=>({}))
+      ajouterJournal(`✗ ${prospect.email} · ${err.error?.message||r.status}`,'err');return false
+    } else {
+      const r=await fetch('https://graph.microsoft.com/v1.0/me/sendMail',{
+        method:'POST',
+        headers:{Authorization:'Bearer '+S.accessToken,'Content-Type':'application/json'},
+        body:JSON.stringify({
+          message:{
+            subject:interp(sujet,prospect),
+            body:{contentType:'HTML',content:interp(corpsComplet,prospect)},
+            toRecipients:[{emailAddress:{address:prospect.email}}]
+          },
+          saveToSentItems:true
+        })
+      })
+      if(r.ok||r.status===202){ajouterJournal(`✓ ${prospect.email} · étape ${prospect.etapeCourante+1} · "${sujet}"`,'ok');return true}
+      if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session expirée — reconnectez-vous','err');return false}
+      const err=await r.json().catch(()=>({}))
+      ajouterJournal(`✗ ${prospect.email} · ${err.error?.message||r.status}`,'err');return false
+    }
   }catch(e){ajouterJournal(`✗ ${prospect.email} · ${e.message}`,'err');return false}
 }
+
 
 async function envoyerLot(campId, seq, delaiMs) {
   if(envoyant)return
@@ -2005,64 +2086,81 @@ function lancerDeclencheurs(){
 
 let synchroEnCours = false
 async function verifierReponses(){
-  if(synchroEnCours) return // éviter les appels simultanés
-  if(!S.accessToken){ajouterJournal('🔴 Synchronisation impossible — reconnectez-vous à Outlook','err');return}
+  if(synchroEnCours) return
+  if(!S.accessToken){ajouterJournal('Synchronisation impossible — reconnectez-vous','err');return}
   synchroEnCours = true
   ajouterJournal('Synchronisation boîte mail…','info')
   try{
-    // Surveiller tous les prospects ayant reçu au moins 1 email, même terminés (ils peuvent répondre après)
     const prospectsActifs = {}
     S.prospects.filter(p=>!p.repandu && p.etapeCourante>0).forEach(p=>{
       const camp=S.campagnes.find(c=>c.id===p.campagneId)
       if(camp&&camp.statut==='active') prospectsActifs[p.email.toLowerCase()] = p
     })
-    
     if(!Object.keys(prospectsActifs).length){
       ajouterJournal('Aucun prospect à surveiller — aucun email envoyé','info')
       return
     }
 
-    // ── 1. RÉPONSES — lire les 200 derniers emails reçus ──
-    const r = await fetch(
-      `https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages?$select=from,receivedDateTime,subject&$top=200&$orderby=receivedDateTime desc`,
-      {headers:{Authorization:'Bearer '+S.accessToken}}
-    )
-    if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session expirée — reconnectez-vous','err');return}
-    const data = await r.json()
-    
-    let nRep=0
-    for(const msg of data.value||[]){
-      const from=(msg.from?.emailAddress?.address||'').toLowerCase()
-      const p = prospectsActifs[from]
-      if(!p) continue
-      // Ne pas retraiter si déjà marqué répondu
-      if(p.repandu) { delete prospectsActifs[from]; continue }
+    let messages = []
 
-      // Vérifier que la réponse est postérieure au dernier envoi
-      const dernierEnvoi = p.historique?.length ? p.historique[p.historique.length-1].envoyeA : null
-      const dateReponse = msg.receivedDateTime
-      if(dernierEnvoi && dateReponse && new Date(dateReponse) < new Date(dernierEnvoi)) {
-        // Réponse antérieure au dernier envoi — ignorer
-        delete prospectsActifs[from]; continue
+    if((S.provider||'microsoft')==='google') {
+      // Gmail : chercher les messages non lus dans inbox
+      const r=await fetch(
+        'https://gmail.googleapis.com/gmail/v1/users/me/messages?q=in:inbox+is:unread&maxResults=50',
+        {headers:{Authorization:'Bearer '+S.accessToken}}
+      )
+      if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session Gmail expirée','err');return}
+      const data=await r.json()
+      // Charger les détails de chaque message
+      const ids=(data.messages||[]).slice(0,30)
+      for(const m of ids){
+        const mr=await fetch(
+          `https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=metadata&metadataHeaders=From&metadataHeaders=Date`,
+          {headers:{Authorization:'Bearer '+S.accessToken}}
+        )
+        if(!mr.ok) continue
+        const md=await mr.json()
+        const fromH=md.payload?.headers?.find(h=>h.name==='From')
+        const dateH=md.payload?.headers?.find(h=>h.name==='Date')
+        if(fromH) messages.push({
+          from: {emailAddress:{address:fromH.value.replace(/.*<(.+)>.*/,'$1').trim()}},
+          receivedDateTime: dateH?new Date(dateH.value).toISOString():new Date().toISOString(),
+          subject: ''
+        })
       }
+    } else {
+      // Microsoft Graph
+      const r=await fetch(
+        `https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages?$select=from,receivedDateTime,subject&$top=200&$orderby=receivedDateTime desc`,
+        {headers:{Authorization:'Bearer '+S.accessToken}}
+      )
+      if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session expirée — reconnectez-vous','err');return}
+      const data=await r.json()
+      messages=data.value||[]
+    }
 
-      // Réponse reçue → stopper la séquence, PAS de blacklist automatique
-      p.repandu=true; p.termine=true; p.prochainEnvoi=null; p.tag='repandu'
+    let nRep=0
+    for(const msg of messages){
+      const from=(msg.from?.emailAddress?.address||'').toLowerCase()
+      const p=prospectsActifs[from]
+      if(!p) continue
+      if(p.repandu){delete prospectsActifs[from];continue}
+      const dernierEnvoi=p.historique?.length?p.historique[p.historique.length-1].envoyeA:null
+      const dateReponse=msg.receivedDateTime
+      if(dernierEnvoi&&dateReponse&&new Date(dateReponse)<new Date(dernierEnvoi)){
+        delete prospectsActifs[from];continue
+      }
+      p.repandu=true;p.termine=true;p.prochainEnvoi=null;p.tag='repandu'
       nRep++
       ajouterJournal(`↩ Réponse de ${from} · "${msg.subject||'sans sujet'}" — séquence stoppée`,'warn')
       delete prospectsActifs[from]
     }
 
-    // ── RÉSUMÉ ──
     if(!nRep) ajouterJournal('Synchronisation OK — aucun événement','info')
-    else ajouterJournal(`Synchro : ${nRep} réponse${nRep>1?'s':''}`, 'ok')
-    
-    sauver()
-    afficherTableau()
-    
+    else ajouterJournal(`Synchro : ${nRep} réponse${nRep>1?'s':''}`,'ok')
+    sauver(); afficherTableau()
   }catch(e){
     ajouterJournal('Erreur synchro : '+e.message,'err')
-    console.error('Synchro error:', e)
   } finally {
     synchroEnCours = false
   }
