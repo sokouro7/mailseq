@@ -1503,6 +1503,7 @@ function afficherSequences() {
           ${sent>0?`<button class="btn btn-ghost btn-sm" onclick="ouvrirSuiviSeq('${s.id}')">📊 suivi</button>`:''}
           <button class="btn btn-primary btn-sm" onclick="ouvrirModalSeq('${s.id}')">✏ modifier</button>
           <button class="btn btn-ghost btn-sm" onclick="dupliquerSeq('${s.id}')">⎘ dupliquer</button>
+        <button class="btn btn-ghost btn-sm" title="Copier pour l'IA" onclick="copierSeqPourIA('${s.id}')">🤖</button>
           <button class="btn btn-danger btn-sm" onclick="supprimerSeq('${s.id}')">✕</button>
         </div>
       </div>
@@ -1791,7 +1792,7 @@ let prospectsImportes=[], tagsManuel=[]
 function gererDrop(e){e.preventDefault();e.currentTarget.classList.remove('drag-over');traiterFichier(e.dataTransfer.files[0])}
 function gererFichier(e){traiterFichier(e.target.files[0])}
 
-function trouverCle(row,candidats){const ks=Object.keys(row);for(const c of candidats){const k=ks.find(k=>k.toLowerCase().includes(c));if(k)return k}return null}
+function trouverCle(row,candidats){const ks=Object.keys(row);for(const c of candidats){const k=ks.find(k=>k.toLowerCase()===c.toLowerCase());if(k)return k}for(const c of candidats){const k=ks.find(k=>k.toLowerCase().replace(/[^a-z0-9]/g,'').includes(c.toLowerCase().replace(/[^a-z0-9]/g,'')));if(k)return k}return null}
 
 function traiterFichier(file){
   if(!file)return
@@ -2878,6 +2879,83 @@ function voirProspectsCamp(campId) {
   overlay.addEventListener('click',e=>{if(e.target.dataset.close!==undefined||e.target===overlay)document.body.removeChild(overlay);if(e.target.dataset.csv)exporterCSVCamp(e.target.dataset.csv)})
   overlay.addEventListener('change',e=>{const sel=e.target.closest('.ptagsel');if(!sel||!sel.value)return;changerTagProspect(sel.dataset.pid,sel.value);document.body.removeChild(overlay);voirProspectsCamp(sel.dataset.cid)})
   document.body.appendChild(overlay)
+}
+
+// ═══ COPIER SÉQUENCE POUR IA ═══
+function copierSeqPourIA(seqId) {
+  const seq = S.sequences.find(s=>s.id===seqId)
+  if(!seq) return
+  const etapes = seq.etapes || aplatiArbre(seq.flowRoot || creerNode())
+  
+  const camps = S.campagnes.filter(c=>c.seqId===seqId)
+  const ps = S.prospects.filter(p=>camps.some(c=>c.id===p.campagneId))
+  const sent = ps.filter(p=>p.etapeCourante>0).length
+  const rep = ps.filter(p=>p.repandu).length
+  const taux = sent>0 ? Math.round(rep/sent*100) : null
+  
+  let txt = `# Séquence cold email : "${seq.nom}"
+
+`
+  
+  if(taux !== null) {
+    txt += `## Performances actuelles
+`
+    txt += `- Emails envoyés : ${sent}
+`
+    txt += `- Réponses : ${rep}
+`
+    txt += `- Taux de réponse : ${taux}%
+
+`
+  }
+  
+  txt += `## Emails de la séquence
+
+`
+  
+  etapes.forEach((e, i) => {
+    const label = i===0 ? 'Email initial' : `Relance ${i}`
+    const delai = i===0 
+      ? (e.envoisImmediat===false && e.dateEnvoi ? `Planifié le ${e.dateEnvoi}` : 'Envoi immédiat')
+      : `${e.delaiVal||e.delaiJours||2} ${e.delaiUnite||'jours'} après · ${e.condition==='pas_de_reponse'?'si pas de réponse':'délai fixe'}`
+    
+    txt += `### ${label}
+`
+    txt += `**Déclencheur :** ${delai}
+`
+    txt += `**Objet :** ${e.sujet||'(vide)'}
+`
+    txt += `**Corps :**
+${(e.corps||'(vide)').replace(/<[^>]+>/g,'').trim()}
+
+`
+  })
+  
+  txt += `---
+`
+  txt += `Cible : directeurs / managers commerciaux, PME 11-50 salariés, France.
+`
+  txt += `Contexte : prospection cold email B2B pour Weclosed (SaaS tracker cold call).
+
+`
+  txt += `Peux-tu analyser cette séquence et me donner tes retours sur :
+`
+  txt += `1. L'accroche et la pertinence de chaque email
+`
+  txt += `2. Les objets (taux d'ouverture potentiel)
+`
+  txt += `3. Le timing et le nombre de relances
+`
+  txt += `4. Ce que tu changerais en priorité
+`
+  
+  navigator.clipboard.writeText(txt).then(()=>{
+    // Feedback visuel
+    const _oc="copierSeqPourIA('"+seqId+"')"
+    const btn=[...document.querySelectorAll('button')].find(b=>b.getAttribute('onclick')===_oc)
+    if(btn){ const orig=btn.textContent; btn.textContent='✓ copié !'; btn.style.color='var(--green)'; setTimeout(()=>{btn.textContent=orig;btn.style.color=''},1500) }
+    ajouterJournal('Séquence "'+seq.nom+'" copiée pour l\'IA','ok')
+  }).catch(()=>alert('Erreur copie — utilisez un navigateur récent'))
 }
 
 // ═══ RELANCER PROSPECT EN ERREUR ═══
