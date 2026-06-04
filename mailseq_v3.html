@@ -5,7 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MailSeq</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
+function sauvegarderBrouillonSeq() {
+  const nom=document.getElementById('nomSeq')?.value?.trim()
+  if(!nom)return
+  if(seqIdEnEdition){const seq=S.sequences.find(s=>s.id===seqIdEnEdition);if(seq){seq.nom=nom;seq.flowRoot=JSON.parse(JSON.stringify(flowRoot));sauver()}}
+  else{const ns={id:uid(),nom,flowRoot:JSON.parse(JSON.stringify(flowRoot)),creee:new Date().toISOString().slice(0,10)};S.sequences.push(ns);seqIdEnEdition=ns.id;sauver();ajouterJournal('"'+nom+'" sauvegardee en brouillon','ok')}
+}
+
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -570,7 +578,6 @@ tr:hover td{background:var(--g50)}
         </div>
       </div>
     </div>
-  </div>
 
   <!-- JOURNAUX -->
   <div id="page-journaux" class="page" style="display:none;flex-direction:column">
@@ -578,41 +585,19 @@ tr:hover td{background:var(--g50)}
     <div class="content"><div class="card" id="contenu-journaux"></div></div>
   </div>
 </main>
+</div>
 
 <!-- ══════════ MODAL CONNEXION ══════════ -->
 <div class="overlay" id="modalConnexion" style="display:none">
   <div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
-      <div><div class="modal-title" id="connModalTitle">Connexion</div><div class="modal-sub" id="connModalSub">Choisissez votre fournisseur email</div></div>
+      <div><div class="modal-title">Connexion Outlook</div><div class="modal-sub">Microsoft Graph API — vos emails partent depuis votre vrai compte</div></div>
       <button class="close-btn" onclick="fermerModal('modalConnexion')">×</button>
     </div>
     <div id="conn-etape1">
-      <!-- Sélecteur provider -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px" id="conn-provider-sel">
-        <button id="btn-prov-microsoft" onclick="selectionnerProvider('microsoft')"
-          style="padding:14px;border:2px solid var(--accent);border-radius:var(--rm);background:var(--accent-l);cursor:pointer;text-align:left">
-          <div style="font-size:18px;margin-bottom:4px">🪟</div>
-          <div style="font-size:13px;font-weight:600;color:var(--g900)">Microsoft</div>
-          <div style="font-size:11px;color:var(--g400)">Outlook · Office 365</div>
-        </button>
-        <button id="btn-prov-google" onclick="selectionnerProvider('google')"
-          style="padding:14px;border:2px solid var(--g200);border-radius:var(--rm);background:var(--w);cursor:pointer;text-align:left">
-          <div style="font-size:18px;margin-bottom:4px">📬</div>
-          <div style="font-size:13px;font-weight:600;color:var(--g900)">Google</div>
-          <div style="font-size:11px;color:var(--g400)">Gmail · Workspace</div>
-        </button>
-      </div>
-      <!-- Champs Microsoft -->
-      <div id="conn-fields-microsoft">
-        <div class="form-group"><label class="label">ID client (Azure)</label><input class="input mono" id="clientIdInput" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>
-        <div class="form-group"><label class="label">ID de locataire</label><input class="input mono" id="tenantIdInput" placeholder="common" value="common"></div>
-        <div class="info-box i-gray" style="font-size:11.5px">URI de redirection à enregistrer dans Azure :<br><strong id="uriRedir" style="font-family:var(--mono);font-size:11px"></strong></div>
-      </div>
-      <!-- Champs Google -->
-      <div id="conn-fields-google" style="display:none">
-        <div class="form-group"><label class="label">Client ID (Google Cloud Console)</label><input class="input mono" id="googleClientIdInput" placeholder="xxxxxxxxxxxx-xxxx.apps.googleusercontent.com"></div>
-        <div class="info-box i-gray" style="font-size:11.5px">URI de redirection à enregistrer dans Google Cloud Console :<br><strong id="uriRedirGoogle" style="font-family:var(--mono);font-size:11px"></strong><br><br>Scopes requis : Gmail API (send + readonly)</div>
-      </div>
+      <div class="form-group"><label class="label">ID client (Azure)</label><input class="input mono" id="clientIdInput" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>
+      <div class="form-group"><label class="label">ID de locataire</label><input class="input mono" id="tenantIdInput" placeholder="common" value="common"></div>
+      <div class="info-box i-gray" style="font-size:11.5px">URI de redirection à enregistrer dans Azure :<br><strong id="uriRedir" style="font-family:var(--mono);font-size:11px"></strong></div>
     </div>
     <div id="conn-etape2" style="display:none;text-align:center;padding:20px 0">
       <div style="font-size:24px;margin-bottom:10px">🔐</div>
@@ -705,7 +690,7 @@ tr:hover td{background:var(--g50)}
         <div style="margin-bottom:10px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
             <label class="label" style="margin-bottom:0">Liste de prospects</label>
-            <button class="btn btn-xs btn-ghost" onclick="fermerModal('modalSeq');aller('prospects',document.getElementById('nav-prospects'))">+ créer</button>
+            <button class="btn btn-xs btn-ghost" onclick="sauvegarderBrouillonSeq();fermerModal('modalSeq');ouvrirModalListe(null)">+ créer</button>
           </div>
           <select class="select" id="seqListeSel" onchange="aperçuListeSeq()"><option value="">— sélectionner —</option></select>
           <div id="seqListeApercu" style="margin-top:6px"></div>
@@ -732,7 +717,7 @@ tr:hover td{background:var(--g50)}
 <script>
 // ═══ ÉTAT ═══
 const S = (() => {
-  const d = { sequences:[], campagnes:[], prospects:[], listes:[], blacklist:[], templates:[], journaux:[], clientId:'', tenantId:'common', accessToken:null, userEmail:null, signature:'', provider:'microsoft' }
+  const d = { sequences:[], campagnes:[], prospects:[], listes:[], blacklist:[], templates:[], journaux:[], clientId:'', tenantId:'common', accessToken:null, userEmail:null, signature:'' }
   try { return Object.assign(d, JSON.parse(localStorage.getItem('msp_v3')||'{}')) } catch { return d }
 })()
 
@@ -845,31 +830,10 @@ function aperçuListeCamp() {
 }
 
 // ═══ CONNEXION OUTLOOK ═══
-let _connProvider = 'microsoft' // provider sélectionné dans la modal
-
-function selectionnerProvider(p) {
-  _connProvider = p
-  const ms = document.getElementById('conn-fields-microsoft')
-  const gg = document.getElementById('conn-fields-google')
-  const bms = document.getElementById('btn-prov-microsoft')
-  const bgg = document.getElementById('btn-prov-google')
-  if(ms) ms.style.display = p==='microsoft' ? 'block' : 'none'
-  if(gg) gg.style.display = p==='google' ? 'block' : 'none'
-  if(bms) { bms.style.borderColor = p==='microsoft' ? 'var(--accent)' : 'var(--g200)'; bms.style.background = p==='microsoft' ? 'var(--accent-l)' : 'var(--w)' }
-  if(bgg) { bgg.style.borderColor = p==='google' ? 'var(--accent)' : 'var(--g200)'; bgg.style.background = p==='google' ? 'var(--accent-l)' : 'var(--w)' }
-}
-
 function ouvrirConnexion() {
-  const uri = window.location.href.split('?')[0].split('#')[0]
-  const uriEl = document.getElementById('uriRedir')
-  const uriGEl = document.getElementById('uriRedirGoogle')
-  if(uriEl) uriEl.textContent = uri
-  if(uriGEl) uriGEl.textContent = uri
+  document.getElementById('uriRedir').textContent = window.location.href.split('?')[0].split('#')[0]
   document.getElementById('clientIdInput').value = S.clientId||''
   document.getElementById('tenantIdInput').value = S.tenantId||'common'
-  // Pré-sélectionner le provider actuel
-  _connProvider = S.provider||'microsoft'
-  selectionnerProvider(_connProvider)
   document.getElementById('conn-etape1').style.display='block'
   document.getElementById('conn-etape2').style.display='none'
   document.getElementById('btnConnecter').disabled=false
@@ -879,7 +843,10 @@ function ouvrirConnexion() {
 function fermerModal(id) { document.getElementById(id).style.display='none' }
 
 async function connecter() {
-  const provider = _connProvider || 'microsoft'
+  const cid=document.getElementById('clientIdInput').value.trim()
+  const tid=document.getElementById('tenantIdInput').value.trim()||'common'
+  if(!cid) { alert('Veuillez entrer votre ID client'); return }
+  S.clientId=cid; S.tenantId=tid; sauver()
   document.getElementById('conn-etape1').style.display='none'
   document.getElementById('conn-etape2').style.display='block'
   document.getElementById('btnConnecter').disabled=true
@@ -887,23 +854,8 @@ async function connecter() {
   let prog=0; const pi=setInterval(()=>{ prog=Math.min(prog+4,88); barre.style.width=prog+'%' },200)
 
   const redir=encodeURIComponent(window.location.href.split('?')[0].split('#')[0])
-  let url, cid
-
-  if(provider==='google') {
-    cid=document.getElementById('googleClientIdInput').value.trim()
-    if(!cid){ clearInterval(pi); echec('Veuillez entrer votre Client ID Google'); return }
-    const scopes=encodeURIComponent('openid email profile https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly')
-    url=`https://accounts.google.com/o/oauth2/v2/auth?client_id=${cid}&response_type=token&redirect_uri=${redir}&scope=${scopes}&prompt=select_account`
-    S.googleClientId=cid
-  } else {
-    cid=document.getElementById('clientIdInput').value.trim()
-    const tid=document.getElementById('tenantIdInput').value.trim()||'common'
-    if(!cid){ clearInterval(pi); echec('Veuillez entrer votre ID client'); return }
-    S.clientId=cid; S.tenantId=tid
-    const scopes=encodeURIComponent('openid profile email Mail.Send Mail.Read User.Read offline_access')
-    url=`https://login.microsoftonline.com/${tid}/oauth2/v2.0/authorize?client_id=${cid}&response_type=token&redirect_uri=${redir}&scope=${scopes}&response_mode=fragment&nonce=${uid()}&prompt=select_account`
-  }
-  sauver()
+  const scopes=encodeURIComponent('openid profile email Mail.Send Mail.Read User.Read offline_access')
+  const url=`https://login.microsoftonline.com/${tid}/oauth2/v2.0/authorize?client_id=${cid}&response_type=token&redirect_uri=${redir}&scope=${scopes}&response_mode=fragment&nonce=${uid()}&prompt=select_account`
 
   const popup=window.open(url,'msp_auth','width=520,height=660,menubar=no,toolbar=no')
   const poll=setInterval(()=>{
@@ -913,7 +865,7 @@ async function connecter() {
         clearInterval(poll); clearInterval(pi)
         const params=new URLSearchParams(hash.substring(1))
         const token=params.get('access_token')
-        if(token){ barre.style.width='100%'; recupererProfil(token, provider) }
+        if(token){ barre.style.width='100%'; recupererProfil(token) }
         else{ echec(params.get('error_description')||'annulé') }
       }
     } catch(e){}
@@ -923,27 +875,17 @@ async function connecter() {
 
 function gererRetourOAuth() {}
 
-async function recupererProfil(token, provider='microsoft') {
+async function recupererProfil(token) {
   try {
-    let email
-    if(provider==='google') {
-      const r=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+token}})
-      if(!r.ok) throw new Error('Erreur profil Google')
-      const u=await r.json()
-      email=u.email
-    } else {
-      const r=await fetch('https://graph.microsoft.com/v1.0/me',{headers:{Authorization:'Bearer '+token}})
-      if(!r.ok) throw new Error('Erreur profil Microsoft')
-      const u=await r.json()
-      email=u.mail||u.userPrincipalName
-    }
-    S.accessToken=token; S.userEmail=email; S.provider=provider; sauver()
-    const label=provider==='google'?'gmail · connecté':'outlook · connecté'
+    const r=await fetch('https://graph.microsoft.com/v1.0/me',{headers:{Authorization:'Bearer '+token}})
+    if(!r.ok) throw new Error()
+    const u=await r.json()
+    S.accessToken=token; S.userEmail=u.mail||u.userPrincipalName; sauver()
     document.getElementById('statusDot').classList.add('on')
-    document.getElementById('statusLabel').textContent=label
+    document.getElementById('statusLabel').textContent='outlook · connecté'
     document.getElementById('statusEmail').textContent=S.userEmail
     document.getElementById('tokenBanner').style.display='none'
-    ajouterJournal(`Connecté : ${S.userEmail} (${provider})`,'ok')
+    ajouterJournal(`Connecté : ${S.userEmail}`,'ok')
     setTimeout(()=>fermerModal('modalConnexion'),800)
     reprendreApresConnexion()
   } catch(e){echec(e.message)}
@@ -958,7 +900,7 @@ function echec(msg) {
 
 if(S.accessToken&&S.userEmail){
   document.getElementById('statusDot').classList.add('on')
-  document.getElementById('statusLabel').textContent=(S.provider==='google'?'gmail':'outlook')+' · connecté'
+  document.getElementById('statusLabel').textContent='outlook · connecté'
   document.getElementById('statusEmail').textContent=S.userEmail
 }
 
@@ -1000,8 +942,43 @@ function ajouterTableau(id){
 }
 
 // ═══ SIGNATURE ═══
-function chargerSig(){const el=document.getElementById('sig-body');if(el&&S.signature)el.innerHTML=S.signature}
-function sauvegarderSig(){S.signature=document.getElementById('sig-body')?.innerHTML||'';sauver();ajouterJournal('Signature enregistrée','ok');alert('Signature enregistrée ✓')}
+function switchSigTab(tab) {
+  document.getElementById('sig-panel-code').style.display = tab==='code' ? 'block' : 'none'
+  document.getElementById('sig-panel-visuel').style.display = tab==='visuel' ? 'block' : 'none'
+  document.getElementById('sigTabCode').style.color = tab==='code' ? 'var(--accent)' : ''
+  document.getElementById('sigTabVisuel').style.color = tab==='visuel' ? 'var(--accent)' : ''
+  if(tab==='visuel') {
+    const el=document.getElementById('sig-body')
+    if(el) el.innerHTML=document.getElementById('sig-html-input')?.value||S.signature||''
+  }
+}
+
+function previewSig() {
+  const html = document.getElementById('sig-html-input')?.value||''
+  const preview = document.getElementById('sig-preview-code')
+  if(preview) preview.innerHTML = html
+}
+
+function chargerSig(){
+  // Charger dans l'éditeur HTML
+  const input=document.getElementById('sig-html-input')
+  if(input) { input.value=S.signature||''; previewSig() }
+  // Charger dans l'éditeur visuel
+  const el=document.getElementById('sig-body')
+  if(el&&S.signature) el.innerHTML=S.signature
+}
+
+function sauvegarderSig(){
+  // Récupérer depuis l'onglet actif
+  const codePanel=document.getElementById('sig-panel-code')
+  if(codePanel&&codePanel.style.display!=='none'){
+    S.signature=document.getElementById('sig-html-input')?.value||''
+  } else {
+    S.signature=document.getElementById('sig-body')?.innerHTML||''
+  }
+  sauver()
+  ajouterJournal('Signature enregistrée','ok')
+  alert('Signature enregistrée ✓')}
 
 // ═══ SÉQUENCES ═══
 // STRUCTURE D'UNE ÉTAPE v3 :
@@ -1057,11 +1034,12 @@ function ouvrirModalSeq(seqId) {
   document.getElementById('seqListeSel').value=''
   document.getElementById('seqListeApercu').innerHTML=''
   document.getElementById('titreModalSeq').textContent = seqId ? 'modifier la séquence' : 'nouvelle séquence'
+  // Bouton dupliquer visible seulement pour séquences existantes
   const btnDupEl=document.getElementById('btnDupliquerSeq')
   if(btnDupEl) btnDupEl.style.display=seqId?'inline-flex':'none'
   if(campActive) {
     document.getElementById('seqLancementStatus').innerHTML=
-      '<div style="background:var(--amber-bg);border:1px solid var(--amber-b);border-radius:var(--r);padding:12px 14px">'
+      '<div style="background:var(--amber-bg);border:1px solid var(--amber-b);border-radius:var(--r);padding:12px 14px;margin-bottom:0">'
       +'<div style="font-size:12px;color:var(--amber);font-weight:500;margin-bottom:8px">⚠ Campagne en cours — lecture seule</div>'
       +'<div style="font-size:12px;color:var(--g600);margin-bottom:10px"><strong>'+campActive.nom+'</strong></div>'
       +'<div style="display:flex;gap:8px">'
@@ -1073,19 +1051,16 @@ function ouvrirModalSeq(seqId) {
       document.querySelectorAll('#flowCanvas input,#flowCanvas select,#flowCanvas button').forEach(el=>el.disabled=true)
       document.querySelectorAll('#flowCanvas [contenteditable]').forEach(el=>el.contentEditable='false')
       document.querySelectorAll('#modalSeq .btn-primary').forEach(b=>{if(b.textContent.includes('Publier'))b.disabled=true})
-      window._lci=campActive.id;window._lsi=seqId
-      const bp=document.getElementById('lockBtnPause'),bs=document.getElementById('lockBtnStop'),bd=document.getElementById('lockBtnDup')
-      if(bp) bp.onclick=()=>{statutCamp(window._lci,'pause');fermerModal('modalSeq');afficherSequences()}
-      if(bs) bs.onclick=()=>{if(confirm('Arrêter définitivement ?')){supprimerCamp(window._lci);fermerModal('modalSeq');afficherSequences()}}
-      if(bd) bd.onclick=()=>{dupliquerSeq(window._lsi)}
+      window._lockCampId=campActive.id; window._lockSeqId=seqId
+      const bp=document.getElementById('lockBtnPause')
+      const bs=document.getElementById('lockBtnStop')
+      const bd=document.getElementById('lockBtnDup')
+      if(bp) bp.onclick=()=>{statutCamp(window._lockCampId,'pause');fermerModal('modalSeq');afficherSequences()}
+      if(bs) bs.onclick=()=>{if(confirm('Arrêter définitivement ?')){supprimerCamp(window._lockCampId);fermerModal('modalSeq');afficherSequences()}}
+      if(bd) bd.onclick=()=>{dupliquerSeq(window._lockSeqId)}
     },100)
   } else {
     document.getElementById('seqLancementStatus').innerHTML=''
-    setTimeout(()=>{
-      document.querySelectorAll('#flowCanvas input,#flowCanvas select,#flowCanvas button').forEach(el=>el.disabled=false)
-      document.querySelectorAll('#flowCanvas [contenteditable]').forEach(el=>el.contentEditable='true')
-      document.querySelectorAll('#modalSeq .btn-primary').forEach(b=>{b.disabled=false})
-    },150)
   }
   document.getElementById('modalSeq').style.display='flex'
 }
@@ -1306,27 +1281,43 @@ function supprimerBranche(nodeId) {
   rendreFlow()
 }
 
+let _savedRange=null,_savedEl=null
+document.addEventListener('selectionchange',()=>{
+  const sel=window.getSelection()
+  if(!sel||!sel.rangeCount) return
+  const node=sel.getRangeAt(0).commonAncestorContainer
+  const ed=node.nodeType===3?node.parentElement?.closest('[contenteditable]'):node.closest?.('[contenteditable]')
+  if(ed){_savedRange=sel.getRangeAt(0).cloneRange();_savedEl=ed}
+})
+
 function insererVar(v) {
+  // Input (champ objet)
   if(dernierEditeurFocus){
     const el=document.getElementById(dernierEditeurFocus)
     if(el&&el.tagName==='INPUT'&&document.activeElement===el){
       const pos=el.selectionStart,cur=el.value
       el.value=cur.slice(0,pos)+v+cur.slice(el.selectionEnd)
       if(selectedNodeId) mettreAJourNode(selectedNodeId,'sujet',el.value)
-      el.focus();el.setSelectionRange(pos+v.length,pos+v.length);return
+      el.focus();el.setSelectionRange(pos+v.length,pos+v.length)
+      return
     }
   }
-  if(window._savedRange&&window._savedEl){
-    window._savedEl.focus()
-    const sel=window.getSelection();sel.removeAllRanges();sel.addRange(window._savedRange)
+  // Contenteditable (corps) - insertion à la position du curseur
+  if(_savedRange&&_savedEl){
+    _savedEl.focus()
+    const sel=window.getSelection()
+    sel.removeAllRanges();sel.addRange(_savedRange)
     document.execCommand('insertText',false,v)
-    const id=window._savedEl.id
-    if(id.startsWith('lin-corps-')) mettreAJourEtapeLineaire(parseInt(id.replace('lin-corps-','')),'corps',window._savedEl.innerHTML)
-    else if(selectedNodeId) mettreAJourNode(selectedNodeId,'corps',window._savedEl.innerHTML)
-    window._savedRange=null;return
+    const id=_savedEl.id
+    if(id.startsWith('lin-corps-')) mettreAJourEtapeLineaire(parseInt(id.replace('lin-corps-','')),'corps',_savedEl.innerHTML)
+    else if(selectedNodeId) mettreAJourNode(selectedNodeId,'corps',_savedEl.innerHTML)
+    _savedRange=null;return
   }
+  // Fallback
   if(dernierEditeurFocus){const el=document.getElementById(dernierEditeurFocus);if(el){el.focus();document.execCommand('insertText',false,v)}}
 }
+
+// Convertir l'arbre en tableau plat pour l'envoi
 function aplatiArbre(node, result=[]) {
   result.push({ sujet:node.sujet, corps:node.corps, condition:node.condition, delaiJours:node.delaiVal||node.delaiJours, delaiVal:node.delaiVal||node.delaiJours, delaiUnite:node.delaiUnite||'jours', heureEnvoi:node.heureEnvoi, envoisImmediat:node.envoisImmediat, dateEnvoi:node.dateEnvoi })
   for(const b of node.branches||[]) aplatiArbre(b, result)
@@ -1495,7 +1486,7 @@ function afficherSequences() {
           <div style="font-size:15px;font-weight:600;color:var(--g900);margin-bottom:4px">${s.nom}</div>
           <div style="font-size:12px;color:var(--g400);display:flex;gap:10px;flex-wrap:wrap">
             <span>${etapes.length} email${etapes.length>1?'s':''}</span>
-            ${(()=>{const fin=actives>0&&ps.filter(p=>!p.termine&&!p.repandu).length===0;return actives>0?('<span style="color:'+(fin?'var(--g400)':'var(--green)')+'">'+(fin?'✓':'●')+' '+actives+' campagne'+(actives>1?'s':'')+' '+(fin?'terminée':'active')+(actives>1?'s':'')+'</span>'):'';})()}
+            ${(()=>{const fin=actives>0&&ps.filter(p=>!p.termine&&!p.repandu).length===0;return actives>0?`<span style="color:\${fin?'var(--g400)':'var(--green)'}">\${fin?'✓':'●'} \${actives} campagne\${actives>1?'s':''} \${fin?'terminée':'active'}\${actives>1?'s':''}</span>`:'';})()}
             <span>créée ${fmtD(s.creee)}</span>
           </div>
         </div>
@@ -1503,7 +1494,6 @@ function afficherSequences() {
           ${sent>0?`<button class="btn btn-ghost btn-sm" onclick="ouvrirSuiviSeq('${s.id}')">📊 suivi</button>`:''}
           <button class="btn btn-primary btn-sm" onclick="ouvrirModalSeq('${s.id}')">✏ modifier</button>
           <button class="btn btn-ghost btn-sm" onclick="dupliquerSeq('${s.id}')">⎘ dupliquer</button>
-        <button class="btn btn-ghost btn-sm" title="Copier pour l'IA" onclick="copierSeqPourIA('${s.id}')">🤖</button>
           <button class="btn btn-danger btn-sm" onclick="supprimerSeq('${s.id}')">✕</button>
         </div>
       </div>
@@ -1515,8 +1505,8 @@ function afficherSequences() {
               <span style="font-size:10px;color:var(--g400);white-space:nowrap;background:var(--g50);border:1px solid var(--g100);border-radius:20px;padding:2px 8px">J+${et.delaiJours}</span>
               <div style="width:20px;height:1.5px;background:var(--g200)"></div>
             </div>`:''}
-            <div style="background:var(--g50);border:1.5px solid ${(()=>{const n=ps.filter(p=>p.etapeCourante===i&&!p.termine&&!p.repandu).length;const fin=ps.length>0&&ps.filter(p=>!p.termine&&!p.repandu).length===0;return n>0?'var(--accent)':fin?'var(--green)':'var(--g200)'})()};border-radius:var(--rm);padding:10px 14px;min-width:150px;max-width:200px;flex-shrink:0">
-              <div style="font-size:10px;font-weight:600;color:${i===0?'var(--accent)':'var(--g500)'};text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">${i===0?'Email initial':`Relance ${i}`}</div>
+            <div style="background:var(--g50);border:1.5px solid ${(()=>{const enc=ps.filter(p=>p.etapeCourante===i&&!p.termine&&!p.repandu).length;const seqFin=ps.length>0&&ps.filter(p=>!p.termine&&!p.repandu).length===0;return enc>0?'var(--accent)':seqFin?'var(--green)':' var(--g200)'})()};border-radius:var(--rm);padding:10px 14px;min-width:150px;max-width:200px;flex-shrink:0">
+              <div style="font-size:10px;font-weight:600;color:${(()=>{const enc=ps.filter(p=>p.etapeCourante===i&&!p.termine&&!p.repandu).length;const fin=ps.length>0&&ps.filter(p=>!p.termine&&!p.repandu).length===0;return enc>0?'var(--accent)':fin?'var(--green)':'var(--g500)';})()};text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">${i===0?'Email initial':`Relance ${i}`}${ps.filter(p=>p.etapeCourante===i&&!p.termine&&!p.repandu).length>0?` · ${ps.filter(p=>p.etapeCourante===i&&!p.termine&&!p.repandu).length} en cours`:''}</div>
               <div style="font-size:12px;font-weight:500;color:var(--g900);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${et.sujet||''}">${et.sujet||'(sans objet)'}</div>
               ${i>0?`<div style="font-size:10px;color:var(--g400);margin-top:3px">si pas de réponse</div>`:''}
             </div>
@@ -1545,8 +1535,9 @@ function ouvrirSuiviSeq(seqId) {
     const csent=cps.filter(p=>p.etapeCourante>0).length
     const crep=cps.filter(p=>p.repandu).length
     const ctx=pct(crep,csent)
-    const badgeCls=c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray'
-    const badgeTxt=c.statut==='active'?'active':c.statut==='pause'?'pausée':'brouillon'
+    const campTerminee=c.statut==='active'&&cps.filter(p=>!p.termine&&!p.repandu).length===0
+    const badgeCls=campTerminee?'b-gray':c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray'
+    const badgeTxt=campTerminee?'✓ terminée':c.statut==='active'?'active':c.statut==='pause'?'pausée':'brouillon'
     const cid=c.id
     let btns=''
     if(c.statut==='brouillon') btns+='<button class="btn btn-xs btn-primary" data-action="publier" data-id="'+cid+'">🚀 Publier</button>'
@@ -1604,7 +1595,8 @@ function compterBranches(node) {
 }
 
 function supprimerSeq(id){
-  const seq=S.sequences.find(s=>s.id===id); if(!seq) return
+  const seq=S.sequences.find(s=>s.id===id)
+  if(!seq) return
   const camps=S.campagnes.filter(c=>c.seqId===id)
   const nbP=S.prospects.filter(p=>camps.some(c=>c.id===p.campagneId)).length
   let msg=`Supprimer "${seq.nom}" ?`
@@ -1792,7 +1784,7 @@ let prospectsImportes=[], tagsManuel=[]
 function gererDrop(e){e.preventDefault();e.currentTarget.classList.remove('drag-over');traiterFichier(e.dataTransfer.files[0])}
 function gererFichier(e){traiterFichier(e.target.files[0])}
 
-function trouverCle(row,candidats){const ks=Object.keys(row);for(const c of candidats){const k=ks.find(k=>k.toLowerCase()===c.toLowerCase());if(k)return k}for(const c of candidats){const k=ks.find(k=>k.toLowerCase().replace(/[^a-z0-9]/g,'').includes(c.toLowerCase().replace(/[^a-z0-9]/g,'')));if(k)return k}return null}
+function trouverCle(row,candidats){const ks=Object.keys(row);for(const c of candidats){const k=ks.find(k=>k.toLowerCase().includes(c));if(k)return k}return null}
 
 function traiterFichier(file){
   if(!file)return
@@ -1961,55 +1953,40 @@ function reinitialiserFormCamp(){
 let envoyant=false
 
 async function envoyerUn(prospect, sujet, corpsHtml) {
+  // Vérification blacklist avant chaque envoi
   if(estBlackliste(prospect.email)){
     ajouterJournal(`🚫 ${prospect.email} — blacklisté, envoi ignoré`,'warn')
     return false
   }
+  // Recharger la signature depuis localStorage à chaque envoi (évite les bugs de cache)
   const sigFraiche = JSON.parse(localStorage.getItem('msp_v3')||'{}').signature || S.signature || ''
   const corpsComplet=corpsHtml+(sigFraiche?`<br><br><hr style="border:none;border-top:1px solid #eee;margin:16px 0">${sigFraiche}`:'')
   if(!S.accessToken){
-    ajouterJournal(`🔴 Non connecté — reconnectez-vous pour envoyer les emails`,'err')
+    ajouterJournal(`🔴 Outlook non connecté — reconnectez-vous pour envoyer les emails`,'err')
+    // Afficher bannière
     const b=document.getElementById('tokenBanner')
-    if(b){b.style.display='flex';b.innerHTML='<span style="flex:1">🔴 Session expirée — reconnectez-vous</span><button class="btn btn-primary btn-sm" onclick="ouvrirConnexion()">Reconnecter</button>'}
+    if(b){b.style.display='flex';b.innerHTML='<span style="flex:1">🔴 Session expirée — reconnectez-vous pour reprendre les envois</span><button class="btn btn-primary btn-sm" onclick="ouvrirConnexion()">Reconnecter</button>'}
     return false
   }
   try{
-    if((S.provider||'microsoft')==='google') {
-      const subjectRendu=interp(sujet,prospect)
-      const bodyRendu=interp(corpsComplet,prospect)
-      const rawLines=['From: '+S.userEmail,'To: '+prospect.email,'Subject: '+subjectRendu,'MIME-Version: 1.0','Content-Type: text/html; charset=UTF-8','',bodyRendu]
-      const raw=rawLines.join('\r\n')
-      const b64=btoa(unescape(encodeURIComponent(raw))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')
-      const r=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{
-        method:'POST',
-        headers:{Authorization:'Bearer '+S.accessToken,'Content-Type':'application/json'},
-        body:JSON.stringify({raw:b64})
+    const r=await fetch('https://graph.microsoft.com/v1.0/me/sendMail',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+S.accessToken,'Content-Type':'application/json'},
+      body:JSON.stringify({
+        message:{
+          subject:interp(sujet,prospect),
+          body:{contentType:'HTML',content:interp(corpsComplet,prospect)},
+          toRecipients:[{emailAddress:{address:prospect.email}}]
+        },
+        saveToSentItems:true
       })
-      if(r.ok||r.status===200){ajouterJournal(`✓ ${prospect.email} · étape ${prospect.etapeCourante+1} · "${sujet}"`,'ok');return true}
-      if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session Gmail expirée — reconnectez-vous','err');return false}
-      const err=await r.json().catch(()=>({}))
-      ajouterJournal(`✗ ${prospect.email} · ${err.error?.message||r.status}`,'err');return false
-    } else {
-      const r=await fetch('https://graph.microsoft.com/v1.0/me/sendMail',{
-        method:'POST',
-        headers:{Authorization:'Bearer '+S.accessToken,'Content-Type':'application/json'},
-        body:JSON.stringify({
-          message:{
-            subject:interp(sujet,prospect),
-            body:{contentType:'HTML',content:interp(corpsComplet,prospect)},
-            toRecipients:[{emailAddress:{address:prospect.email}}]
-          },
-          saveToSentItems:true
-        })
-      })
-      if(r.ok||r.status===202){ajouterJournal(`✓ ${prospect.email} · étape ${prospect.etapeCourante+1} · "${sujet}"`,'ok');return true}
-      if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session expirée — reconnectez-vous','err');return false}
-      const err=await r.json().catch(()=>({}))
-      ajouterJournal(`✗ ${prospect.email} · ${err.error?.message||r.status}`,'err');return false
-    }
+    })
+    if(r.ok||r.status===202){ajouterJournal(`✓ ${prospect.email} · étape ${prospect.etapeCourante+1} · "${sujet}"`,'ok');return true}
+    if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session expirée — reconnectez-vous','err');return false}
+    const err=await r.json().catch(()=>({}))
+    ajouterJournal(`✗ ${prospect.email} · ${err.error?.message||r.status}`,'err');return false
   }catch(e){ajouterJournal(`✗ ${prospect.email} · ${e.message}`,'err');return false}
 }
-
 
 async function envoyerLot(campId, seq, delaiMs) {
   if(envoyant)return
@@ -2084,81 +2061,64 @@ function lancerDeclencheurs(){
 
 let synchroEnCours = false
 async function verifierReponses(){
-  if(synchroEnCours) return
-  if(!S.accessToken){ajouterJournal('Synchronisation impossible — reconnectez-vous','err');return}
+  if(synchroEnCours) return // éviter les appels simultanés
+  if(!S.accessToken){ajouterJournal('🔴 Synchronisation impossible — reconnectez-vous à Outlook','err');return}
   synchroEnCours = true
   ajouterJournal('Synchronisation boîte mail…','info')
   try{
+    // Surveiller tous les prospects ayant reçu au moins 1 email, même terminés (ils peuvent répondre après)
     const prospectsActifs = {}
     S.prospects.filter(p=>!p.repandu && p.etapeCourante>0).forEach(p=>{
       const camp=S.campagnes.find(c=>c.id===p.campagneId)
       if(camp&&camp.statut==='active') prospectsActifs[p.email.toLowerCase()] = p
     })
+    
     if(!Object.keys(prospectsActifs).length){
       ajouterJournal('Aucun prospect à surveiller — aucun email envoyé','info')
       return
     }
 
-    let messages = []
-
-    if((S.provider||'microsoft')==='google') {
-      // Gmail : chercher les messages non lus dans inbox
-      const r=await fetch(
-        'https://gmail.googleapis.com/gmail/v1/users/me/messages?q=in:inbox+is:unread&maxResults=50',
-        {headers:{Authorization:'Bearer '+S.accessToken}}
-      )
-      if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session Gmail expirée','err');return}
-      const data=await r.json()
-      // Charger les détails de chaque message
-      const ids=(data.messages||[]).slice(0,30)
-      for(const m of ids){
-        const mr=await fetch(
-          `https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=metadata&metadataHeaders=From&metadataHeaders=Date`,
-          {headers:{Authorization:'Bearer '+S.accessToken}}
-        )
-        if(!mr.ok) continue
-        const md=await mr.json()
-        const fromH=md.payload?.headers?.find(h=>h.name==='From')
-        const dateH=md.payload?.headers?.find(h=>h.name==='Date')
-        if(fromH) messages.push({
-          from: {emailAddress:{address:fromH.value.replace(/.*<(.+)>.*/,'$1').trim()}},
-          receivedDateTime: dateH?new Date(dateH.value).toISOString():new Date().toISOString(),
-          subject: ''
-        })
-      }
-    } else {
-      // Microsoft Graph
-      const r=await fetch(
-        `https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages?$select=from,receivedDateTime,subject&$top=200&$orderby=receivedDateTime desc`,
-        {headers:{Authorization:'Bearer '+S.accessToken}}
-      )
-      if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session expirée — reconnectez-vous','err');return}
-      const data=await r.json()
-      messages=data.value||[]
-    }
-
+    // ── 1. RÉPONSES — lire les 200 derniers emails reçus ──
+    const r = await fetch(
+      `https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages?$select=from,receivedDateTime,subject&$top=200&$orderby=receivedDateTime desc`,
+      {headers:{Authorization:'Bearer '+S.accessToken}}
+    )
+    if(r.status===401){S.accessToken=null;sauver();ajouterJournal('Session expirée — reconnectez-vous','err');return}
+    const data = await r.json()
+    
     let nRep=0
-    for(const msg of messages){
+    for(const msg of data.value||[]){
       const from=(msg.from?.emailAddress?.address||'').toLowerCase()
-      const p=prospectsActifs[from]
+      const p = prospectsActifs[from]
       if(!p) continue
-      if(p.repandu){delete prospectsActifs[from];continue}
-      const dernierEnvoi=p.historique?.length?p.historique[p.historique.length-1].envoyeA:null
-      const dateReponse=msg.receivedDateTime
-      if(dernierEnvoi&&dateReponse&&new Date(dateReponse)<new Date(dernierEnvoi)){
-        delete prospectsActifs[from];continue
+      // Ne pas retraiter si déjà marqué répondu
+      if(p.repandu) { delete prospectsActifs[from]; continue }
+
+      // Vérifier que la réponse est postérieure au dernier envoi
+      const dernierEnvoi = p.historique?.length ? p.historique[p.historique.length-1].envoyeA : null
+      const dateReponse = msg.receivedDateTime
+      if(dernierEnvoi && dateReponse && new Date(dateReponse) < new Date(dernierEnvoi)) {
+        // Réponse antérieure au dernier envoi — ignorer
+        delete prospectsActifs[from]; continue
       }
-      p.repandu=true;p.termine=true;p.prochainEnvoi=null;p.tag='repandu'
+
+      // Réponse reçue → stopper la séquence, PAS de blacklist automatique
+      p.repandu=true; p.termine=true; p.prochainEnvoi=null; p.tag='repandu'
       nRep++
       ajouterJournal(`↩ Réponse de ${from} · "${msg.subject||'sans sujet'}" — séquence stoppée`,'warn')
       delete prospectsActifs[from]
     }
 
+    // ── RÉSUMÉ ──
     if(!nRep) ajouterJournal('Synchronisation OK — aucun événement','info')
-    else ajouterJournal(`Synchro : ${nRep} réponse${nRep>1?'s':''}`,'ok')
-    sauver(); afficherTableau()
+    else ajouterJournal(`Synchro : ${nRep} réponse${nRep>1?'s':''}`, 'ok')
+    
+    sauver()
+    afficherTableau()
+    
   }catch(e){
     ajouterJournal('Erreur synchro : '+e.message,'err')
+    console.error('Synchro error:', e)
   } finally {
     synchroEnCours = false
   }
@@ -2172,10 +2132,13 @@ function demarrerSynchroAuto(){
   intervalSynchro=setInterval(()=>{lancerDeclencheurs();verifierReponses()},5*60*1000)
   ajouterJournal('Synchronisation automatique activée — toutes les 5 min','ok')
 }
+
 function reprendreApresConnexion(){
   noterExpirationToken()
   demarrerSynchroAuto()
   setTimeout(()=>{
+    const campIds2=new Set(S.campagnes.map(c=>c.id))
+    S.prospects=S.prospects.filter(p=>campIds2.has(p.campagneId));sauver()
     const enRetard=S.prospects.filter(p=>!p.termine&&!p.repandu&&p.prochainEnvoi&&new Date(p.prochainEnvoi)<=new Date())
     if(enRetard.length){
       ajouterJournal(`⏰ ${enRetard.length} envoi${enRetard.length>1?'s':''} en retard — relance automatique`,'ok')
@@ -2220,8 +2183,11 @@ function afficherTableau(){
         <div style="font-size:13px;font-weight:600;color:var(--g900)">Campagnes récentes</div>
         <button class="btn btn-ghost btn-sm" onclick="aller('sequences',document.getElementById('nav-sequences'))">voir tout →</button>
       </div>
-      ${!S.campagnes.length?`<div style="text-align:center;padding:40px;color:var(--g400)"><div style="font-size:28px;opacity:.2;margin-bottom:8px">📭</div><div style="font-size:14px;font-weight:500;color:var(--g500)">Aucune campagne</div></div>`:`
-      <table><thead><tr><th>Nom</th><th>Envoyés</th><th>Réponses</th><th>Taux</th><th>Statut</th><th></th></tr></thead><tbody>
+      ${!S.campagnes.length?`<div style="text-align:center;padding:40px;color:var(--g400)">
+        <div style="font-size:28px;margin-bottom:8px;opacity:.2">📭</div>
+        <div style="font-size:14px;font-weight:500;color:var(--g500);margin-bottom:4px">Aucune campagne</div>
+        <p style="font-size:13px">Créez une séquence et publiez-la</p>
+      </div>`:`<table><thead><tr><th>Nom</th><th>Envoyés</th><th>Réponses</th><th>Taux</th><th>Statut</th><th></th></tr></thead><tbody>
         ${S.campagnes.slice(0,8).map(c=>{
           const ps=S.prospects.filter(p=>p.campagneId===c.id)
           const sent=ps.filter(p=>p.etapeCourante>0).length
@@ -2230,7 +2196,8 @@ function afficherTableau(){
           const fin=c.statut==='active'&&sent>0&&ps.filter(p=>!p.termine&&!p.repandu).length===0
           return `<tr>
             <td style="font-weight:500;color:var(--g900)">${c.nom}</td>
-            <td>${sent}</td><td style="color:var(--green);font-weight:500">${rep}</td>
+            <td>${sent}</td>
+            <td style="color:var(--green);font-weight:500">${rep}</td>
             <td><span class="badge ${rr>15?'b-green':rr>5?'b-amber':'b-gray'}">${rr}%</span></td>
             <td><span class="badge ${fin?'b-gray':c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray'}">${fin?'✓ terminée':c.statut==='active'?'active':c.statut==='pause'?'pausée':'brouillon'}</span></td>
             <td><button class="btn btn-xs btn-danger" onclick="supprimerCamp('${c.id}');afficherTableau()">✕</button></td>
@@ -2238,1005 +2205,103 @@ function afficherTableau(){
       </tbody></table>`}
     </div>`
 }
-
-
-function afficherAnalytiques(){
-  const el=document.getElementById('contenu-analytiques')
-  if(!el) return
-  if(!S.campagnes.length){
-    el.innerHTML=`<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">Aucune donnée</div><p>Lancez une campagne pour voir les analytiques</p></div>`
-    return
-  }
-
-  // État filtre temporel
-  if(!window._analyFilter) window._analyFilter='30j'
-  const filtre=window._analyFilter
-
-  // ── SECTION 1 : Vue par séquence ──
-  const seqCards = S.sequences.map(seq=>{
-    const camps=S.campagnes.filter(c=>c.seqId===seq.id)
-    if(!camps.length) return ''
-    const ps=S.prospects.filter(p=>camps.some(c=>c.id===p.campagneId))
-    const sent=ps.filter(p=>p.etapeCourante>0).length
-    const rep=ps.filter(p=>p.repandu).length
-    const taux=sent>0?Math.round(rep/sent*100):0
-    const fin=camps.every(c=>c.statut!=='active'||ps.filter(p=>p.campagneId===c.id&&!p.termine&&!p.repandu).length===0)
-    return `<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:18px 20px;box-shadow:var(--shadow)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div>
-          <div style="font-size:14px;font-weight:600;color:var(--g900)">${seq.nom}</div>
-          <div style="font-size:11px;color:var(--g400);margin-top:2px">${camps.length} campagne${camps.length>1?'s':''} · ${ps.length} prospect${ps.length>1?'s':''}</div>
-        </div>
-        <span class="badge ${fin?'b-gray':camps.some(c=>c.statut==='active')?'b-green':'b-gray'}">${fin?'✓ terminée':camps.some(c=>c.statut==='active')?'active':'brouillon'}</span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
-        <div style="text-align:center;padding:12px;background:var(--g50);border-radius:var(--r)">
-          <div style="font-size:24px;font-weight:300;color:var(--g900);letter-spacing:-1px">${sent}</div>
-          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--g400);margin-top:4px">Envoyés</div>
-        </div>
-        <div style="text-align:center;padding:12px;background:var(--g50);border-radius:var(--r)">
-          <div style="font-size:24px;font-weight:300;color:var(--green);letter-spacing:-1px">${rep}</div>
-          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--g400);margin-top:4px">Réponses</div>
-        </div>
-        <div style="text-align:center;padding:12px;background:${taux>15?'#F0FDF4':taux>5?'#FFFBEB':'var(--g50)'};border-radius:var(--r)">
-          <div style="font-size:24px;font-weight:300;color:${taux>15?'var(--green)':taux>5?'var(--amber)':'var(--g400)'};letter-spacing:-1px">${taux}%</div>
-          <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--g400);margin-top:4px">Taux réponse</div>
-        </div>
-      </div>
-    </div>`
-  }).filter(Boolean).join('')
-
-  // ── SECTION 2 : Graphique temporel ──
-  const jours=filtre==='7j'?7:filtre==='90j'?90:30
-  const maintenant=new Date()
-  const debut=new Date(maintenant); debut.setDate(debut.getDate()-jours+1); debut.setHours(0,0,0,0)
-
-  // Compter les envois par jour
-  const parJour={}
-  for(let i=0;i<jours;i++){
-    const d=new Date(debut); d.setDate(d.getDate()+i)
-    parJour[d.toISOString().slice(0,10)]=0
-  }
-  S.prospects.forEach(p=>{
-    (p.historique||[]).forEach(h=>{
-      const d=h.envoyeA?.slice(0,10)
-      if(d&&parJour[d]!==undefined) parJour[d]++
-    })
-  })
-
-  const vals=Object.values(parJour)
-  const dates=Object.keys(parJour)
-  const maxVal=Math.max(...vals,1)
-  const W=600,H=140,PL=28,PR=12,PT=10,PB=30
-  const gW=W-PL-PR, gH=H-PT-PB
-
-  // Points de la courbe
-  const pts=vals.map((v,i)=>{
-    const x=PL+Math.round(i/(vals.length-1||1)*gW)
-    const y=PT+Math.round((1-v/maxVal)*gH)
-    return [x,y,v]
-  })
-  const polyline=pts.map(p=>p[0]+','+p[1]).join(' ')
-  const areaPoints=`${PL},${PT+gH} `+pts.map(p=>p[0]+','+p[1]).join(' ')+` ${PL+gW},${PT+gH}`
-
-  // Labels axe X (toutes les N jours selon filtre)
-  const step=jours<=7?1:jours<=30?7:14
-  const xLabels=dates.map((d,i)=>{
-    if(i%step!==0&&i!==dates.length-1) return ''
-    const [,m,dd]=d.split('-')
-    const x=PL+Math.round(i/(vals.length-1||1)*gW)
-    return `<text x="${x}" y="${H-8}" font-size="9" fill="var(--g400)" text-anchor="middle">${dd}/${m}</text>`
-  }).join('')
-
-  // Labels axe Y
-  const yLabels=[0,Math.round(maxVal/2),maxVal].map(v=>{
-    const y=PT+Math.round((1-v/maxVal)*gH)
-    return `<text x="${PL-4}" y="${y+3}" font-size="9" fill="var(--g400)" text-anchor="end">${v}</text>`
-  }).join('')
-
-  const svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">
-    <defs><linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity=".15"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
-    <polygon points="${areaPoints}" fill="url(#gr)"/>
-    <polyline points="${polyline}" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
-    ${pts.map(([x,y,v])=>v>0?`<circle cx="${x}" cy="${y}" r="3" fill="var(--accent)"/>`:'').join('')}
-    ${yLabels}${xLabels}
-    <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT+gH}" stroke="var(--g100)" stroke-width="1"/>
-    <line x1="${PL}" y1="${PT+gH}" x2="${PL+gW}" y2="${PT+gH}" stroke="var(--g100)" stroke-width="1"/>
-  </svg>`
-
-  const totalPeriode=vals.reduce((a,b)=>a+b,0)
-
-  // ── SECTION 3 : Tableau campagnes ──
-  const lignesCamp=S.campagnes.map(c=>{
-    const ps=S.prospects.filter(p=>p.campagneId===c.id)
-    const env=ps.filter(p=>p.etapeCourante>0).length
-    const rep=ps.filter(p=>p.repandu).length
-    const tx=env>0?Math.round(rep/env*100):0
-    const fin=c.statut==='active'&&env>0&&ps.filter(p=>!p.termine&&!p.repandu).length===0
-    return `<tr>
-      <td style="font-weight:500;color:var(--g900)">${c.nom}</td>
-      <td>${env}</td><td style="color:var(--green);font-weight:500">${rep}</td>
-      <td><span class="badge ${tx>15?'b-green':tx>5?'b-amber':'b-gray'}">${tx}%</span></td>
-      <td><span class="badge ${fin?'b-gray':c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray'}">${fin?'✓ terminée':c.statut==='active'?'active':c.statut==='pause'?'pausée':'brouillon'}</span></td>
-      <td><button class="btn btn-xs btn-danger" onclick="supprimerCamp('${c.id}');afficherAnalytiques()">✕</button></td>
-    </tr>`
-  }).join('')
-
-  el.innerHTML=`
-    <!-- Séquences -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:24px">
-      ${seqCards||'<div style="color:var(--g400);font-size:13px">Aucune séquence avec campagne</div>'}
-    </div>
-
-    <!-- Graphique -->
-    <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:20px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <div>
-          <div style="font-size:13px;font-weight:600;color:var(--g900)">Envois dans le temps</div>
-          <div style="font-size:11.5px;color:var(--g400);margin-top:2px">${totalPeriode} email${totalPeriode>1?'s':''} sur les ${jours} derniers jours</div>
-        </div>
-        <div style="display:flex;gap:4px">
-          ${['7j','30j','90j'].map(f=>`<button class="btn btn-sm ${f===filtre?'btn-primary':'btn-ghost'}" onclick="window._analyFilter='${f}';afficherAnalytiques()">${f}</button>`).join('')}
-        </div>
-      </div>
-      ${svg}
-    </div>
-
-    <!-- Campagnes -->
-    <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);overflow:hidden;box-shadow:var(--shadow)">
-      <div style="padding:14px 18px;border-bottom:1px solid var(--g100)">
-        <div style="font-size:13px;font-weight:600;color:var(--g900)">Toutes les campagnes</div>
-      </div>
-      <table><thead><tr><th>Nom</th><th>Envoyés</th><th>Réponses</th><th>Taux</th><th>Statut</th><th></th></tr></thead>
-      <tbody>${lignesCamp}</tbody></table>
-    </div>`
-}
-
-
-function afficherListeCamp(){
-  const el=document.getElementById('contenu-liste-camp')
-  if(!el) return
-  if(!S.campagnes.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📂</div><div class="empty-title">aucune campagne</div></div>`;return}
-  el.innerHTML=S.campagnes.map(c=>{
-    const ps=S.prospects.filter(p=>p.campagneId===c.id)
-    const done=ps.filter(p=>p.done||p.termine).length
-    const rep=ps.filter(p=>p.repandu).length
-    const sent=ps.filter(p=>p.etapeCourante>0).length
-    const p=pct(done,ps.length)
-    return `<div class="camp-card">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between">
-        <div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div style="font-family:var(--mono);font-size:13px;font-weight:500" id="camp-nom-${c.id}">${c.nom}</div>
-            <button class="btn btn-xs btn-ghost" onclick="renommerCamp('${c.id}')" title="Renommer">✏</button>
-          </div>
-          <div class="camp-meta">
-            <span>${ps.length} prospects</span>
-            <span>envoyés <strong>${sent}</strong></span>
-            <span>réponses <strong style="color:var(--green)">${rep}</strong></span>
-            <span>${S.sequences.find(s=>s.id===c.seqId)?.nom||'—'}</span>
-            <span>${fmtD(c.creee)}</span>
-          </div>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <span class="badge ${c.statut==='active'?'bg-green':c.statut==='pause'?'bg-amber':c.statut==='brouillon'?'bg-gray':'bg-gray'}">${c.statut==='brouillon'?'📝 brouillon':c.statut==='active'?'active':c.statut==='pause'?'pausée':'terminée'}</span>
-          ${c.statut==='brouillon'?`<button class="btn btn-primary btn-sm" onclick="publierCamp('${c.id}')">🚀 Publier</button>`:''}
-          ${c.statut==='active'?`<button class="btn btn-ghost btn-sm" onclick="statutCamp('${c.id}','pause')">⏸</button>`:''}
-          ${c.statut==='pause'?`<button class="btn btn-success btn-sm" onclick="statutCamp('${c.id}','active')">▶</button>`:''}
-          <button class="btn btn-ghost btn-sm" onclick="voirProspects('${c.id}')">prospects</button>
-          <button class="btn btn-danger btn-sm" onclick="supprimerCamp('${c.id}')">✕</button>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
-        <div class="progress" style="flex:1"><div class="progress-fill" style="width:${p}%"></div></div>
-        <span style="font-size:10px;color:var(--g400);font-family:var(--mono)">${p}%</span>
-      </div>
-      ${rendreFunnel(c.id)}
-    </div>`
-  }).join('')
-}
-
-function statutCamp(id,s){
-  const c=S.campagnes.find(c=>c.id===id)
-  if(c){c.statut=s;sauver();afficherListeCamp();afficherTableau()}
-}
-
-async function publierCamp(id){
-  const camp=S.campagnes.find(c=>c.id===id)
-  if(!camp) return
-  const ps=S.prospects.filter(p=>p.campagneId===id&&!p.termine&&!p.repandu)
-  if(!confirm(`Publier "${camp.nom}" ?
-
-${ps.length} prospect${ps.length>1?'s':''} vont recevoir des emails.`)) return
-  if(!S.accessToken) {
-    alert('🔴 Connectez-vous à Outlook avant de publier.')
-    return
-  }
-  camp.statut='active';sauver()
-  ajouterJournal(`🚀 Campagne "${camp.nom}" publiée`,'ok')
-  const seq=S.sequences.find(s=>s.id===camp.seqId)
-  if(seq){seq._etapesFlat=getEtapesSeq(seq);envoyerLot(camp.id,seq,camp.delai||45)}
-  demarrerSynchroAuto();afficherListeCamp();afficherTableau()
-}
-
-function supprimerCamp(id){
-  if(!confirm('Supprimer cette campagne et ses prospects ?')) return
-  S.campagnes=S.campagnes.filter(c=>c.id!==id)
-  S.prospects=S.prospects.filter(p=>p.campagneId!==id)
-  sauver(); mettreAJourBadges(); afficherSequences(); afficherTableau()
-}
-function voirProspects(campId){
-  aller('prospects',document.querySelector('[onclick*=prospects]'))
-  document.getElementById('prospCampSel').value=campId
-  afficherProspects()
-}
-
-// ═══ PROSPECTS ═══
-function remplirSelectProspCamp(){
-  const sel=document.getElementById('prospCampSel'),cur=sel?.value
-  if(!sel) return
-  sel.innerHTML='<option value="">— sélectionner une campagne —</option>'+
-    S.campagnes.map(c=>`<option value="${c.id}">${c.nom}</option>`).join('')
-  if(cur) sel.value=cur
-}
-
-
-function exporterCSV(){
-  const cid=document.getElementById('prospCampSel')?.value
-  const ps=cid?S.prospects.filter(p=>p.campagneId===cid):S.prospects
-  if(!ps.length){alert('Aucun prospect à exporter');return}
-  const header='email,prenom,nom,societe,poste,etape,ouvertures,tag,repandu,termine'
-  const body=ps.map(p=>[p.email,p.prenom||'',p.nom||'',p.societe||'',p.poste||'',p.etapeCourante||0,p.ouvertures||0,p.tag||'',p.repandu?'oui':'non',p.termine?'oui':'non'].map(v=>'"'+String(v)+'"').join(',')).join('\n')
-  const blob=new Blob([header+'\n'+body],{type:'text/csv'})
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='prospects.csv';a.click()
-}
-
-// ═══ JOURNAUX ═══
-function afficherJournaux(){
-  const el=document.getElementById('contenu-journaux')
-  if(!el) return
-  // Filtrer les lignes bruyantes répétitives
-  const BRUIT = ['Aucun prospect à surveiller','Synchronisation boîte mail','Aucun déclenchement en attente','Synchronisation OK — aucun événement']
-  const important = S.journaux.filter(l=>!BRUIT.some(b=>l.msg.startsWith(b)))
-  const afficherTout = el.dataset.showAll==='true'
-  const liste = afficherTout ? S.journaux : important
-  if(!S.journaux.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">aucun journal</div></div>`;return}
-  el.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--g100)">
-    <div style="font-size:12px;color:var(--g400)">${important.length} événements importants · ${S.journaux.length} total</div>
-    <button class="btn btn-ghost btn-sm" onclick="const el=document.getElementById('contenu-journaux');el.dataset.showAll=el.dataset.showAll==='true'?'false':'true';afficherJournaux()">
-      ${afficherTout?'Masquer le bruit':'Tout afficher'}
-    </button>
-  </div>
-  ${liste.map(l=>{
-    const bruit=BRUIT.some(b=>l.msg.startsWith(b))
-    return `<div class="log-entry${bruit&&!afficherTout?' log-noise':''}">
-      <span class="log-time">${l.heure}</span>
-      <span class="log-${l.type==='ok'?'ok':l.type==='err'?'err':l.type==='warn'?'warn':'info'}">${l.type==='ok'?'✓':l.type==='err'?'✗':l.type==='warn'?'↩':'·'}</span>
-      <span style="flex:1;color:var(--g${bruit?'400':'700'})">${l.msg}</span>
-    </div>`
-  }).join('')}`
-}
-
-// ═══ FUNNEL ═══
-function rendreFunnel(campId){
-  const camp=S.campagnes.find(c=>c.id===campId)
-  const seq=camp?S.sequences.find(s=>s.id===camp.seqId):null
-  const ps=S.prospects.filter(p=>p.campagneId===campId)
-  if(!camp||!seq||!ps.length) return ''
-  const etapes=getEtapesSeq(seq)
-  const max=ps.length||1
-  const rep=ps.filter(p=>p.repandu).length
-  const term=ps.filter(p=>p.termine&&!p.repandu).length
-  const lus=ps.filter(p=>p.tag==='lu').length
-  const nonLus=ps.filter(p=>p.tag==='non_lu').length
-  return `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--g100)">
-    ${etapes.map((et,i)=>{
-      const env=ps.filter(p=>p.etapeCourante>i).length
-      return `${i>0?`<div class="funnel-conn"><div class="funnel-conn-line"></div><div class="funnel-conn-pill">J+${et.delaiJours||0} · ${max-env} sortis</div><div class="funnel-conn-line"></div></div>`:''}
-      <div class="funnel-step-row">
-        <div class="funnel-label">${i===0?'initial':`relance_${i}`}</div>
-        <div class="funnel-bar-wrap">
-          <div class="funnel-bg" style="width:${pct(env,max)}%;background:rgba(10,10,10,${0.08*(3-i)+0.04});border-radius:4px"></div>
-          <div class="funnel-content">
-            <div style="font-family:var(--mono);font-size:11px;font-weight:500">${(et.sujet||'').replace(/<[^>]*>/g,'').slice(0,30)}</div>
-            <div style="font-size:14px;font-weight:500;font-family:var(--mono)">${env}</div>
-          </div>
-        </div>
-      </div>`}).join('')}
-    <div class="funnel-outcomes">
-      <div class="funnel-outcome"><div class="funnel-outcome-val" style="color:var(--green)">${rep}</div><div class="funnel-outcome-lbl">réponses</div></div>
-      <div class="funnel-outcome"><div class="funnel-outcome-val" style="color:var(--amber)">${term}</div><div class="funnel-outcome-lbl">terminés</div></div>
-      <div class="funnel-outcome"><div class="funnel-outcome-val" style="color:var(--info)">${lus}</div><div class="funnel-outcome-lbl">lus</div></div>
-      <div class="funnel-outcome"><div class="funnel-outcome-val">${pct(rep,max)}%</div><div class="funnel-outcome-lbl">taux réponse</div></div>
-    </div>
-  </div>`
-}
-
-// ═══ BLACKLIST ═══
-function estBlackliste(email) {
-  return (S.blacklist||[]).some(e=>e.toLowerCase()===email.toLowerCase())
-}
-
-function ajouterBlacklist() {
-  const email=prompt('Email à blacklister :')
-  if(!email||!email.includes('@')) return
-  const e=email.trim().toLowerCase()
-  S.blacklist=S.blacklist||[]
-  if(S.blacklist.includes(e)){alert('Déjà dans la blacklist');return}
-  S.blacklist.push(e)
-  S.prospects.filter(p=>p.email.toLowerCase()===e&&!p.termine).forEach(p=>{
-    p.termine=true;p.prochainEnvoi=null;p.tag='blackliste'
-  })
-  sauver();afficherBlacklist()
-  ajouterJournal(`🚫 ${e} ajouté à la blacklist`,'warn')
-}
-
-function retirerBlacklist(email) {
-  S.blacklist=(S.blacklist||[]).filter(e=>e!==email)
-  sauver();afficherBlacklist()
-  mettreAJourBadges()
-}
-
-function afficherBlacklist() {
-  const el=document.getElementById('blacklistTable')
-  if(!el) return
-  const bl=S.blacklist||[]
-  if(!bl.length){
-    el.innerHTML=`<div class="empty"><div class="empty-icon">🚫</div><div class="empty-title">blacklist vide</div><p>Aucun email bloqué</p></div>`
-  } else {
-    el.innerHTML=`<table><thead><tr><th>Email bloqué</th><th></th></tr></thead><tbody>
-      ${bl.map(e=>`<tr>
-        <td style="font-family:var(--mono);font-size:12px">${e}</td>
-        <td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick="retirerBlacklist('${e}')">retirer</button></td>
-      </tr>`).join('')}
-    </tbody></table>`
-  }
-  const bb=document.getElementById('blacklistBadge');if(bb)bb.textContent=bl.length
-}
-
-// ═══ TEMPLATES ═══
-function sauvegarderTemplate(sujet,corps) {
-  const nom=prompt('Nom du template :')
-  if(!nom) return
-  S.templates=S.templates||[]
-  S.templates.push({id:uid(),nom,sujet,corps,creee:isoMaint()})
-  sauver();ajouterJournal(`Template "${nom}" sauvegardé`,'ok');alert('Template sauvegardé ✓')
-}
-
-function supprimerTemplate(id) {
-  if(!confirm('Supprimer ?')) return
-  S.templates=(S.templates||[]).filter(t=>t.id!==id);sauver()
-}
-
-function appliquerTemplateLineaire(i,tplId) {
-  if(!tplId) return
-  const t=(S.templates||[]).find(t=>t.id===tplId)
-  if(!t) return
-  const node=trouverNodeParIndex(flowRoot,i)
-  if(node){node.sujet=t.sujet;node.corps=t.corps}
-  const se=document.getElementById(`lin-sujet-${i}`)
-  const ce=document.getElementById(`lin-corps-${i}`)
-  if(se) se.value=t.sujet
-  if(ce) ce.innerHTML=t.corps
-  ajouterJournal(`Template "${t.nom}" appliqué`,'ok')
-}
-
-function trouverNodeParIndex(node,idx,ctr={n:0}) {
-  if(ctr.n===idx) return node
-  ctr.n++
-  for(const b of node.branches||[]){const f=trouverNodeParIndex(b,idx,ctr);if(f)return f}
-  return null
-}
-
-function trouverDerniereNode(node) {
-  if(!node.branches||!node.branches.length) return node
-  return trouverDerniereNode(node.branches[node.branches.length-1])
-}
-
-function mettreAJourEtapeLineaire(i,champ,valeur) {
-  const node=trouverNodeParIndex(flowRoot,i)
-  if(node){ node[champ]=valeur; if(champ==='delaiVal') node.delaiJours=valeur }
-}
-
-function ajouterEtapeLineaire() {
-  const d=trouverDerniereNode(flowRoot)
-  if(d){d.branches=d.branches||[];d.branches.push(creerNode('pas_de_reponse',3));rendreBuilderActif()}
-}
-
-function supprimerEtapeLineaire(i) {
-  if(i===0){alert("Impossible de supprimer l'email initial");return}
-  if(!confirm('Supprimer ?')) return
-  const node=trouverNodeParIndex(flowRoot,i)
-  if(node){supprimerNodeDansParent(flowRoot,node.id);rendreBuilderActif()}
-}
-
-// ═══ BUILDER LINÉAIRE ═══
-let modeBuilder='lineaire'
-
-function basculerModeBuilder() {
-  modeBuilder=modeBuilder==='lineaire'?'flow':'lineaire'
-  const btn=document.getElementById('btnModeBuilder')
-  if(btn) btn.textContent=modeBuilder==='lineaire'?'🔀 vue flow':'📋 vue linéaire'
-  rendreBuilderActif()
-}
-
-function rendreBuilderActif() {
-  if(modeBuilder==='lineaire') rendreBuilderLineaire()
-  else rendreFlow()
-}
-
 function rendreBuilderLineaire() {
-  const canvas=document.getElementById('flowCanvas')
-  if(!canvas) return
   const etapes=aplatiArbre(flowRoot)
-  const tplOpts=(S.templates||[]).length
-    ?`<select class="form-select" style="width:150px;height:28px;font-size:11px" onchange="appliquerTemplateLineaire(##IDX##,this.value);this.value=''">
-        <option value="">📄 template…</option>
-        ${(S.templates||[]).map(t=>`<option value="${t.id}">${t.nom}</option>`).join('')}
-      </select>`
-    :''
-
-  canvas.innerHTML=etapes.map((et,i)=>`
-    <div style="background:var(--w);border:1.5px solid ${i===0?'var(--accent-m)':'var(--g100)'};border-radius:var(--rm);padding:16px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-        <div style="width:22px;height:22px;border-radius:50%;background:${i===0?'var(--accent)':'var(--g200)'};color:${i===0?'#fff':'var(--g600)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0">${i+1}</div>
-        <span style="font-size:12px;font-weight:600;font-family:var(--mono);flex:1;color:var(--g800)">${i===0?'email initial':`relance ${i}`}</span>
-        ${i===0?`<div style="display:flex;align-items:center;gap:6px">
-            <select class="cond-select" style="font-size:11px;height:26px" id="sel-email0-mode" onchange="mettreAJourEtapeLineaire(0,'envoisImmediat',this.value==='immediat');const ep=document.getElementById('email0-planif');if(ep)ep.style.display=this.value==='planifie'?'flex':'none'">
-              <option value="immediat" ${!(et.envoisImmediat===false)?'selected':''}>⚡ Envoi immédiat à la publication</option>
-              <option value="planifie" ${et.envoisImmediat===false?'selected':''}>📅 Planifier une date</option>
-            </select>
-          </div>`:''}
-        ${i===0?`<div id="email0-planif" class="seq-cond-wrap" style="margin-top:8px;display:${et.envoisImmediat===false?'flex':'none'}">
-          <span style="font-size:12px;color:var(--g500)">Envoyer le</span>
-          <input type="date" class="cond-select" style="width:150px" value="${et.dateEnvoi||''}" onchange="mettreAJourEtapeLineaire(0,'dateEnvoi',this.value)">
-          <span style="font-size:12px;color:var(--g500)">à</span>
-          <input type="time" class="cond-select" style="width:100px" value="${et.heureEnvoi||'09:00'}" onchange="mettreAJourEtapeLineaire(0,'heureEnvoi',this.value)">
-        </div>`:''}
-        ${i>0?`<button class="btn btn-danger btn-xs" onclick="supprimerEtapeLineaire(${i})">✕</button>`:''}
-      </div>
-      ${i>0?`<div style="background:var(--g50);border:1px solid var(--g100);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <span style="font-size:12px;color:var(--g500)">Envoyer si</span>
-        <select class="cond-select" onchange="mettreAJourEtapeLineaire(${i},'condition',this.value)">
-          <option value="pas_de_reponse" ${et.condition==='pas_de_reponse'?'selected':''}>si pas de réponse</option>
-          <option value="delai" ${et.condition==='delai'?'selected':''}>délai fixe (toujours)</option>
-        </select>
-        <span style="font-size:12px;color:var(--g500)">après</span>
-        <input type="number" class="cond-num" value="${et.delaiVal||et.delaiJours||2}" min="1" max="999" onchange="mettreAJourEtapeLineaire(${i},'delaiVal',+this.value)">
-        <select class="cond-select" style="width:90px" id="unite-sel-${i}" onchange="mettreAJourEtapeLineaire(${i},'delaiUnite',this.value);const hw=document.getElementById('heure-wrap-${i}');if(hw)hw.style.display=this.value==='jours'?'flex':'none'">
-          <option value="jours" ${(et.delaiUnite||'jours')==='jours'?'selected':''}>jours</option>
-          <option value="heures" ${et.delaiUnite==='heures'?'selected':''}>heures</option>
-          <option value="minutes" ${et.delaiUnite==='minutes'?'selected':''}>minutes</option>
-        </select>
-        <span id="heure-wrap-${i}" style="display:${(et.delaiUnite||'jours')==='jours'?'flex':'none'};align-items:center;gap:8px">
-          <span style="font-size:12px;color:var(--g500)">à</span>
-          <input type="time" class="cond-select" style="width:100px" value="${et.heureEnvoi||'09:00'}" onchange="mettreAJourEtapeLineaire(${i},'heureEnvoi',this.value)">
-        </span>
-      </div>`:''}
-      <div class="form-group" style="margin-bottom:8px">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-          <label class="form-label" style="margin-bottom:0;flex:1">Objet</label>
-          ${tplOpts.replace(/##IDX##/g,i)}
-          <button class="btn btn-ghost btn-xs" onclick="ouvrirApercu(${i})">👁 aperçu</button>
-          <button class="btn btn-ghost btn-xs" onclick="envoyerEmailTest(${i})">📧 test</button>
+  const el=document.getElementById('flowCanvas')
+  if(!el)return
+  let html='<div style="display:flex;flex-direction:column;gap:0;padding:8px 0">'
+  etapes.forEach((et,i)=>{
+    const isFirst=i===0
+    const label=isFirst?'Email initial':'Relance '+i
+    const preview=(et.corps||'').replace(/<[^>]+>/g,'').trim().slice(0,60)||'Corps vide...'
+    const objet=et.sujet||'Objet vide...'
+    const borderColor=isFirst?'var(--accent)':'#e8eaf6'
+    html+=`
+    <div style="background:var(--w);border:1.5px solid ${borderColor};border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);cursor:pointer;transition:box-shadow .15s,border-color .15s"
+      onmouseenter="this.style.boxShadow='0 4px 16px rgba(99,102,241,.15)';this.style.borderColor='var(--accent)'"
+      onmouseleave="this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)';this.style.borderColor='${borderColor}'"
+      onclick="ouvrirEditionEtape(${i})">
+      <div style="display:flex;align-items:stretch;min-height:72px">
+        <div style="width:52px;flex-shrink:0;background:${isFirst?'var(--accent)':'var(--g50)'};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-right:1px solid ${isFirst?'rgba(255,255,255,.2)':'var(--g100)'}">
+          <div style="width:28px;height:28px;border-radius:50%;background:${isFirst?'rgba(255,255,255,.25)':'var(--accent)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">${i+1}</div>
+          <div style="font-size:9px;font-weight:600;text-transform:uppercase;color:${isFirst?'rgba(255,255,255,.8)':'var(--g400)'}">${isFirst?'Init':'R'+i}</div>
         </div>
-        <input class="form-input" id="lin-sujet-${i}" value="${(et.sujet||'').replace(/"/g,'&quot;')}"
-          placeholder="Objet…" oninput="mettreAJourEtapeLineaire(${i},'sujet',this.value)"
-          onfocus="dernierEditeurFocus='lin-sujet-${i}'">
-      </div>
-      <div class="form-group" style="margin-bottom:8px">
-        <label class="form-label">Corps</label>
-        <div class="editor-wrap">
-          <div class="editor-toolbar">${outilsEditeur('lin-corps-'+i)}</div>
-          <div id="lin-corps-${i}" class="editor-body" contenteditable="true"
-            data-placeholder="Bonjour {{prenom}},&#10;&#10;..."
-            onfocus="dernierEditeurFocus='lin-corps-${i}'"
-            oninput="mettreAJourEtapeLineaire(${i},'corps',this.innerHTML)">${et.corps||''}</div>
+        <div style="flex:1;padding:12px 14px;min-width:0">
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:${isFirst?'var(--accent)':'var(--g400)'};margin-bottom:4px">${label}</div>
+          <div style="font-size:13.5px;font-weight:600;color:var(--g900);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${objet}</div>
+          <div style="font-size:12px;color:var(--g400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${preview}</div>
         </div>
-      </div>
-      <div style="display:flex;justify-content:flex-end">
-        <button class="btn btn-ghost btn-xs"
-          onclick="sauvegarderTemplate(document.getElementById('lin-sujet-${i}').value,document.getElementById('lin-corps-${i}').innerHTML)">
-          💾 sauver template
-        </button>
-      </div>
-    </div>
-    ${i<etapes.length-1?`<div style="padding:4px 0 0 20px"><div style="width:2px;height:20px;background:var(--g200);margin-left:9px"></div></div>`:''}`
-  ).join('')+`
-  <div style="padding:12px 0 4px">
-    <button class="btn btn-ghost btn-sm" style="width:100%" onclick="ajouterEtapeLineaire()">+ ajouter une relance</button>
-  </div>`
-}
-
-// ═══ TOKEN REFRESH ═══
-let tokenExpireAt=null
-
-function noterExpirationToken() {
-  tokenExpireAt=Date.now()+50*60*1000
-  setTimeout(alerterExpirationToken,50*60*1000)
-}
-
-function alerterExpirationToken() {
-  if(!S.accessToken) return
-  const banner=document.getElementById('tokenBanner')
-  if(banner){
-    banner.style.display='flex'
-    banner.innerHTML=`<span style="flex:1">⚠ Session Outlook expire dans 10 min — reconnectez-vous pour ne pas rater d'envois</span>
-      <button class="btn btn-primary btn-sm" onclick="ouvrirConnexion()">🔄 Reconnecter</button>
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('tokenBanner').style.display='none'">✕</button>`
-  }
-  setTimeout(()=>{
-    if(!S.accessToken) return
-    S.accessToken=null;sauver()
-    document.getElementById('statusDot').classList.remove('on')
-    document.getElementById('statusLabel').textContent='session expirée'
-    document.getElementById('statusEmail').textContent='cliquer pour reconnecter →'
-    const b=document.getElementById('tokenBanner')
-    if(b){b.style.display='flex';b.innerHTML=`<span style="flex:1">🔴 Session expirée — envois en pause</span><button class="btn btn-primary btn-sm" onclick="ouvrirConnexion()">Reconnecter</button>`}
-    ajouterJournal('Session Outlook expirée','err')
-  },10*60*1000)
-}
-
-
-// ═══ RENOMMER CAMPAGNE ═══
-function renommerCamp(id) {
-  const camp = S.campagnes.find(c=>c.id===id)
-  if(!camp) return
-  const nouveau = prompt('Nouveau nom de la campagne :', camp.nom)
-  if(!nouveau || nouveau.trim()===camp.nom) return
-  camp.nom = nouveau.trim()
-  sauver()
-  afficherListeCamp()
-  ajouterJournal(`Campagne renommée : "${nouveau.trim()}"`,'ok')
-}
-
-// ═══ BLACKLISTER DEPUIS PROSPECTS ═══
-function blacklisterDepuisProspect(prospectId) {
-  const p = S.prospects.find(x=>x.id===prospectId)
-  if(!p) return
-  if(!confirm(`Blacklister ${p.email} ?
-
-Cet email ne recevra plus jamais d'email via MailSeq.`)) return
-  p.tag='blackliste'; p.termine=true; p.prochainEnvoi=null
-  S.blacklist = S.blacklist||[]
-  if(!S.blacklist.includes(p.email.toLowerCase())) {
-    S.blacklist.push(p.email.toLowerCase())
-  }
-  sauver()
-  afficherProspects()
-  afficherBlacklist()
-  mettreAJourBadges()
-  ajouterJournal(`🚫 ${p.email} — blacklisté depuis le tableau prospects`,'warn')
-}
-
-// ═══ MODIFIER TAG PROSPECT ═══
-function changerTagProspect(prospectId, tag) {
-  const p = S.prospects.find(x=>x.id===prospectId)
-  if(!p || !tag) return
-  if(tag==='actif') {
-    p.tag=null; p.repandu=false; p.termine=false
-    p.etapeCourante=0; p.historique=[]; p.ouvertures=0
-    p.prochainEnvoi=new Date().toISOString()
-    ajouterJournal(`↺ ${p.email} — remis en actif (étape 1)`,'ok')
-    sauver()
-    if(confirm(`✓ ${p.email} remis à l'étape 1.\n\nEnvoyer l'email 1 maintenant ?`)){const camp=S.campagnes.find(c=>c.id===p.campagneId);const seq=camp?S.sequences.find(s=>s.id===camp.seqId):null;if(seq)envoyerLot(camp.id,seq,camp.delai||45)}
-    sauver()
-    if(confirm(`✓ ${p.email} remis à l'étape 1.\n\nEnvoyer l'email 1 maintenant ?`)) {
-      const camp=S.campagnes.find(c=>c.id===p.campagneId)
-      const seq=camp?S.sequences.find(s=>s.id===camp.seqId):null
-      if(seq) envoyerLot(camp.id,seq,camp.delai||45)
-    }
-  } else if(tag==='repandu') {
-    p.tag='repandu'; p.repandu=true; p.termine=true; p.prochainEnvoi=null
-    ajouterJournal(`↩ ${p.email} — marqué comme répondu`,'ok')
-  } else if(tag==='blackliste') {
-    if(!confirm(`Blacklister définitivement ${p.email} ?`)) return
-    p.tag='blackliste'; p.termine=true; p.prochainEnvoi=null
-    S.blacklist=S.blacklist||[]
-    if(!S.blacklist.includes(p.email.toLowerCase())) S.blacklist.push(p.email.toLowerCase())
-    ajouterJournal(`🚫 ${p.email} — blacklisté`,'warn')
-  }
-  sauver(); afficherProspects()
-}
-
-// ═══ FORCER ENVOI MAINTENANT ═══
-function forcerEnvoiSeq(seqId) {
-  const camps = S.campagnes.filter(c=>c.seqId===seqId&&c.statut==='active')
-  if(!camps.length) { alert('Aucune campagne active pour cette séquence'); return }
-  // Remettre le prochainEnvoi à maintenant pour tous les prospects en attente
-  let count = 0
-  camps.forEach(camp => {
-    const seq = S.sequences.find(s=>s.id===camp.seqId)
-    if(!seq) return
-    S.prospects.filter(p=>p.campagneId===camp.id&&!p.termine&&!p.repandu&&p.prochainEnvoi).forEach(p=>{
-      p.prochainEnvoi = new Date().toISOString()
-      count++
-    })
-    seq._etapesFlat = getEtapesSeq(seq)
-    envoyerLot(camp.id, seq, camp.delai||45)
-  })
-  if(count > 0) {
-    ajouterJournal(`⚡ Envoi forcé — ${count} prospect${count>1?'s':''} traités maintenant`,'ok')
-    afficherSequences()
-  } else {
-    alert('Aucun envoi en attente pour cette séquence')
-  }
-}
-
-// ═══ VOIR PROSPECTS D'UNE CAMPAGNE ═══
-function voirProspectsCamp(campId) {
-  const camp=S.campagnes.find(c=>c.id===campId)
-  const ps=S.prospects.filter(p=>p.campagneId===campId)
-  const overlay=document.createElement('div')
-  overlay.className='overlay'
-  overlay.onclick=e=>{if(e.target===overlay)document.body.removeChild(overlay)}
-  let rows=''
-  for(const p of ps){
-    const statut=p.repandu?'<span class="badge b-green">répondu</span>':p.tag==='erreur'?'<span class="badge b-red">erreur</span>':p.termine?'<span class="badge b-gray">terminé</span>':'<span class="badge b-amber">actif</span>'
-    rows+='<tr><td style="font-family:var(--mono);font-size:11.5px">'+p.email+'</td><td>'+([p.prenom,p.nom].filter(Boolean).join(' ')||'—')+'</td><td>'+(p.societe||'—')+'</td><td><span class="badge b-gray">étape_'+(p.etapeCourante||0)+'</span></td><td>'+(p.repandu||p.termine?'—':fmtProchainEnvoi(p.prochainEnvoi))+'</td><td>'+statut+'</td><td><select style="height:22px;font-size:11px;border:1px solid var(--g200);border-radius:5px;background:var(--w);cursor:pointer" data-pid="'+p.id+'" data-cid="'+campId+'" class="ptagsel"><option value="">✏</option><option value="repandu">↩ répondu</option><option value="actif">↺ reset</option><option value="blackliste">🚫 blacklister</option></select></td></tr>'
-  }
-  overlay.innerHTML='<div class="modal modal-wide"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><div><div class="modal-title">'+(camp?.nom||'Prospects')+'</div><div style="font-size:12px;color:var(--g400);margin-top:2px">'+ps.length+' prospect'+(ps.length>1?'s':'')+'</div></div><button class="close-btn" data-close>×</button></div><div class="table-wrap"><table><thead><tr><th>Email</th><th>Prénom</th><th>Société</th><th>Étape</th><th>Prochain envoi</th><th>Statut</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div><div class="modal-footer"><button class="btn btn-ghost btn-sm" data-csv="'+campId+'">↓ CSV</button><button class="btn btn-ghost" data-close>Fermer</button></div></div>'
-  overlay.addEventListener('click',e=>{if(e.target.dataset.close!==undefined||e.target===overlay)document.body.removeChild(overlay);if(e.target.dataset.csv)exporterCSVCamp(e.target.dataset.csv)})
-  overlay.addEventListener('change',e=>{const sel=e.target.closest('.ptagsel');if(!sel||!sel.value)return;changerTagProspect(sel.dataset.pid,sel.value);document.body.removeChild(overlay);voirProspectsCamp(sel.dataset.cid)})
-  document.body.appendChild(overlay)
-}
-
-// ═══ COPIER SÉQUENCE POUR IA ═══
-function copierSeqPourIA(seqId) {
-  const seq = S.sequences.find(s=>s.id===seqId)
-  if(!seq) return
-  const etapes = seq.etapes || aplatiArbre(seq.flowRoot || creerNode())
-  
-  const camps = S.campagnes.filter(c=>c.seqId===seqId)
-  const ps = S.prospects.filter(p=>camps.some(c=>c.id===p.campagneId))
-  const sent = ps.filter(p=>p.etapeCourante>0).length
-  const rep = ps.filter(p=>p.repandu).length
-  const taux = sent>0 ? Math.round(rep/sent*100) : null
-  
-  let txt = `# Séquence cold email : "${seq.nom}"
-
-`
-  
-  if(taux !== null) {
-    txt += `## Performances actuelles
-`
-    txt += `- Emails envoyés : ${sent}
-`
-    txt += `- Réponses : ${rep}
-`
-    txt += `- Taux de réponse : ${taux}%
-
-`
-  }
-  
-  txt += `## Emails de la séquence
-
-`
-  
-  etapes.forEach((e, i) => {
-    const label = i===0 ? 'Email initial' : `Relance ${i}`
-    const delai = i===0 
-      ? (e.envoisImmediat===false && e.dateEnvoi ? `Planifié le ${e.dateEnvoi}` : 'Envoi immédiat')
-      : `${e.delaiVal||e.delaiJours||2} ${e.delaiUnite||'jours'} après · ${e.condition==='pas_de_reponse'?'si pas de réponse':'délai fixe'}`
-    
-    txt += `### ${label}
-`
-    txt += `**Déclencheur :** ${delai}
-`
-    txt += `**Objet :** ${e.sujet||'(vide)'}
-`
-    txt += `**Corps :**
-${(e.corps||'(vide)').replace(/<[^>]+>/g,'').trim()}
-
-`
-  })
-  
-  txt += `---
-`
-  txt += `Cible : directeurs / managers commerciaux, PME 11-50 salariés, France.
-`
-  txt += `Contexte : prospection cold email B2B pour Weclosed (SaaS tracker cold call).
-
-`
-  txt += `Peux-tu analyser cette séquence et me donner tes retours sur :
-`
-  txt += `1. L'accroche et la pertinence de chaque email
-`
-  txt += `2. Les objets (taux d'ouverture potentiel)
-`
-  txt += `3. Le timing et le nombre de relances
-`
-  txt += `4. Ce que tu changerais en priorité
-`
-  
-  navigator.clipboard.writeText(txt).then(()=>{
-    // Feedback visuel
-    const _oc="copierSeqPourIA('"+seqId+"')"
-    const btn=[...document.querySelectorAll('button')].find(b=>b.getAttribute('onclick')===_oc)
-    if(btn){ const orig=btn.textContent; btn.textContent='✓ copié !'; btn.style.color='var(--green)'; setTimeout(()=>{btn.textContent=orig;btn.style.color=''},1500) }
-    ajouterJournal('Séquence "'+seq.nom+'" copiée pour l\'IA','ok')
-  }).catch(()=>alert('Erreur copie — utilisez un navigateur récent'))
-}
-
-// ═══ RELANCER PROSPECT EN ERREUR ═══
-async function relancerProspect(prospectId) {
-  const p = S.prospects.find(x=>x.id===prospectId)
-  if(!p) return
-  if(!S.accessToken) { alert('Connectez-vous à Outlook pour relancer.'); return }
-  const camp = S.campagnes.find(c=>c.id===p.campagneId)
-  const seq = camp ? S.sequences.find(s=>s.id===camp.seqId) : null
-  if(!seq) { alert('Séquence introuvable'); return }
-  const etapes = getEtapesSeq(seq)
-  const etape = etapes[Math.max(0, p.etapeCourante-1)]
-  if(!etape) return
-  p.tag = null; p.erreurMsg = null
-  const ok = await envoyerUn(p, etape.sujet, etape.corps)
-  if(ok) ajouterJournal(`↺ Relance manuelle réussie → ${p.email}`,'ok')
-  sauver(); afficherProspects()
-}
-
-// ═══ DUPLICATION DE SÉQUENCE ═══
-function dupliquerSeq(id) {
-  const seq = S.sequences.find(s=>s.id===id)
-  if(!seq) return
-  const nom = prompt('Nom de la copie :', seq.nom+' (copie)')
-  if(!nom) return
-  const copie = JSON.parse(JSON.stringify(seq))
-  copie.id = uid()
-  copie.nom = nom
-  copie.creee = isoMaint()
-  S.sequences.push(copie)
-  sauver(); afficherSequences()
-  ajouterJournal(`Séquence "${nom}" dupliquée`,'ok')
-  setTimeout(()=>ouvrirModalSeq(copie.id),150)
-}
-
-// ═══ EMAIL DE TEST ═══
-async function envoyerEmailTest(stepIndex) {
-  const emailTest = prompt('Adresse email pour le test :')
-  if(!emailTest || !emailTest.includes('@')) return
-  
-  // Récupérer l'étape depuis le builder linéaire actuel
-  const etapes = aplatiArbre(flowRoot)
-  const etape = etapes[stepIndex]
-  if(!etape) return
-
-  // Prospect fictif pour les variables
-  const prospectTest = {
-    email: emailTest,
-    prenom: 'Prénom',
-    nom: 'Nom',
-    societe: 'Société',
-    poste: 'Poste'
-  }
-
-  if(!S.accessToken) {
-    alert('🔴 Connectez-vous à Outlook pour envoyer un email test.')
-    return
-  }
-
-
-
-
-
-  const sujetTest = `[TEST] ${interp(etape.sujet, prospectTest)}`
-  const ok = await envoyerUn(prospectTest, sujetTest, etape.corps)
-  if(ok) {
-    ajouterJournal(`📧 Email test envoyé → ${emailTest}`,'ok')
-    alert(`✓ Email test envoyé à ${emailTest}`)
-  }
-}
-
-// ═══ APERÇU EMAIL ═══
-function ouvrirApercu(stepIndex) {
-  // Récupérer un prospect exemple de la liste sélectionnée
-  const lid = document.getElementById('seqListeSel')?.value
-  const liste = lid ? S.listes.find(l=>l.id===lid) : null
-  const exempleProspect = liste?.contacts?.[0] || {
-    email: 'jean.dupont@exemple.fr',
-    prenom: 'Jean',
-    nom: 'Dupont',
-    societe: 'Acme Corp',
-    poste: 'Directeur Commercial'
-  }
-
-  const etapes = aplatiArbre(flowRoot)
-  const etape = etapes[stepIndex]
-  if(!etape) return
-
-  const sujetRendu = interp(etape.sujet, exempleProspect)
-  const corpsRendu = interp(etape.corps, exempleProspect)
-  const signature = S.signature ? `<br><br><hr style="border:none;border-top:1px solid #eee;margin:16px 0">${S.signature}` : ''
-
-  // Créer modal d'aperçu
-  const overlay = document.createElement('div')
-  overlay.className = 'overlay'
-  overlay.onclick = e => { if(e.target===overlay) document.body.removeChild(overlay) }
-  overlay.innerHTML = `
-    <div class="modal" style="width:680px;max-height:85vh">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--g100)">
-        <div>
-          <div class="modal-title" style="margin-bottom:0">Aperçu — ${stepIndex===0?'Email initial':`Relance ${stepIndex}`}</div>
-          <div style="font-size:11px;color:var(--g400);margin-top:3px">Variables remplacées avec : ${exempleProspect.prenom} ${exempleProspect.nom} · ${exempleProspect.societe}</div>
+        <div style="display:flex;flex-direction:column;justify-content:center;gap:6px;padding:10px;border-left:1px solid var(--g100)" onclick="event.stopPropagation()">
+          <button class="btn btn-ghost btn-xs" onclick="ouvrirApercu(${i})">👁</button>
+          <button class="btn btn-ghost btn-xs" onclick="envoyerEmailTest(${i})">📧</button>
+          ${i>0?`<button style="background:none;border:none;color:var(--g300);cursor:pointer;font-size:14px;padding:0" onclick="supprimerEtapeLineaire(${i})">✕</button>`:''}
         </div>
-        <button class="close-panel" onclick="this.closest('.overlay').remove()">×</button>
-      </div>
-      
-      <!-- Infos email -->
-      <div style="background:var(--g50);border:1px solid var(--g100);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;font-size:12px">
-        <div style="display:flex;gap:8px;margin-bottom:6px">
-          <span style="color:var(--g400);width:50px;flex-shrink:0">De :</span>
-          <span style="color:var(--g700)">${S.userEmail||'votre@email.fr'}</span>
-        </div>
-        <div style="display:flex;gap:8px;margin-bottom:6px">
-          <span style="color:var(--g400);width:50px;flex-shrink:0">À :</span>
-          <span style="color:var(--g700)">${exempleProspect.email}</span>
-        </div>
-        <div style="display:flex;gap:8px">
-          <span style="color:var(--g400);width:50px;flex-shrink:0">Objet :</span>
-          <span style="color:var(--g900);font-weight:500">${sujetRendu||'(sans objet)'}</span>
-        </div>
-      </div>
-
-      <!-- Corps rendu -->
-      <div style="border:1px solid var(--g200);border-radius:var(--r);padding:16px 18px;font-size:13px;line-height:1.7;color:var(--g800);max-height:320px;overflow-y:auto;background:var(--w)">
-        ${corpsRendu+signature || '<span style="color:var(--g300)">(corps vide)</span>'}
-      </div>
-
-      <!-- Vérification variables non remplacées -->
-      ${(sujetRendu+corpsRendu).includes('{{') ? `
-      <div class="info-box i-amber" style="margin-top:12px;margin-bottom:0">
-        ⚠ Des variables n'ont pas été remplacées : ${[...new Set((sujetRendu+corpsRendu).match(/\{\{[^}]+\}\}/g)||[])].join(', ')}
-        <br>Vérifiez que vos colonnes Excel correspondent exactement.
-      </div>` : `
-      <div class="info-box i-green" style="margin-top:12px;margin-bottom:0">
-        ✓ Toutes les variables sont remplacées correctement
-      </div>`}
-
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="envoyerEmailTest(${stepIndex})">📧 Envoyer un email test</button>
-        <button class="btn btn-primary" onclick="this.closest('.overlay').remove()">Fermer</button>
       </div>
     </div>`
-  document.body.appendChild(overlay)
-}
-
-// ═══ PROGRESSION ENVOI EN TEMPS RÉEL ═══
-function afficherProgressionEnvoi(envoyes, total, nomCamp) {
-  const el = document.getElementById('progressEnvoi')
-  const label = document.getElementById('progressLabel')
-  const fill = document.getElementById('progressFill')
-  if(!el) return
-  if(total===0) { el.style.display='none'; return }
-  el.style.display='flex'
-  const pct = Math.round(envoyes/total*100)
-  if(label) label.textContent = `${envoyes}/${total} envoyés`
-  if(fill) fill.style.width = pct+'%'
-  if(envoyes>=total) setTimeout(()=>{ if(el) el.style.display='none' }, 3000)
-}
-
-// ═══ PAGINATION PROSPECTS ═══
-let pageProspects = 1
-const PAGE_SIZE = 50
-
-function afficherProspects() {
-  const el = document.getElementById('contenu-prospects')
-  if(!el) return
-  if(!S.listes.length) {
-    el.innerHTML=`<div class="empty"><div class="empty-icon">👥</div><div class="empty-title">aucune liste</div><p style="margin-bottom:16px">Créez votre première liste de prospects</p><button class="btn btn-primary" onclick="ouvrirModalListe(null)">+ nouvelle liste</button></div>`
-    return
-  }
-  // Afficher les listes avec leurs contacts
-  el.innerHTML=S.listes.map(l=>{
-    const campagnes=S.campagnes.filter(c=>c.listeId===l.id)
-    return `<div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div>
-          <div style="font-size:14px;font-weight:600;color:var(--g900)">${l.nom}</div>
-          <div style="font-size:12px;color:var(--g400);margin-top:3px">${l.contacts.length} contact${l.contacts.length>1?'s':''} · créée ${fmtD(l.creee)}${campagnes.length?' · utilisée dans '+campagnes.length+' campagne'+(campagnes.length>1?'s':''):''}</div>
+    if(i<etapes.length-1){
+      const nx=etapes[i+1]
+      const cond=nx.condition==='pas_de_reponse'?'si pas de reponse':'toujours'
+      const del=(nx.delaiVal||nx.delaiJours||2)+' '+(nx.delaiUnite||'jours')
+      const heure=(nx.delaiUnite||'jours')==='jours'?' a '+(nx.heureEnvoi||'09:00'):''
+      html+=`<div style="display:flex;flex-direction:column;align-items:center">
+        <div style="width:2px;height:12px;background:#e8eaf6"></div>
+        <div onclick="ouvrirEditeurConnecteur(${i+1})"
+          style="display:flex;align-items:center;gap:6px;background:var(--g50);border:1.5px solid #e8eaf6;border-radius:20px;padding:5px 12px;cursor:pointer;font-size:11.5px;color:var(--g600);font-weight:500;transition:all .15s"
+          onmouseenter="this.style.borderColor='var(--accent)';this.style.color='var(--accent)';this.style.background='var(--accent-l)'"
+          onmouseleave="this.style.borderColor='#e8eaf6';this.style.color='var(--g600)';this.style.background='var(--g50)'">
+          ⏱ ${del}${heure} · ${cond} <span style="font-size:10px;color:var(--g300)">✏</span>
         </div>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-ghost btn-sm" onclick="ouvrirModalListe('${l.id}')">✏ modifier</button>
-          <button class="btn btn-danger btn-sm" onclick="supprimerListe('${l.id}')">supprimer</button>
-        </div>
-      </div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap">
-        ${l.contacts.slice(0,10).map(p=>`<div style="display:flex;align-items:center;gap:5px;background:var(--g50);border:1px solid var(--g100);border-radius:20px;padding:3px 10px 3px 5px;font-size:12px">
-          <div style="width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">${(p.prenom||p.email)[0].toUpperCase()}</div>
-          <span style="color:var(--g700)">${p.prenom?p.prenom+' '+(p.nom||''):p.email}</span>
-          ${p.societe?`<span style="color:var(--g400)">· ${p.societe}</span>`:''}
-        </div>`).join('')}
-        ${l.contacts.length>10?`<div style="display:flex;align-items:center;padding:3px 10px;background:var(--g50);border:1px solid var(--g100);border-radius:20px;font-size:12px;color:var(--g400)">+${l.contacts.length-10} autres</div>`:''}
-      </div>
-    </div>`
-  }).join('')
-  return // skip old code
-  const cid = ''
-  const recherche = ''
-  let ps = []
-  if(!cid) { return }
-  if(!ps.length) { el.innerHTML=`<div class="empty"><div class="empty-icon">👤</div><div class="empty-title">aucun prospect</div></div>`; return }
-
-  // Filtrer par recherche
-  if(recherche) {
-    ps = ps.filter(p =>
-      (p.email||'').toLowerCase().includes(recherche) ||
-      (p.prenom||'').toLowerCase().includes(recherche) ||
-      (p.nom||'').toLowerCase().includes(recherche) ||
-      (p.societe||'').toLowerCase().includes(recherche)
-    )
-  }
-
-  const total = ps.length
-  const totalPages = Math.ceil(total/PAGE_SIZE)
-  if(pageProspects > totalPages) pageProspects = 1
-  const slice = ps.slice((pageProspects-1)*PAGE_SIZE, pageProspects*PAGE_SIZE)
-
-  el.innerHTML=`
-    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--g100);background:var(--g50)">
-      <input class="form-input" id="rechercheProspects" placeholder="Rechercher…" style="height:28px;font-size:12px;max-width:220px" 
-        value="${recherche}" oninput="pageProspects=1;afficherProspects()">
-      <span style="font-size:11px;color:var(--g400);margin-left:auto">${total} prospect${total>1?'s':''}</span>
-    </div>
-    <table><thead><tr><th>email</th><th>prénom</th><th>société</th><th>étape</th><th>prochain envoi</th><th>tag</th><th>statut</th></tr></thead><tbody>
-      ${slice.map(p=>`<tr>
-        <td style="font-family:var(--mono);font-size:11.5px">${p.email}</td>
-        <td>${[p.prenom,p.nom].filter(Boolean).join(' ')||'—'}</td>
-        <td style="color:var(--g500)">${p.societe||'—'}</td>
-        <td><span class="badge b-gray">étape_${p.etapeCourante||0}</span></td>
-        <td style="font-size:12px;color:var(--g600)">${p.repandu||p.termine?'—':fmtProchainEnvoi(p.prochainEnvoi)}</td>
-        <td>
-          <div style="display:flex;align-items:center;gap:4px">
-            ${p.tag==='repandu'?badge('↩ répondu','green'):p.tag==='blackliste'?badge('🚫 blacklist','red'):p.tag==='erreur'?`<span class="badge b-red" title="${p.erreurMsg||''}">✗ erreur</span>`:badge('—','gray')}
-            <select style="height:22px;font-size:10px;border:1px solid var(--g200);border-radius:4px;background:var(--w);color:var(--g600);cursor:pointer;outline:none;padding:0 4px"
-              onchange="changerTagProspect('${p.id}',this.value);this.value=''">
-              <option value="">✏</option>
-              <option value="repandu">↩ répondu</option>
-              <option value="actif">actif (reset)</option>
-              <option value="blackliste">🚫 blacklister</option>
-            </select>
-          </div>
-        </td>
-        <td>
-          <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
-            ${p.repandu?badge('↩ répondu','green'):p.tag==='erreur'?badge('erreur','red'):p.termine?badge('terminé','gray'):badge('actif','amber')}
-            ${p.tag==='erreur'?`<button class="btn btn-xs btn-ghost" onclick="relancerProspect('${p.id}')">↺</button>`:''}
-            ${!p.repandu&&p.tag!=='blackliste'?`<button class="btn btn-xs btn-danger" onclick="blacklisterDepuisProspect('${p.id}')" title="Blacklister">🚫</button>`:''}
-          </div>
-        </td>
-      </tr>`).join('')}
-    </tbody></table>
-    ${totalPages>1?`<div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-top:1px solid var(--g100)">
-      <button class="btn btn-ghost btn-sm" onclick="pageProspects=Math.max(1,pageProspects-1);afficherProspects()" ${pageProspects<=1?'disabled':''}>←</button>
-      <span style="font-size:12px;color:var(--g500);font-family:var(--mono)">${pageProspects} / ${totalPages}</span>
-      <button class="btn btn-ghost btn-sm" onclick="pageProspects=Math.min(${totalPages},pageProspects+1);afficherProspects()" ${pageProspects>=totalPages?'disabled':''}>→</button>
-    </div>`:''}
-  `
-}
-
-// Save cursor position for variable insertion
-document.addEventListener('selectionchange',()=>{
-  const sel=window.getSelection();if(!sel||!sel.rangeCount)return
-  const node=sel.getRangeAt(0).commonAncestorContainer
-  const ed=node.nodeType===3?node.parentElement?.closest('[contenteditable]'):node.closest?.('[contenteditable]')
-  if(ed){window._savedRange=sel.getRangeAt(0).cloneRange();window._savedEl=ed}
-})
-
-// ═══ INIT ═══
-mettreAJourBadges()
-afficherTableau()
-if(S.accessToken) {
-  setTimeout(()=>{
-    const enRetard=S.prospects.filter(p=>!p.termine&&!p.repandu&&p.prochainEnvoi&&new Date(p.prochainEnvoi)<=new Date())
-    if(enRetard.length){
-      ajouterJournal(`⏰ ${enRetard.length} envoi${enRetard.length>1?'s':''} en retard détecté${enRetard.length>1?'s':''} — envoi immédiat`,'ok')
-      lancerDeclencheurs()
+        <div style="width:2px;height:12px;background:#e8eaf6"></div>
+      </div>`
     }
-    verifierReponses()
-  },1000)
-  setTimeout(reprendreApresConnexion,3000)
+  })
+  html+=`<button class="btn btn-ghost" style="margin-top:8px;width:100%;justify-content:center;border-style:dashed;color:var(--g400);height:44px;border-radius:10px"
+    onmouseenter="this.style.borderColor='var(--accent)';this.style.color='var(--accent)';this.style.background='var(--accent-l)'"
+    onmouseout="this.style.borderColor='var(--g200)';this.style.color='var(--g400)';this.style.background=''"
+    onclick="ajouterEtapeLineaire()">+ Ajouter une relance</button></div>`
+  el.innerHTML=html
 }
-</script>
-</div>
-</body>
-</html>
+
+function ouvrirEditionEtape(idx) {
+  const etapes=aplatiArbre(flowRoot);const et=etapes[idx];if(!et)return
+  const isFirst=idx===0
+  const tplOpts=S.templates.length?'<select style="height:26px;font-size:11px;border:1px solid var(--g200);border-radius:var(--r);background:var(--w);cursor:pointer;max-width:120px" onchange="appliquerTemplateLineaire('+idx+',this.value);this.value=\'\'"><option value="">template...</option>'+S.templates.map(t=>'<option value="'+t.id+'">'+t.nom+'</option>').join('')+'</select>':''
+  const ov=document.createElement('div');ov.className='overlay'
+  ov.onclick=e=>{if(e.target===ov){document.body.removeChild(ov);rendreBuilderLineaire()}}
+  const planifSection=isFirst?'<div style="margin-bottom:12px;flex-shrink:0"><select class="cond-select" style="height:30px" onchange="mettreAJourEtapeLineaire(0,\'envoisImmediat\',this.value===\'immediat\');const ep=document.getElementById(\'e0pp\');if(ep)ep.style.display=this.value===\'planifie\'?\'flex\':\'none\'"><option value="immediat" '+(et.envoisImmediat===false?'':'selected')+'>⚡ Envoi immediat</option><option value="planifie" '+(et.envoisImmediat===false?'selected':'')+'>📅 Planifier une date</option></select><div id="e0pp" class="seq-cond-wrap" style="margin-top:8px;display:'+(et.envoisImmediat===false?'flex':'none')+'"><span style="font-size:12px;color:var(--g500)">Envoyer le</span><input type="date" class="cond-select" style="width:150px" value="'+(et.dateEnvoi||'')+'" onchange="mettreAJourEtapeLineaire(0,\'dateEnvoi\',this.value)"><span style="font-size:12px;color:var(--g500)">a</span><input type="time" class="cond-select" style="width:100px" value="'+(et.heureEnvoi||'09:00')+'" onchange="mettreAJourEtapeLineaire(0,\'heureEnvoi\',this.value)"></div></div>':''
+  ov.innerHTML='<div class="modal" style="max-width:680px;width:95vw;max-height:90vh;display:flex;flex-direction:column">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-shrink:0">'
+    +'<div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">'+(idx+1)+'</div>'
+    +'<div><div style="font-size:15px;font-weight:700;color:var(--g900)">'+(isFirst?'Email initial':'Relance '+idx)+'</div><div style="font-size:11.5px;color:var(--g400)">Cliquez en dehors pour fermer</div></div></div>'
+    +'<button class="close-btn" onclick="this.closest(\'.overlay\').remove();rendreBuilderLineaire()">×</button></div>'
+    +planifSection
+    +'<div style="margin-bottom:10px;flex-shrink:0"><div style="display:flex;align-items:center;border:1px solid var(--g200);border-radius:var(--r);overflow:hidden" onfocusin="this.style.borderColor=\'var(--accent)\'" onfocusout="this.style.borderColor=\'var(--g200)\'">'
+    +'<span style="padding:0 10px;background:var(--g50);border-right:1px solid var(--g200);font-size:10px;font-weight:700;text-transform:uppercase;color:var(--g400);white-space:nowrap;align-self:stretch;display:flex;align-items:center">Objet</span>'
+    +'<div style="display:flex;align-items:center;gap:4px;padding-right:6px">'+tplOpts+'<button class="btn btn-ghost btn-xs" onclick="ouvrirApercu('+idx+')">👁</button><button class="btn btn-ghost btn-xs" onclick="envoyerEmailTest('+idx+')">📧</button></div>'
+    +'<input class="form-input" id="lsp'+idx+'" value="'+((et.sujet||'').replace(/"/g,'&quot;'))+'" placeholder="Objet..." oninput="mettreAJourEtapeLineaire('+idx+',\'sujet\',this.value)" onfocus="dernierEditeurFocus=\'lsp'+idx+'\'" style="border:none;border-radius:0;flex:1;height:36px;padding:0 10px;outline:none;font-size:13px"></div></div>'
+    +'<div style="flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0">'
+    +'<div class="editor-wrap" style="flex:1;display:flex;flex-direction:column;min-height:0">'
+    +'<div class="editor-toolbar">'+outilsEditeur('lcp'+idx)+'</div>'
+    +'<div id="lcp'+idx+'" class="editor-body" contenteditable="true" style="flex:1;overflow-y:auto;min-height:180px" data-placeholder="Bonjour {{prenom}},&#10;&#10;..." oninput="mettreAJourEtapeLineaire('+idx+',\'corps\',this.innerHTML)" onfocus="dernierEditeurFocus=\'lcp'+idx+'\'">'+(et.corps||'')+'</div></div></div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--g100);flex-shrink:0">'
+    +'<button class="btn btn-ghost btn-sm" onclick="sauvegarderTemplate('+idx+')">💾 sauver template</button>'
+    +'<button class="btn btn-primary btn-sm" onclick="this.closest(\'.overlay\').remove();rendreBuilderLineaire()">✓ Fermer</button></div></div>'
+  document.body.appendChild(ov)
+}
+
+function ouvrirEditeurConnecteur(idx) {
+  const etapes=aplatiArbre(flowRoot);const et=etapes[idx];if(!et||idx===0)return
+  const ov=document.createElement('div');ov.className='overlay'
+  ov.onclick=e=>{if(e.target===ov){document.body.removeChild(ov);rendreBuilderLineaire()}}
+  ov.innerHTML='<div class="modal" style="max-width:420px;width:90vw">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">'
+    +'<div style="font-size:15px;font-weight:700;color:var(--g900)">Declencheur — Relance '+idx+'</div>'
+    +'<button class="close-btn" onclick="this.closest(\'.overlay\').remove();rendreBuilderLineaire()">×</button></div>'
+    +'<div class="form-group"><label class="label">Condition</label><select class="input" onchange="mettreAJourEtapeLineaire('+idx+',\'condition\',this.value)"><option value="pas_de_reponse" '+(et.condition==='pas_de_reponse'?'selected':'')+'>↩ Si pas de reponse</option><option value="delai" '+(et.condition==='delai'?'selected':'')+'>⏱ Delai fixe (toujours)</option></select></div>'
+    +'<div class="form-group"><label class="label">Delai</label><div style="display:flex;align-items:center;gap:8px"><input type="number" class="input" style="width:80px" value="'+(et.delaiVal||et.delaiJours||2)+'" min="1" max="999" onchange="mettreAJourEtapeLineaire('+idx+',\'delaiVal\',+this.value)"><select class="input" style="width:110px" onchange="mettreAJourEtapeLineaire('+idx+',\'delaiUnite\',this.value);const hw=document.getElementById(\'hconn'+idx+'\');if(hw)hw.style.display=this.value===\'jours\'?\'flex\':\'none\'"><option value="jours" '+((et.delaiUnite||'jours')==='jours'?'selected':'')+'>jours</option><option value="heures" '+(et.delaiUnite==='heures'?'selected':'')+'>heures</option><option value="minutes" '+(et.delaiUnite==='minutes'?'selected':'')+'>minutes</option></select></div></div>'
+    +'<div id="hconn'+idx+'" style="display:'+((et.delaiUnite||'jours')==='jours'?'flex':'none')+';align-items:center;gap:8px;margin-bottom:16px"><label class="label" style="margin:0;white-space:nowrap">Heure</label><input type="time" class="input" style="width:120px" value="'+(et.heureEnvoi||'09:00')+'" onchange="mettreAJourEtapeLineaire('+idx+',\'heureEnvoi\',this.value)"></div>'
+    +'<div style="display:flex;justify-content:flex-end;padding-top:12px;border-top:1px solid var(--g100)"><button class="btn btn-primary btn-sm" onclick="this.closest(\'.overlay\').remove();rendreBuilderLineaire()">✓ Appliquer</button></div></div>'
+  document.body.appendChild(ov)
+}
+
+>
