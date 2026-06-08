@@ -13,6 +13,38 @@ function sauvegarderBrouillonSeq() {
   else{const ns={id:uid(),nom,flowRoot:JSON.parse(JSON.stringify(flowRoot)),creee:new Date().toISOString().slice(0,10)};S.sequences.push(ns);seqIdEnEdition=ns.id;sauver();ajouterJournal('"'+nom+'" sauvegardee en brouillon','ok')}
 }
 
+
+function afficherAnalytiques(){
+  const el=document.getElementById('contenu-analytiques')
+  if(!el)return
+  if(!S.campagnes.length){el.innerHTML='<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">Aucune donnée</div><p>Lancez une campagne pour voir les analytiques</p></div>';return}
+  if(!window._analyFilter)window._analyFilter='30j'
+  const filtre=window._analyFilter
+  const seqCards=S.sequences.map(seq=>{
+    const camps=S.campagnes.filter(c=>c.seqId===seq.id);if(!camps.length)return ''
+    const ps=S.prospects.filter(p=>camps.some(c=>c.id===p.campagneId))
+    const sent=ps.filter(p=>p.etapeCourante>0).length,rep=ps.filter(p=>p.repandu).length
+    const taux=sent>0?Math.round(rep/sent*100):0
+    const fin=camps.every(c=>c.statut!=='active'||ps.filter(p=>p.campagneId===c.id&&!p.termine&&!p.repandu).length===0)
+    return '<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:18px 20px;box-shadow:var(--shadow)"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div><div style="font-size:14px;font-weight:600;color:var(--g900)">'+seq.nom+'</div><div style="font-size:11px;color:var(--g400);margin-top:2px">'+camps.length+' campagne'+(camps.length>1?'s':'')+' · '+ps.length+' prospect'+(ps.length>1?'s':'')+'</div></div><span class="badge '+(fin?'b-gray':camps.some(c=>c.statut==='active')?'b-green':'b-gray')+'">'+(fin?'✓ terminée':camps.some(c=>c.statut==='active')?'active':'brouillon')+'</span></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px"><div style="text-align:center;padding:12px;background:var(--g50);border-radius:var(--r)"><div style="font-size:24px;font-weight:300;color:var(--g900)">'+sent+'</div><div style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--g400);margin-top:4px">Envoyés</div></div><div style="text-align:center;padding:12px;background:var(--g50);border-radius:var(--r)"><div style="font-size:24px;font-weight:300;color:var(--green)">'+rep+'</div><div style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--g400);margin-top:4px">Réponses</div></div><div style="text-align:center;padding:12px;background:'+(taux>15?'#F0FDF4':taux>5?'#FFFBEB':'var(--g50)')+';border-radius:var(--r)"><div style="font-size:24px;font-weight:300;color:'+(taux>15?'var(--green)':taux>5?'var(--amber)':'var(--g400)')+'">'+taux+'%</div><div style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--g400);margin-top:4px">Taux réponse</div></div></div></div>'
+  }).filter(Boolean).join('')
+  const jours=filtre==='7j'?7:filtre==='90j'?90:30
+  const debut=new Date();debut.setDate(debut.getDate()-jours+1);debut.setHours(0,0,0,0)
+  const parJour={};for(let i=0;i<jours;i++){const d=new Date(debut);d.setDate(d.getDate()+i);parJour[d.toISOString().slice(0,10)]=0}
+  S.prospects.forEach(p=>{(p.historique||[]).forEach(h=>{const d=h.envoyeA?.slice(0,10);if(d&&parJour[d]!==undefined)parJour[d]++})})
+  const vals=Object.values(parJour),dates=Object.keys(parJour),maxVal=Math.max(...vals,1)
+  const W=600,H=140,PL=28,PR=12,PT=10,PB=30,gW=W-PL-PR,gH=H-PT-PB
+  const pts=vals.map((v,i)=>{const x=PL+Math.round(i/(vals.length-1||1)*gW);const y=PT+Math.round((1-v/maxVal)*gH);return[x,y,v]})
+  const polyline=pts.map(p=>p[0]+','+p[1]).join(' '),area=PL+','+(PT+gH)+' '+pts.map(p=>p[0]+','+p[1]).join(' ')+' '+(PL+gW)+','+(PT+gH)
+  const step=jours<=7?1:jours<=30?7:14
+  const xL=dates.map((d,i)=>{if(i%step!==0&&i!==dates.length-1)return '';const[,m,dd]=d.split('-');const x=PL+Math.round(i/(vals.length-1||1)*gW);return'<text x="'+x+'" y="'+(H-8)+'" font-size="9" fill="var(--g400)" text-anchor="middle">'+dd+'/'+m+'</text>'}).join('')
+  const yL=[0,Math.round(maxVal/2),maxVal].map(v=>{const y=PT+Math.round((1-v/maxVal)*gH);return'<text x="'+(PL-4)+'" y="'+(y+3)+'" font-size="9" fill="var(--g400)" text-anchor="end">'+v+'</text>'}).join('')
+  const svg='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto"><defs><linearGradient id="gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity=".15"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs><polygon points="'+area+'" fill="url(#gr)"/><polyline points="'+polyline+'" fill="none" stroke="var(--accent)" stroke-width="1.8"/>'+pts.map(([x,y,v])=>v>0?'<circle cx="'+x+'" cy="'+y+'" r="3" fill="var(--accent)"/>':'').join('')+yL+xL+'<line x1="'+PL+'" y1="'+PT+'" x2="'+PL+'" y2="'+(PT+gH)+'" stroke="var(--g100)" stroke-width="1"/><line x1="'+PL+'" y1="'+(PT+gH)+'" x2="'+(PL+gW)+'" y2="'+(PT+gH)+'" stroke="var(--g100)" stroke-width="1"/></svg>'
+  const total=vals.reduce((a,b)=>a+b,0)
+  const rows=S.campagnes.map(c=>{const ps=S.prospects.filter(p=>p.campagneId===c.id);const env=ps.filter(p=>p.etapeCourante>0).length,rep=ps.filter(p=>p.repandu).length,tx=env>0?Math.round(rep/env*100):0;const fin=c.statut==='active'&&env>0&&ps.filter(p=>!p.termine&&!p.repandu).length===0;return'<tr><td style="font-weight:500;color:var(--g900)">'+c.nom+'</td><td>'+env+'</td><td style="color:var(--green);font-weight:500">'+rep+'</td><td><span class="badge '+(tx>15?'b-green':tx>5?'b-amber':'b-gray')+'">'+tx+'%</span></td><td><span class="badge '+(fin?'b-gray':c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray')+'">'+(fin?'✓ terminée':c.statut==='active'?'active':c.statut==='pause'?'pausée':'brouillon')+'</span></td><td><button class="btn btn-xs btn-danger" onclick="supprimerCamp(''+c.id+'');afficherAnalytiques()">✕</button></td></tr>'}).join('')
+  el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:24px">'+(seqCards||'<div style="color:var(--g400)">Aucune séquence avec campagne</div>')+'</div><div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:20px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><div><div style="font-size:13px;font-weight:600;color:var(--g900)">Envois dans le temps</div><div style="font-size:11.5px;color:var(--g400);margin-top:2px">'+total+' email'+(total>1?'s':'')+' sur '+jours+' jours</div></div><div style="display:flex;gap:4px">'+['7j','30j','90j'].map(f=>'<button class="btn btn-sm '+(f===filtre?'btn-primary':'btn-ghost')+'" onclick="window._analyFilter=''+f+'';afficherAnalytiques()">'+f+'</button>').join('')+'</div></div>'+svg+'</div><div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);overflow:hidden;box-shadow:var(--shadow)"><div style="padding:14px 18px;border-bottom:1px solid var(--g100)"><div style="font-size:13px;font-weight:600;color:var(--g900)">Toutes les campagnes</div></div><table><thead><tr><th>Nom</th><th>Envoyés</th><th>Réponses</th><th>Taux</th><th>Statut</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+}
+
 </script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -493,6 +525,7 @@ tr:hover td{background:var(--g50)}
   <div id="page-blacklist" class="page" style="display:none;flex-direction:column">
     <div class="topbar">
       <div class="topbar-title">2 — Blacklist</div>
+    <div class="content" id="contenu-blacklist"></div>
       <button class="btn btn-primary btn-sm" onclick="ajouterBlacklist()">+ ajouter un email</button>
     </div>
     <div class="content">
@@ -2304,6 +2337,153 @@ function ouvrirEditeurConnecteur(idx) {
   document.body.appendChild(ov)
 }
 
+
+// ═══ AFFICHER JOURNAUX ═══
+function afficherJournaux() {
+  const el=document.getElementById('contenu-journaux')
+  if(!el)return
+  if(!S.journaux||!S.journaux.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Aucun journal</div><p>Les envois et événements apparaissent ici</p></div>'
+    return
+  }
+  const BRUIT=['Aucun prospect à surveiller','Synchronisation OK — aucun événement','Aucun déclenchement en attente','Synchronisation boîte mail']
+  const showAll=el.dataset.showAll==='true'
+  const liste=showAll?S.journaux:S.journaux.filter(l=>!BRUIT.some(b=>l.msg&&l.msg.startsWith(b)))
+  const important=S.journaux.filter(l=>!BRUIT.some(b=>l.msg&&l.msg.startsWith(b))).length
+  el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--g100)">'
+    +'<div style="font-size:12px;color:var(--g400)">'+important+' événements importants · '+S.journaux.length+' total</div>'
+    +'<button class="btn btn-ghost btn-sm" onclick="const e=document.getElementById(\'contenu-journaux\');e.dataset.showAll=e.dataset.showAll===\'true\'?\'false\':\'true\';afficherJournaux()">'+(showAll?'Masquer le bruit':'Tout afficher')+'</button>'
+    +'</div>'
+    +liste.map(l=>'<div class="log-entry">'
+      +'<span class="log-time">'+(l.heure||'')+'</span>'
+      +'<span class="log-'+(l.type==='ok'?'ok':l.type==='err'?'err':l.type==='warn'?'warn':'info')+'">'+(l.type==='ok'?'✓':l.type==='err'?'✗':l.type==='warn'?'↩':'·')+'</span>'
+      +'<span style="flex:1;color:var(--g'+(l.type==='info'?'500':'700')+')">'+(l.msg||'')+'</span>'
+      +'</div>').join('')
+}
+
+// ═══ AFFICHER PROSPECTS ═══
+function afficherProspects() {
+  const el=document.getElementById('contenu-prospects')
+  if(!el)return
+  if(!S.prospects.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">👥</div><div class="empty-title">Aucun prospect</div><p>Les prospects apparaissent après publication d\'une campagne</p></div>'
+    return
+  }
+  const rows=S.prospects.map(p=>{
+    const camp=S.campagnes.find(c=>c.id===p.campagneId)
+    const seq=camp?S.sequences.find(s=>s.id===camp.seqId):null
+    const statut=p.repandu?'<span class="badge b-green">répondu</span>':p.tag==='erreur'?'<span class="badge b-red">erreur</span>':p.termine?'<span class="badge b-gray">terminé</span>':'<span class="badge b-amber">actif</span>'
+    return '<tr>'
+      +'<td style="font-family:var(--mono);font-size:11.5px">'+p.email+'</td>'
+      +'<td>'+([p.prenom,p.nom].filter(Boolean).join(' ')||'—')+'</td>'
+      +'<td style="color:var(--g400)">'+(p.societe||'—')+'</td>'
+      +'<td style="font-size:12px;color:var(--g500)">'+(seq?seq.nom:'—')+'</td>'
+      +'<td><span class="badge b-gray">étape_'+(p.etapeCourante||0)+'</span></td>'
+      +'<td style="font-size:12px">'+(p.repandu||p.termine?'—':fmtProchainEnvoi(p.prochainEnvoi))+'</td>'
+      +'<td>'+statut+'</td>'
+      +'</tr>'
+  }).join('')
+  el.innerHTML='<div class="table-wrap"><table>'
+    +'<thead><tr><th>Email</th><th>Prénom / Nom</th><th>Société</th><th>Séquence</th><th>Étape</th><th>Prochain envoi</th><th>Statut</th></tr></thead>'
+    +'<tbody>'+rows+'</tbody></table></div>'
+}
+
+// ═══ AFFICHER BLACKLIST ═══
+function afficherBlacklist() {
+  const el=document.getElementById('contenu-blacklist')
+  if(!el)return
+  const bl=S.blacklist||[]
+  if(!bl.length){
+    el.innerHTML='<div class="empty"><div class="empty-icon">🚫</div><div class="empty-title">Blacklist vide</div><p>Ajoutez des emails à ne jamais contacter</p></div>'
+    return
+  }
+  el.innerHTML='<div class="table-wrap"><table>'
+    +'<thead><tr><th>Email</th><th></th></tr></thead><tbody>'
+    +bl.map((e,i)=>'<tr><td style="font-family:var(--mono)">'+(typeof e==='string'?e:e.email||e)+'</td>'
+      +'<td><button class="btn btn-xs btn-danger" onclick="retirerBlacklist('+i+')">✕</button></td></tr>').join('')
+    +'</tbody></table></div>'
+}
+
+// ═══ RENDERER BUILDER ACTIF ═══
+function rendreBuilderActif() {
+  if(typeof modeBuilder==='undefined'||modeBuilder==='lineaire') {
+    rendreBuilderLineaire()
+  } else {
+    if(typeof rendreFlow==='function') rendreFlow()
+    else rendreBuilderLineaire()
+  }
+}
+
+// ═══ VOIR PROSPECTS D'UNE CAMPAGNE ═══
+function voirProspectsCamp(campId) {
+  const camp=S.campagnes.find(c=>c.id===campId)
+  const ps=S.prospects.filter(p=>p.campagneId===campId)
+  const overlay=document.createElement('div');overlay.className='overlay'
+  overlay.onclick=e=>{if(e.target===overlay)document.body.removeChild(overlay)}
+  let rows=''
+  for(const p of ps){
+    const st=p.repandu?'<span class="badge b-green">répondu</span>':p.termine?'<span class="badge b-gray">terminé</span>':'<span class="badge b-amber">actif</span>'
+    rows+='<tr>'
+      +'<td style="font-family:var(--mono);font-size:11.5px">'+p.email+'</td>'
+      +'<td>'+([p.prenom,p.nom].filter(Boolean).join(' ')||'—')+'</td>'
+      +'<td>'+(p.societe||'—')+'</td>'
+      +'<td><span class="badge b-gray">étape_'+(p.etapeCourante||0)+'</span></td>'
+      +'<td style="font-size:12px">'+(p.repandu||p.termine?'—':fmtProchainEnvoi(p.prochainEnvoi))+'</td>'
+      +'<td>'+st+'</td>'
+      +'<td><select style="height:22px;font-size:11px;border:1px solid var(--g200);border-radius:5px;background:var(--w)" data-pid="'+p.id+'" data-cid="'+campId+'" class="ptagsel">'
+      +'<option value="">✏</option><option value="repandu">↩ répondu</option><option value="actif">↺ reset</option><option value="blackliste">🚫 blacklister</option>'
+      +'</select></td></tr>'
+  }
+  overlay.innerHTML='<div class="modal modal-wide">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
+    +'<div><div class="modal-title">'+(camp?.nom||'Prospects')+'</div>'
+    +'<div style="font-size:12px;color:var(--g400);margin-top:2px">'+ps.length+' prospect'+(ps.length>1?'s':'')+'</div></div>'
+    +'<button class="close-btn" data-close>×</button></div>'
+    +'<div class="table-wrap"><table><thead><tr><th>Email</th><th>Prénom</th><th>Société</th><th>Étape</th><th>Prochain envoi</th><th>Statut</th><th></th></tr></thead>'
+    +'<tbody>'+rows+'</tbody></table></div>'
+    +'<div class="modal-footer"><button class="btn btn-ghost" data-close>Fermer</button></div></div>'
+  overlay.addEventListener('click',e=>{if(e.target.dataset.close!==undefined||e.target===overlay)document.body.removeChild(overlay)})
+  overlay.addEventListener('change',e=>{
+    const sel=e.target.closest('.ptagsel');if(!sel||!sel.value)return
+    changerTagProspect(sel.dataset.pid,sel.value)
+    document.body.removeChild(overlay);voirProspectsCamp(sel.dataset.cid)
+  })
+  document.body.appendChild(overlay)
+}
+
+// ═══ CHANGER TAG PROSPECT ═══
+function changerTagProspect(pid, tag) {
+  const p=S.prospects.find(x=>x.id===pid);if(!p)return
+  if(tag==='repandu'){p.tag='repandu';p.repandu=true;p.termine=true;p.prochainEnvoi=null;ajouterJournal('↩ '+p.email+' — marqué répondu','ok')}
+  else if(tag==='blackliste'){p.tag='blackliste';p.prochainEnvoi=null;S.blacklist=S.blacklist||[];S.blacklist.push(p.email);ajouterJournal('🚫 '+p.email+' — blacklisté','warn')}
+  else if(tag==='actif'){
+    p.tag=null;p.repandu=false;p.termine=false
+    p.etapeCourante=0;p.historique=[];p.ouvertures=0
+    p.prochainEnvoi=new Date().toISOString()
+    ajouterJournal('↺ '+p.email+' — remis en actif (étape 1)','ok')
+    sauver()
+    if(confirm('✓ '+p.email+' remis à l\'étape 1.\n\nEnvoyer l\'email 1 maintenant ?')){
+      const camp=S.campagnes.find(c=>c.id===p.campagneId)
+      const seq=camp?S.sequences.find(s=>s.id===camp.seqId):null
+      if(seq)envoyerLot(camp.id,seq,camp.delai||45)
+    }
+    return
+  }
+  sauver()
+}
+
+// ═══ EXPORT CSV CAMPAGNE ═══
+function exporterCSVCamp(campId) {
+  const ps=S.prospects.filter(p=>p.campagneId===campId)
+  if(!ps.length){alert('Aucun prospect');return}
+  const rows=[['Email','Prénom','Nom','Société','Poste','Étape','Statut','Prochain envoi']]
+  ps.forEach(p=>rows.push([p.email,p.prenom||'',p.nom||'',p.societe||'',p.poste||'',p.etapeCourante||0,p.repandu?'répondu':p.termine?'terminé':'actif',p.prochainEnvoi||'']))
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n')
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='prospects_'+campId+'.csv';a.click()
+}
+
+// ═══ CONTENU BLACKLIST HTML ═══
+// (contenu-blacklist n'existe pas dans le HTML - on l'ajoute dynamiquement)
 </script>
 </div>
 >
