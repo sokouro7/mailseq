@@ -2187,57 +2187,61 @@ function afficherTableau(){
   const act=S.campagnes.filter(c=>c.statut==='active').length
   const el=document.getElementById('contenu-tableau')
   if(!el) return
-  el.innerHTML=`
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
-      <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px 22px;box-shadow:var(--shadow)">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);margin-bottom:12px">Emails envoyés</div>
-        <div style="font-size:40px;font-weight:300;letter-spacing:-2px;color:var(--g900);line-height:1">${env}</div>
-        <div style="font-size:11.5px;color:var(--g400);margin-top:8px">toutes campagnes</div>
-      </div>
-      <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px 22px;box-shadow:var(--shadow)">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);margin-bottom:12px">Réponses</div>
-        <div style="font-size:40px;font-weight:300;letter-spacing:-2px;color:var(--green);line-height:1">${rep}</div>
-        <div style="font-size:11.5px;color:var(--g400);margin-top:8px">${env?pct(rep,env)+'% taux':'—'}</div>
-      </div>
-      <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px 22px;box-shadow:var(--shadow)">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);margin-bottom:12px">En attente</div>
-        <div style="font-size:40px;font-weight:300;letter-spacing:-2px;color:${att>0?'var(--amber)':'var(--g300)'};line-height:1">${att}</div>
-        <div style="font-size:11.5px;color:var(--g400);margin-top:8px">envois planifiés</div>
-      </div>
-      <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px 22px;box-shadow:var(--shadow)">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);margin-bottom:12px">Campagnes actives</div>
-        <div style="font-size:40px;font-weight:300;letter-spacing:-2px;color:var(--accent);line-height:1">${act}</div>
-        <div style="font-size:11.5px;color:var(--g400);margin-top:8px">${S.campagnes.filter(c=>c.statut==='brouillon').length} en brouillon</div>
-      </div>
-    </div>
-    ${att>0?`<div class="info-box i-green" style="margin-bottom:16px">✓ <strong>${att}</strong> envoi${att>1?'s':''} planifié${att>1?'s':''} — partira automatiquement à la prochaine ouverture</div>`:''}
-    <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);overflow:hidden;box-shadow:var(--shadow)">
-      <div style="padding:14px 18px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:13px;font-weight:600;color:var(--g900)">Campagnes récentes</div>
-        <button class="btn btn-ghost btn-sm" onclick="aller('sequences',document.getElementById('nav-sequences'))">voir tout →</button>
-      </div>
-      ${!S.campagnes.length?`<div style="text-align:center;padding:40px;color:var(--g400)">
-        <div style="font-size:28px;margin-bottom:8px;opacity:.2">📭</div>
-        <div style="font-size:14px;font-weight:500;color:var(--g500);margin-bottom:4px">Aucune campagne</div>
-        <p style="font-size:13px">Créez une séquence et publiez-la</p>
-      </div>`:`<table><thead><tr><th>Nom</th><th>Envoyés</th><th>Réponses</th><th>Taux</th><th>Statut</th><th></th></tr></thead><tbody>
-        ${S.campagnes.slice(0,8).map(c=>{
-          const ps=S.prospects.filter(p=>p.campagneId===c.id)
-          const sent=ps.filter(p=>p.etapeCourante>0).length
-          const rep=ps.filter(p=>p.repandu).length
-          const rr=pct(rep,sent)
-          const fin=c.statut==='active'&&sent>0&&ps.filter(p=>!p.termine&&!p.repandu).length===0
-          return `<tr>
-            <td style="font-weight:500;color:var(--g900)">${c.nom}</td>
-            <td>${sent}</td>
-            <td style="color:var(--green);font-weight:500">${rep}</td>
-            <td><span class="badge ${rr>15?'b-green':rr>5?'b-amber':'b-gray'}">${rr}%</span></td>
-            <td><span class="badge ${fin?'b-gray':c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray'}">${fin?'✓ terminée':c.statut==='active'?'active':c.statut==='pause'?'pausée':'brouillon'}</span></td>
-            <td><button class="btn btn-xs btn-danger" onclick="supprimerCamp('${c.id}');afficherTableau()">✕</button></td>
-          </tr>`}).join('')}
-      </tbody></table>`}
-    </div>`
+
+  let html='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">'
+  html+='<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px 22px;box-shadow:var(--shadow)">'
+  html+='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);margin-bottom:12px">Emails envoyés</div>'
+  html+='<div style="font-size:40px;font-weight:300;letter-spacing:-2px;color:var(--g900);line-height:1">'+env+'</div>'
+  html+='<div style="font-size:11.5px;color:var(--g400);margin-top:8px">toutes campagnes</div></div>'
+
+  html+='<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px 22px;box-shadow:var(--shadow)">'
+  html+='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);margin-bottom:12px">Réponses</div>'
+  html+='<div style="font-size:40px;font-weight:300;letter-spacing:-2px;color:var(--green);line-height:1">'+rep+'</div>'
+  html+='<div style="font-size:11.5px;color:var(--g400);margin-top:8px">'+(env?pct(rep,env)+'% taux':'—')+'</div></div>'
+
+  html+='<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px 22px;box-shadow:var(--shadow)">'
+  html+='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);margin-bottom:12px">En attente</div>'
+  html+='<div style="font-size:40px;font-weight:300;letter-spacing:-2px;color:'+(att>0?'var(--amber)':'var(--g300)')+';line-height:1">'+att+'</div>'
+  html+='<div style="font-size:11.5px;color:var(--g400);margin-top:8px">envois planifiés</div></div>'
+
+  html+='<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px 22px;box-shadow:var(--shadow)">'
+  html+='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);margin-bottom:12px">Campagnes actives</div>'
+  html+='<div style="font-size:40px;font-weight:300;letter-spacing:-2px;color:var(--accent);line-height:1">'+act+'</div>'
+  html+='<div style="font-size:11.5px;color:var(--g400);margin-top:8px">'+S.campagnes.filter(c=>c.statut==='brouillon').length+' en brouillon</div></div></div>'
+
+  if(att>0) html+='<div class="info-box i-green" style="margin-bottom:16px">✓ <strong>'+att+'</strong> envoi'+(att>1?'s':'')+' planifié'+(att>1?'s':'')+' — partira automatiquement</div>'
+
+  html+='<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);overflow:hidden;box-shadow:var(--shadow)">'
+  html+='<div style="padding:14px 18px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between">'
+  html+='<div style="font-size:13px;font-weight:600;color:var(--g900)">Campagnes récentes</div>'
+  html+='<button class="btn btn-ghost btn-sm" onclick="aller(\'sequences\',document.getElementById(\'nav-sequences\'))">voir tout →</button></div>'
+
+  if(!S.campagnes.length){
+    html+='<div style="text-align:center;padding:40px"><div style="font-size:28px;margin-bottom:8px;opacity:.2">📭</div>'
+    html+='<div style="font-size:14px;font-weight:500;color:var(--g500);margin-bottom:4px">Aucune campagne</div>'
+    html+='<p style="font-size:13px;color:var(--g400)">Créez une séquence et publiez-la</p></div>'
+  } else {
+    html+='<table><thead><tr><th>Nom</th><th>Envoyés</th><th>Réponses</th><th>Taux</th><th>Statut</th><th></th></tr></thead><tbody>'
+    S.campagnes.slice(0,8).forEach(c=>{
+      const ps=S.prospects.filter(p=>p.campagneId===c.id)
+      const sent=ps.filter(p=>p.etapeCourante>0).length
+      const rep=ps.filter(p=>p.repandu).length
+      const rr=pct(rep,sent)
+      const fin=c.statut==='active'&&sent>0&&ps.filter(p=>!p.termine&&!p.repandu).length===0
+      html+='<tr>'
+      html+='<td style="font-weight:500;color:var(--g900)">'+c.nom+'</td>'
+      html+='<td>'+sent+'</td>'
+      html+='<td style="color:var(--green);font-weight:500">'+rep+'</td>'
+      html+='<td><span class="badge '+(rr>15?'b-green':rr>5?'b-amber':'b-gray')+'">'+rr+'%</span></td>'
+      html+='<td><span class="badge '+(fin?'b-gray':c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray')+'">'+(fin?'✓ terminée':c.statut==='active'?'active':c.statut==='pause'?'pausée':'brouillon')+'</span></td>'
+      html+='<td><button class="btn btn-xs btn-danger" onclick="supprimerCamp(\''+c.id+'\');afficherTableau()">✕</button></td></tr>'
+    })
+    html+='</tbody></table>'
+  }
+  html+='</div>'
+  el.innerHTML=html
 }
+
 function rendreBuilderLineaire() {
   const etapes=aplatiArbre(flowRoot)
   const el=document.getElementById('flowCanvas')
@@ -2484,6 +2488,24 @@ function exporterCSVCamp(campId) {
 
 // ═══ CONTENU BLACKLIST HTML ═══
 // (contenu-blacklist n'existe pas dans le HTML - on l'ajoute dynamiquement)
+
+// ═══ INIT PAGE ═══
+;(function(){
+  if(S.accessToken && S.userEmail){
+    const dot=document.getElementById('statusDot')
+    const lbl=document.getElementById('statusLabel')
+    const eml=document.getElementById('statusEmail')
+    if(dot) dot.classList.add('on')
+    if(lbl) lbl.textContent=(S.provider==='google'?'gmail':'outlook')+' · connecté'
+    if(eml) eml.textContent=S.userEmail
+  }
+  mettreAJourBadges()
+  afficherTableau()
+  if(S.accessToken){
+    setTimeout(function(){try{reprendreApresConnexion()}catch(e){}},2000)
+  }
+})()
+
 </script>
 </div>
 >
