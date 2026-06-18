@@ -283,7 +283,7 @@ tr:hover td{background:var(--g50)}
 }
 .editor-body{
   min-height:120px;padding:13px 15px;outline:none;
-  font-size:15px;line-height:1.8;color:var(--g800);
+  font-size:16px;line-height:1.85;color:var(--g800);
 }
 .editor-body:empty::before{content:attr(data-placeholder);color:var(--g300);pointer-events:none}
 .editor-body img{max-width:100%;border-radius:6px}
@@ -485,7 +485,6 @@ tr:hover td{background:var(--g50)}
   <div id="page-blacklist" class="page" style="display:none;flex-direction:column">
     <div class="topbar">
       <div class="topbar-title">2 — Blacklist</div>
-    <div class="content" id="contenu-blacklist"></div>
       <button class="btn btn-primary btn-sm" onclick="ajouterBlacklist()">+ ajouter un email</button>
     </div>
     <div class="content">
@@ -1487,6 +1486,7 @@ function afficherSequences() {
           ${sent>0?`<button class="btn btn-ghost btn-sm" onclick="ouvrirSuiviSeq('${s.id}')">📊 suivi</button>`:''}
           <button class="btn btn-primary btn-sm" onclick="ouvrirModalSeq('${s.id}')">✏ modifier</button>
           <button class="btn btn-ghost btn-sm" onclick="dupliquerSeq('${s.id}')">⎘ dupliquer</button>
+        <button class="btn btn-ghost btn-sm" title="Copier pour IA" onclick="copierSeqPourIA('${s.id}')">🤖</button>
           <button class="btn btn-danger btn-sm" onclick="supprimerSeq('${s.id}')">✕</button>
         </div>
       </div>
@@ -1777,7 +1777,7 @@ let prospectsImportes=[], tagsManuel=[]
 function gererDrop(e){e.preventDefault();e.currentTarget.classList.remove('drag-over');traiterFichier(e.dataTransfer.files[0])}
 function gererFichier(e){traiterFichier(e.target.files[0])}
 
-function trouverCle(row,candidats){const ks=Object.keys(row);for(const c of candidats){const k=ks.find(k=>k.toLowerCase().includes(c));if(k)return k}return null}
+function trouverCle(row,candidats){const ks=Object.keys(row);for(const c of candidats){const k=ks.find(k=>k.toLowerCase()===c.toLowerCase());if(k)return k}for(const c of candidats){const k=ks.find(k=>k.toLowerCase().replace(/[^a-z0-9]/g,'').includes(c.toLowerCase().replace(/[^a-z0-9]/g,'')));if(k)return k}return null}
 
 function traiterFichier(file){
   if(!file)return
@@ -2147,323 +2147,233 @@ function afficherTableau(){
   const act=S.campagnes.filter(c=>c.statut==='active').length
   const el=document.getElementById('contenu-tableau')
   if(!el) return
-
-  let html='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">'
-  html+='<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px 22px;box-shadow:var(--shadow)">'
-  html+='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);margin-bottom:12px">Emails envoyés</div>'
-  html+='<div style="font-size:40px;font-weight:300;letter-spacing:-2px;color:var(--g900);line-height:1">'+env+'</div>'
-  html+='<div style="font-size:11.5px;color:var(--g400);margin-top:8px">toutes campagnes</div></div>'
-
-  html+='<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px 22px;box-shadow:var(--shadow)">'
-  html+='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);margin-bottom:12px">Réponses</div>'
-  html+='<div style="font-size:40px;font-weight:300;letter-spacing:-2px;color:var(--green);line-height:1">'+rep+'</div>'
-  html+='<div style="font-size:11.5px;color:var(--g400);margin-top:8px">'+(env?pct(rep,env)+'% taux':'—')+'</div></div>'
-
-  html+='<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px 22px;box-shadow:var(--shadow)">'
-  html+='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);margin-bottom:12px">En attente</div>'
-  html+='<div style="font-size:40px;font-weight:300;letter-spacing:-2px;color:'+(att>0?'var(--amber)':'var(--g300)')+';line-height:1">'+att+'</div>'
-  html+='<div style="font-size:11.5px;color:var(--g400);margin-top:8px">envois planifiés</div></div>'
-
-  html+='<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px 22px;box-shadow:var(--shadow)">'
-  html+='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);margin-bottom:12px">Campagnes actives</div>'
-  html+='<div style="font-size:40px;font-weight:300;letter-spacing:-2px;color:var(--accent);line-height:1">'+act+'</div>'
-  html+='<div style="font-size:11.5px;color:var(--g400);margin-top:8px">'+S.campagnes.filter(c=>c.statut==='brouillon').length+' en brouillon</div></div></div>'
-
-  if(att>0) html+='<div class="info-box i-green" style="margin-bottom:16px">✓ <strong>'+att+'</strong> envoi'+(att>1?'s':'')+' planifié'+(att>1?'s':'')+' — partira automatiquement</div>'
-
-  html+='<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);overflow:hidden;box-shadow:var(--shadow)">'
-  html+='<div style="padding:14px 18px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between">'
-  html+='<div style="font-size:13px;font-weight:600;color:var(--g900)">Campagnes récentes</div>'
-  html+='<button class="btn btn-ghost btn-sm" onclick="aller(\'sequences\',document.getElementById(\'nav-sequences\'))">voir tout →</button></div>'
-
-  if(!S.campagnes.length){
-    html+='<div style="text-align:center;padding:40px"><div style="font-size:28px;margin-bottom:8px;opacity:.2">📭</div>'
-    html+='<div style="font-size:14px;font-weight:500;color:var(--g500);margin-bottom:4px">Aucune campagne</div>'
-    html+='<p style="font-size:13px;color:var(--g400)">Créez une séquence et publiez-la</p></div>'
-  } else {
-    html+='<table><thead><tr><th>Nom</th><th>Envoyés</th><th>Réponses</th><th>Taux</th><th>Statut</th><th></th></tr></thead><tbody>'
-    S.campagnes.slice(0,8).forEach(c=>{
-      const ps=S.prospects.filter(p=>p.campagneId===c.id)
-      const sent=ps.filter(p=>p.etapeCourante>0).length
-      const rep=ps.filter(p=>p.repandu).length
-      const rr=pct(rep,sent)
-      const fin=c.statut==='active'&&sent>0&&ps.filter(p=>!p.termine&&!p.repandu).length===0
-      html+='<tr>'
-      html+='<td style="font-weight:500;color:var(--g900)">'+c.nom+'</td>'
-      html+='<td>'+sent+'</td>'
-      html+='<td style="color:var(--green);font-weight:500">'+rep+'</td>'
-      html+='<td><span class="badge '+(rr>15?'b-green':rr>5?'b-amber':'b-gray')+'">'+rr+'%</span></td>'
-      html+='<td><span class="badge '+(fin?'b-gray':c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray')+'">'+(fin?'✓ terminée':c.statut==='active'?'active':c.statut==='pause'?'pausée':'brouillon')+'</span></td>'
-      html+='<td><button class="btn btn-xs btn-danger" onclick="supprimerCamp(\''+c.id+'\');afficherTableau()">✕</button></td></tr>'
-    })
-    html+='</tbody></table>'
-  }
-  html+='</div>'
-  el.innerHTML=html
-}
-
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+      <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px 22px;box-shadow:var(--shadow)">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);margin-bottom:12px">Emails envoyés</div>
+        <div style="font-size:40px;font-weight:300;letter-spacing:-2px;color:var(--g900);line-height:1">${env}</div>
+        <div style="font-size:11.5px;color:var(--g400);margin-top:8px">toutes campagnes</div>
+      </div>
+      <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px 22px;box-shadow:var(--shadow)">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);margin-bottom:12px">Réponses</div>
+        <div style="font-size:40px;font-weight:300;letter-spacing:-2px;color:var(--green);line-height:1">${rep}</div>
+        <div style="font-size:11.5px;color:var(--g400);margin-top:8px">${env?pct(rep,env)+'% taux':'—'}</div>
+      </div>
+      <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px 22px;box-shadow:var(--shadow)">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);margin-bottom:12px">En attente</div>
+        <div style="font-size:40px;font-weight:300;letter-spacing:-2px;color:${att>0?'var(--amber)':'var(--g300)'};line-height:1">${att}</div>
+        <div style="font-size:11.5px;color:var(--g400);margin-top:8px">envois planifiés</div>
+      </div>
+      <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:20px 22px;box-shadow:var(--shadow)">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--g400);margin-bottom:12px">Campagnes actives</div>
+        <div style="font-size:40px;font-weight:300;letter-spacing:-2px;color:var(--accent);line-height:1">${act}</div>
+        <div style="font-size:11.5px;color:var(--g400);margin-top:8px">${S.campagnes.filter(c=>c.statut==='brouillon').length} en brouillon</div>
+      </div>
+    </div>
+    ${att>0?`<div class="info-box i-green" style="margin-bottom:16px">✓ <strong>${att}</strong> envoi${att>1?'s':''} planifié${att>1?'s':''} — partira automatiquement à la prochaine ouverture</div>`:''}
+    <div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);overflow:hidden;box-shadow:var(--shadow)">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:13px;font-weight:600;color:var(--g900)">Campagnes récentes</div>
+        <button class="btn btn-ghost btn-sm" onclick="aller('sequences',document.getElementById('nav-sequences'))">voir tout →</button>
+      </div>
+      ${!S.campagnes.length?`<div style="text-align:center;padding:40px;color:var(--g400)">
+        <div style="font-size:28px;margin-bottom:8px;opacity:.2">📭</div>
+        <div style="font-size:14px;font-weight:500;color:var(--g500);margin-bottom:4px">Aucune campagne</div>
+        <p style="font-size:13px">Créez une séquence et publiez-la</p>
+      </div>`:`<table><thead><tr><th>Nom</th><th>Envoyés</th><th>Réponses</th><th>Taux</th><th>Statut</th><th></th></tr></thead><tbody>
+        ${S.campagnes.slice(0,8).map(c=>{
+          const ps=S.prospects.filter(p=>p.campagneId===c.id)
+          const sent=ps.filter(p=>p.etapeCourante>0).length
+          const rep=ps.filter(p=>p.repandu).length
+          const rr=pct(rep,sent)
+          const fin=c.statut==='active'&&sent>0&&ps.filter(p=>!p.termine&&!p.repandu).length===0
+          return `<tr>
+            <td style="font-weight:500;color:var(--g900)">${c.nom}</td>
+            <td>${sent}</td>
+            <td style="color:var(--green);font-weight:500">${rep}</td>
+            <td><span class="badge ${rr>15?'b-green':rr>5?'b-amber':'b-gray'}">${rr}%</span></td>
+            <td><span class="badge ${fin?'b-gray':c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray'}">${fin?'✓ terminée':c.statut==='active'?'active':c.statut==='pause'?'pausée':'brouillon'}</span></td>
+            <td><button class="btn btn-xs btn-danger" onclick="supprimerCamp('${c.id}');afficherTableau()">✕</button></td>
+          </tr>`}).join('')}
+      </tbody></table>`}
+    </div>`
 function rendreBuilderLineaire() {
   const etapes=aplatiArbre(flowRoot)
   const el=document.getElementById('flowCanvas')
   if(!el)return
   let html='<div style="display:flex;flex-direction:column;gap:0;padding:8px 0">'
-  etapes.forEach((et,i)=>{
-    const isFirst=i===0
-    const label=isFirst?'Email initial':'Relance '+i
-    const preview=(et.corps||'').replace(/<[^>]+>/g,'').trim().slice(0,60)||'Corps vide...'
-    const objet=et.sujet||'Objet vide...'
-    const borderColor=isFirst?'var(--accent)':'#e8eaf6'
-    html+=`
-    <div style="background:var(--w);border:1.5px solid ${borderColor};border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);cursor:pointer;transition:box-shadow .15s,border-color .15s"
-      onmouseenter="this.style.boxShadow='0 4px 16px rgba(99,102,241,.15)';this.style.borderColor='var(--accent)'"
-      onmouseleave="this.style.boxShadow='0 2px 8px rgba(0,0,0,.06)';this.style.borderColor='${borderColor}'"
-      onclick="ouvrirEditionEtape(${i})">
-      <div style="display:flex;align-items:stretch;min-height:72px">
-        <div style="width:52px;flex-shrink:0;background:${isFirst?'var(--accent)':'var(--g50)'};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-right:1px solid ${isFirst?'rgba(255,255,255,.2)':'var(--g100)'}">
-          <div style="width:28px;height:28px;border-radius:50%;background:${isFirst?'rgba(255,255,255,.25)':'var(--accent)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">${i+1}</div>
-          <div style="font-size:9px;font-weight:600;text-transform:uppercase;color:${isFirst?'rgba(255,255,255,.8)':'var(--g400)'}">${isFirst?'Init':'R'+i}</div>
-        </div>
-        <div style="flex:1;padding:12px 14px;min-width:0">
-          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:${isFirst?'var(--accent)':'var(--g400)'};margin-bottom:4px">${label}</div>
-          <div style="font-size:13.5px;font-weight:600;color:var(--g900);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${objet}</div>
-          <div style="font-size:12px;color:var(--g400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${preview}</div>
-        </div>
-        <div style="display:flex;flex-direction:column;justify-content:center;gap:6px;padding:10px;border-left:1px solid var(--g100)" onclick="event.stopPropagation()">
-          <button class="btn btn-ghost btn-xs" onclick="ouvrirApercu(${i})">👁</button>
-          <button class="btn btn-ghost btn-xs" onclick="envoyerEmailTest(${i})">📧</button>
-          ${i>0?`<button style="background:none;border:none;color:var(--g300);cursor:pointer;font-size:14px;padding:0" onclick="supprimerEtapeLineaire(${i})">✕</button>`:''}
-        </div>
-      </div>
-    </div>`
+  etapes.forEach(function(et,i){
+    var isFirst=i===0
+    var label=isFirst?'Email initial':'Relance '+i
+    var preview=(et.corps||'').replace(/<[^>]+>/g,'').trim().slice(0,60)||'Corps vide...'
+    var objet=et.sujet||'Objet vide...'
+    var bc=isFirst?'var(--accent)':'#e8eaf6'
+    html+='<div style="background:var(--w);border:1.5px solid '+bc+';border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06);cursor:pointer" onclick="ouvrirEditionEtape('+i+')">'
+    html+='<div style="display:flex;align-items:stretch;min-height:72px">'
+    html+='<div style="width:52px;flex-shrink:0;background:'+(isFirst?'var(--accent)':'var(--g50)')+';display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-right:1px solid '+(isFirst?'rgba(255,255,255,.2)':'var(--g100)')+'">'
+    html+='<div style="width:28px;height:28px;border-radius:50%;background:'+(isFirst?'rgba(255,255,255,.25)':'var(--accent)')+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">'+(i+1)+'</div>'
+    html+='<div style="font-size:9px;font-weight:600;text-transform:uppercase;color:'+(isFirst?'rgba(255,255,255,.8)':'var(--g400)')+'">'+(isFirst?'Init':'R'+i)+'</div></div>'
+    html+='<div style="flex:1;padding:12px 14px;min-width:0">'
+    html+='<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:'+(isFirst?'var(--accent)':'var(--g400)')+';margin-bottom:4px">'+label+'</div>'
+    html+='<div style="font-size:13.5px;font-weight:600;color:var(--g900);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+objet+'</div>'
+    html+='<div style="font-size:12px;color:var(--g400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+preview+'</div></div>'
+    html+='<div style="display:flex;flex-direction:column;justify-content:center;gap:6px;padding:10px;border-left:1px solid var(--g100)" onclick="event.stopPropagation()">'
+    html+='<button class="btn btn-ghost btn-xs" onclick="ouvrirApercu('+i+')">&#128065;</button>'
+    html+='<button class="btn btn-ghost btn-xs" onclick="envoyerEmailTest('+i+')">&#128231;</button>'
+    if(i>0) html+='<button style="background:none;border:none;color:var(--g300);cursor:pointer;font-size:14px;padding:0" onclick="supprimerEtapeLineaire('+i+')">&#10005;</button>'
+    html+='</div></div></div>'
     if(i<etapes.length-1){
-      const nx=etapes[i+1]
-      const cond=nx.condition==='pas_de_reponse'?'si pas de reponse':'toujours'
-      const del=(nx.delaiVal||nx.delaiJours||2)+' '+(nx.delaiUnite||'jours')
-      const heure=(nx.delaiUnite||'jours')==='jours'?' a '+(nx.heureEnvoi||'09:00'):''
-      html+=`<div style="display:flex;flex-direction:column;align-items:center">
-        <div style="width:2px;height:12px;background:#e8eaf6"></div>
-        <div onclick="ouvrirEditeurConnecteur(${i+1})"
-          style="display:flex;align-items:center;gap:6px;background:var(--g50);border:1.5px solid #e8eaf6;border-radius:20px;padding:5px 12px;cursor:pointer;font-size:11.5px;color:var(--g600);font-weight:500;transition:all .15s"
-          onmouseenter="this.style.borderColor='var(--accent)';this.style.color='var(--accent)';this.style.background='var(--accent-l)'"
-          onmouseleave="this.style.borderColor='#e8eaf6';this.style.color='var(--g600)';this.style.background='var(--g50)'">
-          ⏱ ${del}${heure} · ${cond} <span style="font-size:10px;color:var(--g300)">✏</span>
-        </div>
-        <div style="width:2px;height:12px;background:#e8eaf6"></div>
-      </div>`
+      var nx=etapes[i+1]
+      var cond=nx.condition==='pas_de_reponse'?'si pas de reponse':'toujours'
+      var del=(nx.delaiVal||nx.delaiJours||2)+' '+(nx.delaiUnite||'jours')
+      var heure=(nx.delaiUnite||'jours')==='jours'?' a '+(nx.heureEnvoi||'09:00'):''
+      html+='<div style="display:flex;flex-direction:column;align-items:center">'
+      html+='<div style="width:2px;height:12px;background:#e8eaf6"></div>'
+      html+='<div onclick="ouvrirEditeurConnecteur('+(i+1)+')" style="display:flex;align-items:center;gap:6px;background:var(--g50);border:1.5px solid #e8eaf6;border-radius:20px;padding:5px 12px;cursor:pointer;font-size:11.5px;color:var(--g600);font-weight:500">'
+      html+='&#9201; '+del+heure+' &middot; '+cond+' <span style="font-size:10px;color:var(--g300)">&#9998;</span></div>'
+      html+='<div style="width:2px;height:12px;background:#e8eaf6"></div></div>'
     }
   })
-  html+=`<button class="btn btn-ghost" style="margin-top:8px;width:100%;justify-content:center;border-style:dashed;color:var(--g400);height:44px;border-radius:10px"
-    onmouseenter="this.style.borderColor='var(--accent)';this.style.color='var(--accent)';this.style.background='var(--accent-l)'"
-    onmouseout="this.style.borderColor='var(--g200)';this.style.color='var(--g400)';this.style.background=''"
-    onclick="ajouterEtapeLineaire()">+ Ajouter une relance</button></div>`
+  html+='<button class="btn btn-ghost" style="margin-top:8px;width:100%;justify-content:center;border-style:dashed;color:var(--g400);height:44px;border-radius:10px" onclick="ajouterEtapeLineaire()">+ Ajouter une relance</button></div>'
   el.innerHTML=html
 }
 
 function ouvrirEditionEtape(idx) {
-  const etapes=aplatiArbre(flowRoot);const et=etapes[idx];if(!et)return
-  const isFirst=idx===0
-  const tplOpts=S.templates.length?'<select style="height:26px;font-size:11px;border:1px solid var(--g200);border-radius:var(--r);background:var(--w);cursor:pointer;max-width:120px" onchange="appliquerTemplateLineaire('+idx+',this.value);this.value=\'\'"><option value="">template...</option>'+S.templates.map(t=>'<option value="'+t.id+'">'+t.nom+'</option>').join('')+'</select>':''
-  const ov=document.createElement('div');ov.className='overlay'
-  ov.onclick=e=>{if(e.target===ov){document.body.removeChild(ov);rendreBuilderLineaire()}}
-  const planifSection=isFirst?'<div style="margin-bottom:12px;flex-shrink:0"><select class="cond-select" style="height:30px" onchange="mettreAJourEtapeLineaire(0,\'envoisImmediat\',this.value===\'immediat\');const ep=document.getElementById(\'e0pp\');if(ep)ep.style.display=this.value===\'planifie\'?\'flex\':\'none\'"><option value="immediat" '+(et.envoisImmediat===false?'':'selected')+'>⚡ Envoi immediat</option><option value="planifie" '+(et.envoisImmediat===false?'selected':'')+'>📅 Planifier une date</option></select><div id="e0pp" class="seq-cond-wrap" style="margin-top:8px;display:'+(et.envoisImmediat===false?'flex':'none')+'"><span style="font-size:12px;color:var(--g500)">Envoyer le</span><input type="date" class="cond-select" style="width:150px" value="'+(et.dateEnvoi||'')+'" onchange="mettreAJourEtapeLineaire(0,\'dateEnvoi\',this.value)"><span style="font-size:12px;color:var(--g500)">a</span><input type="time" class="cond-select" style="width:100px" value="'+(et.heureEnvoi||'09:00')+'" onchange="mettreAJourEtapeLineaire(0,\'heureEnvoi\',this.value)"></div></div>':''
-  ov.innerHTML='<div class="modal" style="max-width:680px;width:95vw;max-height:90vh;display:flex;flex-direction:column">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-shrink:0">'
-    +'<div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">'+(idx+1)+'</div>'
-    +'<div><div style="font-size:15px;font-weight:700;color:var(--g900)">'+(isFirst?'Email initial':'Relance '+idx)+'</div><div style="font-size:11.5px;color:var(--g400)">Cliquez en dehors pour fermer</div></div></div>'
-    +'<button class="close-btn" onclick="this.closest(\'.overlay\').remove();rendreBuilderLineaire()">×</button></div>'
-    +planifSection
-    +'<div style="margin-bottom:10px;flex-shrink:0"><div style="display:flex;align-items:center;border:1px solid var(--g200);border-radius:var(--r);overflow:hidden" onfocusin="this.style.borderColor=\'var(--accent)\'" onfocusout="this.style.borderColor=\'var(--g200)\'">'
-    +'<span style="padding:0 10px;background:var(--g50);border-right:1px solid var(--g200);font-size:10px;font-weight:700;text-transform:uppercase;color:var(--g400);white-space:nowrap;align-self:stretch;display:flex;align-items:center">Objet</span>'
-    +'<div style="display:flex;align-items:center;gap:4px;padding-right:6px">'+tplOpts+'<button class="btn btn-ghost btn-xs" onclick="ouvrirApercu('+idx+')">👁</button><button class="btn btn-ghost btn-xs" onclick="envoyerEmailTest('+idx+')">📧</button></div>'
-    +'<input class="form-input" id="lsp'+idx+'" value="'+((et.sujet||'').replace(/"/g,'&quot;'))+'" placeholder="Objet..." oninput="mettreAJourEtapeLineaire('+idx+',\'sujet\',this.value)" onfocus="dernierEditeurFocus=\'lsp'+idx+'\'" style="border:none;border-radius:0;flex:1;height:36px;padding:0 10px;outline:none;font-size:13px"></div></div>'
-    +'<div style="flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0">'
-    +'<div class="editor-wrap" style="flex:1;display:flex;flex-direction:column;min-height:0">'
-    +'<div class="editor-toolbar">'+outilsEditeur('lcp'+idx)+'</div>'
-    +'<div id="lcp'+idx+'" class="editor-body" contenteditable="true" style="flex:1;overflow-y:auto;min-height:180px" data-placeholder="Bonjour {{prenom}},&#10;&#10;..." oninput="mettreAJourEtapeLineaire('+idx+',\'corps\',this.innerHTML)" onfocus="dernierEditeurFocus=\'lcp'+idx+'\'">'+(et.corps||'')+'</div></div></div>'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--g100);flex-shrink:0">'
-    +'<button class="btn btn-ghost btn-sm" onclick="sauvegarderTemplate('+idx+')">💾 sauver template</button>'
-    +'<button class="btn btn-primary btn-sm" onclick="this.closest(\'.overlay\').remove();rendreBuilderLineaire()">✓ Fermer</button></div></div>'
+  var etapes=aplatiArbre(flowRoot),et=etapes[idx]
+  if(!et)return
+  var isFirst=idx===0
+  var tplSel=S.templates.length?'<select style="height:26px;font-size:11px;border:1px solid var(--g200);border-radius:var(--r);background:var(--w);max-width:120px" onchange="appliquerTemplateLineaire('+idx+',this.value);this.value=\'\'"><option value="">template...</option>'+S.templates.map(function(t){return '<option value="'+t.id+'">'+t.nom+'</option>'}).join('')+'</select>':''
+  var ov=document.createElement('div');ov.className='overlay'
+  ov.onclick=function(e){if(e.target===ov){document.body.removeChild(ov);rendreBuilderLineaire()}}
+  var h='<div class="modal" style="max-width:680px;width:95vw;max-height:90vh;display:flex;flex-direction:column">'
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-shrink:0">'
+  h+='<div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">'+(idx+1)+'</div>'
+  h+='<div><div style="font-size:15px;font-weight:700;color:var(--g900)">'+(isFirst?'Email initial':'Relance '+idx)+'</div></div></div>'
+  h+='<button class="close-btn" onclick="this.closest(\'.overlay\').remove();rendreBuilderLineaire()">x</button></div>'
+  if(isFirst){
+    h+='<div style="margin-bottom:12px"><select class="cond-select" style="height:30px" onchange="mettreAJourEtapeLineaire(0,\'envoisImmediat\',this.value===\'immediat\');var ep=document.getElementById(\'e0pp\');if(ep)ep.style.display=this.value===\'planifie\'?\'flex\':\'none\'">'
+    h+='<option value="immediat" '+(et.envoisImmediat===false?'':'selected')+'>Envoi immediat</option>'
+    h+='<option value="planifie" '+(et.envoisImmediat===false?'selected':'')+'>Planifier une date</option></select>'
+    h+='<div id="e0pp" class="seq-cond-wrap" style="margin-top:8px;display:'+(et.envoisImmediat===false?'flex':'none')+'">'
+    h+='<span style="font-size:12px;color:var(--g500)">Le</span><input type="date" class="cond-select" style="width:150px" value="'+(et.dateEnvoi||'')+'" onchange="mettreAJourEtapeLineaire(0,\'dateEnvoi\',this.value)">'
+    h+='<span style="font-size:12px;color:var(--g500)">a</span><input type="time" class="cond-select" style="width:100px" value="'+(et.heureEnvoi||'09:00')+'" onchange="mettreAJourEtapeLineaire(0,\'heureEnvoi\',this.value)"></div></div>'
+  }
+  h+='<div style="margin-bottom:10px"><div style="display:flex;align-items:center;border:1px solid var(--g200);border-radius:var(--r);overflow:hidden">'
+  h+='<span style="padding:0 10px;background:var(--g50);border-right:1px solid var(--g200);font-size:10px;font-weight:700;text-transform:uppercase;color:var(--g400);white-space:nowrap;align-self:stretch;display:flex;align-items:center">Objet</span>'
+  h+='<div style="display:flex;align-items:center;gap:4px;padding-right:6px">'+tplSel+'<button class="btn btn-ghost btn-xs" onclick="ouvrirApercu('+idx+')">&#128065;</button><button class="btn btn-ghost btn-xs" onclick="envoyerEmailTest('+idx+')">&#128231;</button></div>'
+  h+='<input class="form-input" id="lsp'+idx+'" value="'+((et.sujet||'').replace(/"/g,'&quot;'))+'" placeholder="Objet..." oninput="mettreAJourEtapeLineaire('+idx+',\'sujet\',this.value)" onfocus="dernierEditeurFocus=\'lsp'+idx+'\'" style="border:none;flex:1;height:36px;padding:0 10px;font-size:13px"></div></div>'
+  h+='<div style="flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0"><div class="editor-wrap" style="flex:1;display:flex;flex-direction:column">'
+  h+='<div class="editor-toolbar">'+outilsEditeur('lcp'+idx)+'</div>'
+  h+='<div id="lcp'+idx+'" class="editor-body" contenteditable="true" style="flex:1;overflow-y:auto;min-height:180px" data-placeholder="Bonjour {{prenom}},..." oninput="mettreAJourEtapeLineaire('+idx+',\'corps\',this.innerHTML)" onfocus="dernierEditeurFocus=\'lcp'+idx+'\'">'+(et.corps||'')+'</div></div></div>'
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--g100)">'
+  h+='<button class="btn btn-ghost btn-sm" onclick="sauvegarderTemplate('+idx+')">sauver template</button>'
+  h+='<button class="btn btn-primary btn-sm" onclick="this.closest(\'.overlay\').remove();rendreBuilderLineaire()">Fermer</button></div></div>'
+  ov.innerHTML=h
   document.body.appendChild(ov)
 }
 
 function ouvrirEditeurConnecteur(idx) {
-  const etapes=aplatiArbre(flowRoot);const et=etapes[idx];if(!et||idx===0)return
-  const ov=document.createElement('div');ov.className='overlay'
-  ov.onclick=e=>{if(e.target===ov){document.body.removeChild(ov);rendreBuilderLineaire()}}
-  ov.innerHTML='<div class="modal" style="max-width:420px;width:90vw">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">'
-    +'<div style="font-size:15px;font-weight:700;color:var(--g900)">Declencheur — Relance '+idx+'</div>'
-    +'<button class="close-btn" onclick="this.closest(\'.overlay\').remove();rendreBuilderLineaire()">×</button></div>'
-    +'<div class="form-group"><label class="label">Condition</label><select class="input" onchange="mettreAJourEtapeLineaire('+idx+',\'condition\',this.value)"><option value="pas_de_reponse" '+(et.condition==='pas_de_reponse'?'selected':'')+'>↩ Si pas de reponse</option><option value="delai" '+(et.condition==='delai'?'selected':'')+'>⏱ Delai fixe (toujours)</option></select></div>'
-    +'<div class="form-group"><label class="label">Delai</label><div style="display:flex;align-items:center;gap:8px"><input type="number" class="input" style="width:80px" value="'+(et.delaiVal||et.delaiJours||2)+'" min="1" max="999" onchange="mettreAJourEtapeLineaire('+idx+',\'delaiVal\',+this.value)"><select class="input" style="width:110px" onchange="mettreAJourEtapeLineaire('+idx+',\'delaiUnite\',this.value);const hw=document.getElementById(\'hconn'+idx+'\');if(hw)hw.style.display=this.value===\'jours\'?\'flex\':\'none\'"><option value="jours" '+((et.delaiUnite||'jours')==='jours'?'selected':'')+'>jours</option><option value="heures" '+(et.delaiUnite==='heures'?'selected':'')+'>heures</option><option value="minutes" '+(et.delaiUnite==='minutes'?'selected':'')+'>minutes</option></select></div></div>'
-    +'<div id="hconn'+idx+'" style="display:'+((et.delaiUnite||'jours')==='jours'?'flex':'none')+';align-items:center;gap:8px;margin-bottom:16px"><label class="label" style="margin:0;white-space:nowrap">Heure</label><input type="time" class="input" style="width:120px" value="'+(et.heureEnvoi||'09:00')+'" onchange="mettreAJourEtapeLineaire('+idx+',\'heureEnvoi\',this.value)"></div>'
-    +'<div style="display:flex;justify-content:flex-end;padding-top:12px;border-top:1px solid var(--g100)"><button class="btn btn-primary btn-sm" onclick="this.closest(\'.overlay\').remove();rendreBuilderLineaire()">✓ Appliquer</button></div></div>'
+  var etapes=aplatiArbre(flowRoot),et=etapes[idx]
+  if(!et||idx===0)return
+  var ov=document.createElement('div');ov.className='overlay'
+  ov.onclick=function(e){if(e.target===ov){document.body.removeChild(ov);rendreBuilderLineaire()}}
+  var h='<div class="modal" style="max-width:420px;width:90vw">'
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">'
+  h+='<div style="font-size:15px;font-weight:700;color:var(--g900)">Declencheur Relance '+idx+'</div>'
+  h+='<button class="close-btn" onclick="this.closest(\'.overlay\').remove();rendreBuilderLineaire()">x</button></div>'
+  h+='<div class="form-group"><label class="label">Condition</label><select class="input" onchange="mettreAJourEtapeLineaire('+idx+',\'condition\',this.value)">'
+  h+='<option value="pas_de_reponse" '+(et.condition==='pas_de_reponse'?'selected':'')+'>Si pas de reponse</option>'
+  h+='<option value="delai" '+(et.condition==='delai'?'selected':'')+'>Delai fixe</option></select></div>'
+  h+='<div class="form-group"><label class="label">Delai</label><div style="display:flex;gap:8px">'
+  h+='<input type="number" class="input" style="width:80px" value="'+(et.delaiVal||et.delaiJours||2)+'" min="1" max="999" onchange="mettreAJourEtapeLineaire('+idx+',\'delaiVal\',+this.value)">'
+  h+='<select class="input" style="width:110px" onchange="mettreAJourEtapeLineaire('+idx+',\'delaiUnite\',this.value);var hw=document.getElementById(\'hconn'+idx+'\');if(hw)hw.style.display=this.value===\'jours\'?\'flex\':\'none\'">'
+  h+='<option value="jours" '+((et.delaiUnite||'jours')==='jours'?'selected':'')+'>jours</option>'
+  h+='<option value="heures" '+(et.delaiUnite==='heures'?'selected':'')+'>heures</option>'
+  h+='<option value="minutes" '+(et.delaiUnite==='minutes'?'selected':'')+'>minutes</option></select></div></div>'
+  h+='<div id="hconn'+idx+'" style="display:'+((et.delaiUnite||'jours')==='jours'?'flex':'none')+';gap:8px;margin-bottom:16px">'
+  h+='<label class="label" style="margin:0">Heure</label><input type="time" class="input" style="width:120px" value="'+(et.heureEnvoi||'09:00')+'" onchange="mettreAJourEtapeLineaire('+idx+',\'heureEnvoi\',this.value)"></div>'
+  h+='<div style="display:flex;justify-content:flex-end;padding-top:12px;border-top:1px solid var(--g100)">'
+  h+='<button class="btn btn-primary btn-sm" onclick="this.closest(\'.overlay\').remove();rendreBuilderLineaire()">Appliquer</button></div></div>'
+  ov.innerHTML=h
   document.body.appendChild(ov)
 }
 
-
-// ═══ AFFICHER JOURNAUX ═══
-function afficherJournaux() {
-  const el=document.getElementById('contenu-journaux')
-  if(!el)return
-  if(!S.journaux||!S.journaux.length){
-    el.innerHTML='<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">Aucun journal</div><p>Les envois et événements apparaissent ici</p></div>'
-    return
-  }
-  const BRUIT=['Aucun prospect à surveiller','Synchronisation OK — aucun événement','Aucun déclenchement en attente','Synchronisation boîte mail']
-  const showAll=el.dataset.showAll==='true'
-  const liste=showAll?S.journaux:S.journaux.filter(l=>!BRUIT.some(b=>l.msg&&l.msg.startsWith(b)))
-  const important=S.journaux.filter(l=>!BRUIT.some(b=>l.msg&&l.msg.startsWith(b))).length
-  el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--g100)">'
-    +'<div style="font-size:12px;color:var(--g400)">'+important+' événements importants · '+S.journaux.length+' total</div>'
-    +'<button class="btn btn-ghost btn-sm" onclick="const e=document.getElementById(\'contenu-journaux\');e.dataset.showAll=e.dataset.showAll===\'true\'?\'false\':\'true\';afficherJournaux()">'+(showAll?'Masquer le bruit':'Tout afficher')+'</button>'
-    +'</div>'
-    +liste.map(l=>'<div class="log-entry">'
-      +'<span class="log-time">'+(l.heure||'')+'</span>'
-      +'<span class="log-'+(l.type==='ok'?'ok':l.type==='err'?'err':l.type==='warn'?'warn':'info')+'">'+(l.type==='ok'?'✓':l.type==='err'?'✗':l.type==='warn'?'↩':'·')+'</span>'
-      +'<span style="flex:1;color:var(--g'+(l.type==='info'?'500':'700')+')">'+(l.msg||'')+'</span>'
-      +'</div>').join('')
-}
-
-// ═══ AFFICHER PROSPECTS ═══
-function afficherProspects() {
-  const el=document.getElementById('contenu-prospects')
-  if(!el)return
-  if(!S.prospects.length){
-    el.innerHTML='<div class="empty"><div class="empty-icon">👥</div><div class="empty-title">Aucun prospect</div><p>Les prospects apparaissent après publication d\'une campagne</p></div>'
-    return
-  }
-  const rows=S.prospects.map(p=>{
-    const camp=S.campagnes.find(c=>c.id===p.campagneId)
-    const seq=camp?S.sequences.find(s=>s.id===camp.seqId):null
-    const statut=p.repandu?'<span class="badge b-green">répondu</span>':p.tag==='erreur'?'<span class="badge b-red">erreur</span>':p.termine?'<span class="badge b-gray">terminé</span>':'<span class="badge b-amber">actif</span>'
-    return '<tr>'
-      +'<td style="font-family:var(--mono);font-size:11.5px">'+p.email+'</td>'
-      +'<td>'+([p.prenom,p.nom].filter(Boolean).join(' ')||'—')+'</td>'
-      +'<td style="color:var(--g400)">'+(p.societe||'—')+'</td>'
-      +'<td style="font-size:12px;color:var(--g500)">'+(seq?seq.nom:'—')+'</td>'
-      +'<td><span class="badge b-gray">étape_'+(p.etapeCourante||0)+'</span></td>'
-      +'<td style="font-size:12px">'+(p.repandu||p.termine?'—':fmtProchainEnvoi(p.prochainEnvoi))+'</td>'
-      +'<td>'+statut+'</td>'
-      +'</tr>'
-  }).join('')
-  el.innerHTML='<div class="table-wrap"><table>'
-    +'<thead><tr><th>Email</th><th>Prénom / Nom</th><th>Société</th><th>Séquence</th><th>Étape</th><th>Prochain envoi</th><th>Statut</th></tr></thead>'
-    +'<tbody>'+rows+'</tbody></table></div>'
-}
-
-// ═══ AFFICHER BLACKLIST ═══
-function afficherBlacklist() {
-  const el=document.getElementById('contenu-blacklist')
-  if(!el)return
-  const bl=S.blacklist||[]
-  if(!bl.length){
-    el.innerHTML='<div class="empty"><div class="empty-icon">🚫</div><div class="empty-title">Blacklist vide</div><p>Ajoutez des emails à ne jamais contacter</p></div>'
-    return
-  }
-  el.innerHTML='<div class="table-wrap"><table>'
-    +'<thead><tr><th>Email</th><th></th></tr></thead><tbody>'
-    +bl.map((e,i)=>'<tr><td style="font-family:var(--mono)">'+(typeof e==='string'?e:e.email||e)+'</td>'
-      +'<td><button class="btn btn-xs btn-danger" onclick="retirerBlacklist('+i+')">✕</button></td></tr>').join('')
-    +'</tbody></table></div>'
-}
-
-// ═══ RENDERER BUILDER ACTIF ═══
-function rendreBuilderActif() {
-  if(typeof modeBuilder==='undefined'||modeBuilder==='lineaire') {
-    rendreBuilderLineaire()
-  } else {
-    if(typeof rendreFlow==='function') rendreFlow()
-    else rendreBuilderLineaire()
-  }
-}
-
-// ═══ VOIR PROSPECTS D'UNE CAMPAGNE ═══
-function voirProspectsCamp(campId) {
-  const camp=S.campagnes.find(c=>c.id===campId)
-  const ps=S.prospects.filter(p=>p.campagneId===campId)
-  const overlay=document.createElement('div');overlay.className='overlay'
-  overlay.onclick=e=>{if(e.target===overlay)document.body.removeChild(overlay)}
-  let rows=''
-  for(const p of ps){
-    const st=p.repandu?'<span class="badge b-green">répondu</span>':p.termine?'<span class="badge b-gray">terminé</span>':'<span class="badge b-amber">actif</span>'
-    rows+='<tr>'
-      +'<td style="font-family:var(--mono);font-size:11.5px">'+p.email+'</td>'
-      +'<td>'+([p.prenom,p.nom].filter(Boolean).join(' ')||'—')+'</td>'
-      +'<td>'+(p.societe||'—')+'</td>'
-      +'<td><span class="badge b-gray">étape_'+(p.etapeCourante||0)+'</span></td>'
-      +'<td style="font-size:12px">'+(p.repandu||p.termine?'—':fmtProchainEnvoi(p.prochainEnvoi))+'</td>'
-      +'<td>'+st+'</td>'
-      +'<td><select style="height:22px;font-size:11px;border:1px solid var(--g200);border-radius:5px;background:var(--w)" data-pid="'+p.id+'" data-cid="'+campId+'" class="ptagsel">'
-      +'<option value="">✏</option><option value="repandu">↩ répondu</option><option value="actif">↺ reset</option><option value="blackliste">🚫 blacklister</option>'
-      +'</select></td></tr>'
-  }
-  overlay.innerHTML='<div class="modal modal-wide">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
-    +'<div><div class="modal-title">'+(camp?.nom||'Prospects')+'</div>'
-    +'<div style="font-size:12px;color:var(--g400);margin-top:2px">'+ps.length+' prospect'+(ps.length>1?'s':'')+'</div></div>'
-    +'<button class="close-btn" data-close>×</button></div>'
-    +'<div class="table-wrap"><table><thead><tr><th>Email</th><th>Prénom</th><th>Société</th><th>Étape</th><th>Prochain envoi</th><th>Statut</th><th></th></tr></thead>'
-    +'<tbody>'+rows+'</tbody></table></div>'
-    +'<div class="modal-footer"><button class="btn btn-ghost" data-close>Fermer</button></div></div>'
-  overlay.addEventListener('click',e=>{if(e.target.dataset.close!==undefined||e.target===overlay)document.body.removeChild(overlay)})
-  overlay.addEventListener('change',e=>{
-    const sel=e.target.closest('.ptagsel');if(!sel||!sel.value)return
-    changerTagProspect(sel.dataset.pid,sel.value)
-    document.body.removeChild(overlay);voirProspectsCamp(sel.dataset.cid)
-  })
-  document.body.appendChild(overlay)
-}
-
-// ═══ CHANGER TAG PROSPECT ═══
-function changerTagProspect(pid, tag) {
-  const p=S.prospects.find(x=>x.id===pid);if(!p)return
-  if(tag==='repandu'){p.tag='repandu';p.repandu=true;p.termine=true;p.prochainEnvoi=null;ajouterJournal('↩ '+p.email+' — marqué répondu','ok')}
-  else if(tag==='blackliste'){p.tag='blackliste';p.prochainEnvoi=null;S.blacklist=S.blacklist||[];S.blacklist.push(p.email);ajouterJournal('🚫 '+p.email+' — blacklisté','warn')}
-  else if(tag==='actif'){
-    p.tag=null;p.repandu=false;p.termine=false
-    p.etapeCourante=0;p.historique=[];p.ouvertures=0
-    p.prochainEnvoi=new Date().toISOString()
-    ajouterJournal('↺ '+p.email+' — remis en actif (étape 1)','ok')
-    sauver()
-    if(confirm('✓ '+p.email+' remis à l\'étape 1.\n\nEnvoyer l\'email 1 maintenant ?')){
-      const camp=S.campagnes.find(c=>c.id===p.campagneId)
-      const seq=camp?S.sequences.find(s=>s.id===camp.seqId):null
-      if(seq)envoyerLot(camp.id,seq,camp.delai||45)
-    }
-    return
-  }
-  sauver()
-}
-
-// ═══ EXPORT CSV CAMPAGNE ═══
-function exporterCSVCamp(campId) {
-  const ps=S.prospects.filter(p=>p.campagneId===campId)
-  if(!ps.length){alert('Aucun prospect');return}
-  const rows=[['Email','Prénom','Nom','Société','Poste','Étape','Statut','Prochain envoi']]
-  ps.forEach(p=>rows.push([p.email,p.prenom||'',p.nom||'',p.societe||'',p.poste||'',p.etapeCourante||0,p.repandu?'répondu':p.termine?'terminé':'actif',p.prochainEnvoi||'']))
-  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n')
-  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='prospects_'+campId+'.csv';a.click()
-}
-
-// ═══ CONTENU BLACKLIST HTML ═══
-// (contenu-blacklist n'existe pas dans le HTML - on l'ajoute dynamiquement)
-
-
 function sauvegarderBrouillonSeq() {
-  var nom=document.getElementById('nomSeq');
-  nom=nom?nom.value.trim():''
+  var nomEl=document.getElementById('nomSeq')
+  var nom=nomEl?nomEl.value.trim():''
   if(!nom)return
   if(seqIdEnEdition){var seq=S.sequences.find(function(s){return s.id===seqIdEnEdition});if(seq){seq.nom=nom;seq.flowRoot=JSON.parse(JSON.stringify(flowRoot));sauver()}}
-  else{var ns={id:uid(),nom:nom,flowRoot:JSON.parse(JSON.stringify(flowRoot)),creee:new Date().toISOString().slice(0,10)};S.sequences.push(ns);seqIdEnEdition=ns.id;sauver();ajouterJournal('"'+nom+'" sauvegardee en brouillon','ok')}
+  else{var ns={id:uid(),nom:nom,flowRoot:JSON.parse(JSON.stringify(flowRoot)),creee:new Date().toISOString().slice(0,10)};S.sequences.push(ns);seqIdEnEdition=ns.id;sauver()}
+}
+
+function copierSeqPourIA(seqId) {
+  var seq=S.sequences.find(function(s){return s.id===seqId});if(!seq)return
+  var etapes=seq.etapes||aplatiArbre(seq.flowRoot||creerNode())
+  var camps=S.campagnes.filter(function(c){return c.seqId===seqId})
+  var ps=S.prospects.filter(function(p){return camps.some(function(c){return c.id===p.campagneId})})
+  var sent=ps.filter(function(p){return p.etapeCourante>0}).length
+  var rep=ps.filter(function(p){return p.repandu}).length
+  var taux=sent>0?Math.round(rep/sent*100):null
+  var txt="# Sequence : "+seq.nom+"\n\n"
+  if(taux!==null)txt+="Perf : "+sent+" envoyes, "+rep+" reponses, "+taux+"%\n\n"
+  etapes.forEach(function(e,i){
+    txt+="["+(i===0?"Email initial":"Relance "+i)+"] Objet: "+(e.sujet||"(vide)")+"\n"+(e.corps||"").replace(/<[^>]+>/g,"").trim()+"\n\n"
+  })
+  txt+="---\nAnalyse cette sequence cold email B2B.\n"
+  navigator.clipboard.writeText(txt).catch(function(){})
+}
+
+}
+
+function rendreBuilderActif() {
+  rendreBuilderLineaire()
+}
+
+function afficherJournaux() {
+  var el=document.getElementById('contenu-journaux')
+  if(!el)return
+  if(!S.journaux||!S.journaux.length){
+    el.innerHTML='<div class="empty"><div class="empty-title">Aucun journal</div><p>Les envois apparaissent ici</p></div>'
+    return
+  }
+  var html=''
+  for(var j=0;j<S.journaux.length;j++){
+    var l=S.journaux[j]
+    var icon=l.type==='ok'?'V':l.type==='err'?'X':l.type==='warn'?'!':'.'
+    html+='<div class="log-entry">'
+    html+='<span class="log-time">'+(l.heure||'')+'</span> '
+    html+='<span class="log-'+(l.type||'info')+'">['+icon+']</span> '
+    html+='<span>'+(l.msg||'')+'</span>'
+    html+='</div>'
+  }
+  el.innerHTML=html
+}
+
+function afficherProspects() {
+  var el=document.getElementById('contenu-prospects')
+  if(!el)return
+  if(!S.prospects.length){el.innerHTML='<div class="empty"><div class="empty-icon">&#128101;</div><div class="empty-title">Aucun prospect</div><p>Publiez une campagne</p></div>';return}
+  var rows=S.prospects.map(function(p){
+    var camp=S.campagnes.find(function(c){return c.id===p.campagneId})
+    var seq=camp?S.sequences.find(function(s){return s.id===camp.seqId}):null
+    var st=p.repandu?'<span class="badge b-green">repondu</span>':p.termine?'<span class="badge b-gray">termine</span>':'<span class="badge b-amber">actif</span>'
+    return '<tr><td style="font-family:var(--mono);font-size:11.5px">'+p.email+'</td><td>'+([p.prenom,p.nom].filter(Boolean).join(' ')||'-')+'</td><td>'+(p.societe||'-')+'</td><td style="font-size:12px">'+(seq?seq.nom:'-')+'</td><td><span class="badge b-gray">etape_'+(p.etapeCourante||0)+'</span></td><td style="font-size:12px">'+(p.repandu||p.termine?'-':fmtProchainEnvoi(p.prochainEnvoi))+'</td><td>'+st+'</td></tr>'
+  }).join('')
+  el.innerHTML='<div class="table-wrap"><table><thead><tr><th>Email</th><th>Nom</th><th>Societe</th><th>Sequence</th><th>Etape</th><th>Prochain envoi</th><th>Statut</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+}
+
+function afficherBlacklist() {
+  var el=document.getElementById('contenu-blacklist')
+  if(!el)return
+  var bl=S.blacklist||[]
+  if(!bl.length){el.innerHTML='<div class="empty"><div class="empty-icon">&#128683;</div><div class="empty-title">Blacklist vide</div></div>';return}
+  el.innerHTML='<div class="table-wrap"><table><thead><tr><th>Email</th><th></th></tr></thead><tbody>'+bl.map(function(e,i){return '<tr><td style="font-family:var(--mono)">'+(typeof e==='string'?e:e.email||e)+'</td><td><button class="btn btn-xs btn-danger" onclick="retirerBlacklist('+i+')">&#10005;</button></td></tr>'}).join('')+'</tbody></table></div>'
 }
 
 function afficherAnalytiques(){
   var el=document.getElementById('contenu-analytiques')
   if(!el)return
-  if(!S.campagnes.length){el.innerHTML='<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">Aucune donnée</div><p>Lancez une campagne pour voir les analytiques</p></div>';return}
-  if(!window._analyFilter)window._analyFilter='30j'
-  var filtre=window._analyFilter
+  if(!S.campagnes.length){el.innerHTML='<div class="empty"><div class="empty-icon">&#128202;</div><div class="empty-title">Aucune donnee</div><p>Lancez une campagne</p></div>';return}
   var seqCards=S.sequences.map(function(seq){
     var camps=S.campagnes.filter(function(c){return c.seqId===seq.id});if(!camps.length)return ''
     var ps=S.prospects.filter(function(p){return camps.some(function(c){return c.id===p.campagneId})})
@@ -2471,53 +2381,69 @@ function afficherAnalytiques(){
     var rep=ps.filter(function(p){return p.repandu}).length
     var taux=sent>0?Math.round(rep/sent*100):0
     return '<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:18px 20px;box-shadow:var(--shadow)">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div>'
-      +'<div style="font-size:14px;font-weight:600;color:var(--g900)">'+seq.nom+'</div>'
-      +'<div style="font-size:11px;color:var(--g400);margin-top:2px">'+camps.length+' campagne'+(camps.length>1?'s':'')+' · '+ps.length+' prospect'+(ps.length>1?'s':'')+'</div>'
-      +'</div></div>'
+      +'<div style="font-size:14px;font-weight:600;color:var(--g900);margin-bottom:14px">'+seq.nom+'</div>'
       +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">'
-      +'<div style="text-align:center;padding:12px;background:var(--g50);border-radius:var(--r)"><div style="font-size:24px;font-weight:300;color:var(--g900)">'+sent+'</div><div style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--g400);margin-top:4px">Envoyés</div></div>'
-      +'<div style="text-align:center;padding:12px;background:var(--g50);border-radius:var(--r)"><div style="font-size:24px;font-weight:300;color:var(--green)">'+rep+'</div><div style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--g400);margin-top:4px">Réponses</div></div>'
-      +'<div style="text-align:center;padding:12px;background:'+(taux>15?'#F0FDF4':taux>5?'#FFFBEB':'var(--g50)')+';border-radius:var(--r)"><div style="font-size:24px;font-weight:300;color:'+(taux>15?'var(--green)':taux>5?'var(--amber)':'var(--g400)')+'">'+taux+'%</div><div style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--g400);margin-top:4px">Taux réponse</div></div>'
+      +'<div style="text-align:center;padding:12px;background:var(--g50);border-radius:var(--r)"><div style="font-size:24px;font-weight:300">'+sent+'</div><div style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--g400);margin-top:4px">Envoyes</div></div>'
+      +'<div style="text-align:center;padding:12px;background:var(--g50);border-radius:var(--r)"><div style="font-size:24px;font-weight:300;color:var(--green)">'+rep+'</div><div style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--g400);margin-top:4px">Reponses</div></div>'
+      +'<div style="text-align:center;padding:12px;background:var(--g50);border-radius:var(--r)"><div style="font-size:24px;font-weight:300;color:'+(taux>15?'var(--green)':taux>5?'var(--amber)':'var(--g400)')+'">'+taux+'%</div><div style="font-size:10px;font-weight:600;text-transform:uppercase;color:var(--g400);margin-top:4px">Taux reponse</div></div>'
       +'</div></div>'
   }).filter(Boolean).join('')
-
   var rows=S.campagnes.map(function(c){
     var ps=S.prospects.filter(function(p){return p.campagneId===c.id})
     var env=ps.filter(function(p){return p.etapeCourante>0}).length
     var rep=ps.filter(function(p){return p.repandu}).length
     var tx=env>0?Math.round(rep/env*100):0
-    var fin=c.statut==='active'&&env>0&&ps.filter(function(p){return !p.termine&&!p.repandu}).length===0
-    return '<tr><td style="font-weight:500;color:var(--g900)">'+c.nom+'</td><td>'+env+'</td><td style="color:var(--green);font-weight:500">'+rep+'</td>'
-      +'<td><span class="badge '+(tx>15?'b-green':tx>5?'b-amber':'b-gray')+'">'+tx+'%</span></td>'
-      +'<td><span class="badge '+(fin?'b-gray':c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray')+'">'+(fin?'✓ terminée':c.statut==='active'?'active':c.statut==='pause'?'pausée':'brouillon')+'</span></td>'
-      +'<td><button class="btn btn-xs btn-danger" onclick="supprimerCamp(&apos;'+c.id+'&apos;);afficherAnalytiques()">✕</button></td></tr>'
+    return '<tr><td style="font-weight:500">'+c.nom+'</td><td>'+env+'</td><td style="color:var(--green);font-weight:500">'+rep+'</td><td><span class="badge '+(tx>15?'b-green':tx>5?'b-amber':'b-gray')+'">'+tx+'%</span></td><td><span class="badge '+(c.statut==='active'?'b-green':c.statut==='pause'?'b-amber':'b-gray')+'">'+c.statut+'</span></td></tr>'
   }).join('')
-
-  el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:24px">'
-    +(seqCards||'<div style="color:var(--g400)">Aucune séquence avec campagne</div>')+'</div>'
+  el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:24px">'+(seqCards||'')+'</div>'
     +'<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);overflow:hidden;box-shadow:var(--shadow)">'
-    +'<div style="padding:14px 18px;border-bottom:1px solid var(--g100)"><div style="font-size:13px;font-weight:600;color:var(--g900)">Toutes les campagnes</div></div>'
-    +'<table><thead><tr><th>Nom</th><th>Envoyés</th><th>Réponses</th><th>Taux</th><th>Statut</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+    +'<div style="padding:14px 18px;border-bottom:1px solid var(--g100)"><div style="font-size:13px;font-weight:600">Campagnes</div></div>'
+    +'<table><thead><tr><th>Nom</th><th>Envoyes</th><th>Reponses</th><th>Taux</th><th>Statut</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
 }
 
-// ═══ INIT PAGE ═══
-;(function(){
-  if(S.accessToken && S.userEmail){
-    const dot=document.getElementById('statusDot')
-    const lbl=document.getElementById('statusLabel')
-    const eml=document.getElementById('statusEmail')
-    if(dot) dot.classList.add('on')
-    if(lbl) lbl.textContent=(S.provider==='google'?'gmail':'outlook')+' · connecté'
-    if(eml) eml.textContent=S.userEmail
+
+function voirProspectsCamp(campId) {
+  var camp=S.campagnes.find(function(c){return c.id===campId})
+  var ps=S.prospects.filter(function(p){return p.campagneId===campId})
+  var ov=document.createElement('div');ov.className='overlay'
+  ov.onclick=function(e){if(e.target===ov)document.body.removeChild(ov)}
+  var rows=''
+  for(var j=0;j<ps.length;j++){
+    var p=ps[j]
+    var st=p.repandu?'<span class="badge b-green">repondu</span>':p.termine?'<span class="badge b-gray">termine</span>':'<span class="badge b-amber">actif</span>'
+    rows+='<tr><td style="font-family:var(--mono);font-size:11.5px">'+p.email+'</td>'
+    rows+='<td>'+([p.prenom,p.nom].filter(Boolean).join(' ')||'-')+'</td>'
+    rows+='<td>'+(p.societe||'-')+'</td>'
+    rows+='<td><span class="badge b-gray">etape_'+(p.etapeCourante||0)+'</span></td>'
+    rows+='<td>'+(p.repandu||p.termine?'-':fmtProchainEnvoi(p.prochainEnvoi))+'</td>'
+    rows+='<td>'+st+'</td>'
+    rows+='<td><select style="height:22px;font-size:11px;border:1px solid var(--g200);border-radius:5px;background:var(--w)" data-pid="'+p.id+'" data-cid="'+campId+'" class="ptagsel">'
+    rows+='<option value="">edit</option><option value="repandu">repondu</option><option value="actif">reset</option><option value="blackliste">blacklister</option></select></td></tr>'
   }
-  mettreAJourBadges()
-  afficherTableau()
-  if(S.accessToken){
-    setTimeout(function(){try{reprendreApresConnexion()}catch(e){}},2000)
-  }
-})()
+  ov.innerHTML='<div class="modal modal-wide"><div style="display:flex;justify-content:space-between;margin-bottom:16px"><div><div class="modal-title">'+(camp?camp.nom:'Prospects')+'</div></div><button class="close-btn" data-close>x</button></div><div class="table-wrap"><table><thead><tr><th>Email</th><th>Nom</th><th>Societe</th><th>Etape</th><th>Prochain envoi</th><th>Statut</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div><div class="modal-footer"><button class="btn btn-ghost" data-close>Fermer</button></div></div>'
+  ov.addEventListener('click',function(e){if(e.target.dataset.close!==undefined||e.target===ov)document.body.removeChild(ov)})
+  ov.addEventListener('change',function(e){var sel=e.target.closest('.ptagsel');if(!sel||!sel.value)return;changerTagProspect(sel.dataset.pid,sel.value);document.body.removeChild(ov);voirProspectsCamp(sel.dataset.cid)})
+  document.body.appendChild(ov)
+}
+
+function changerTagProspect(pid, tag) {
+  var p=S.prospects.find(function(x){return x.id===pid});if(!p)return
+  if(tag==='repandu'){p.tag='repandu';p.repandu=true;p.termine=true;p.prochainEnvoi=null;ajouterJournal('repondu: '+p.email,'ok')}
+  else if(tag==='blackliste'){p.tag='blackliste';p.prochainEnvoi=null;S.blacklist=S.blacklist||[];S.blacklist.push(p.email);ajouterJournal('blackliste: '+p.email,'warn')}
+  else if(tag==='actif'){p.tag=null;p.repandu=false;p.termine=false;p.etapeCourante=0;p.historique=[];p.prochainEnvoi=new Date().toISOString();ajouterJournal('reset: '+p.email,'ok')}
+  sauver()
+}
+
+function exporterCSVCamp(campId) {
+  var ps=S.prospects.filter(function(p){return p.campagneId===campId})
+  if(!ps.length){alert('Aucun prospect');return}
+  var rows=[['Email','Prenom','Nom','Societe','Etape','Statut']]
+  ps.forEach(function(p){rows.push([p.email,p.prenom||'',p.nom||'',p.societe||'',p.etapeCourante||0,p.repandu?'repondu':p.termine?'termine':'actif'])})
+  var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"'}).join(',')}).join('\n')
+  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='prospects.csv';a.click()
+}
 
 </script>
 </div>
->
+</body>
+</html>
