@@ -1330,11 +1330,22 @@ function estBlackliste(email) {
 
 function interp(tpl, prospect) {
   if (!tpl || !prospect) return tpl || ''
-  return tpl
-    .replace(/\{\{\s*prenom\s*\}\}/gi, prospect.prenom || '')
-    .replace(/\{\{\s*nom\s*\}\}/gi, prospect.nom || '')
-    .replace(/\{\{\s*societe\s*\}\}/gi, prospect.societe || '')
-    .replace(/\{\{\s*email\s*\}\}/gi, prospect.email || '')
+  // Normaliser les accents et casse dans les variables {{...}}
+  return tpl.replace(/\{\{\s*([^{}\s]+)\s*\}\}/g, function(match, varName) {
+    // Enlever les accents et mettre en minuscules
+    const clean = varName.toLowerCase()
+      .replace(/[éèêë]/g, 'e')
+      .replace(/[àâä]/g, 'a')
+      .replace(/[îï]/g, 'i')
+      .replace(/[ôö]/g, 'o')
+      .replace(/[ùûü]/g, 'u')
+      .replace(/ç/g, 'c')
+    if (clean === 'prenom') return prospect.prenom || ''
+    if (clean === 'nom') return prospect.nom || ''
+    if (clean === 'societe' || clean === 'entreprise' || clean === 'company') return prospect.societe || ''
+    if (clean === 'email' || clean === 'mail') return prospect.email || ''
+    return match  // Laisser tel quel si variable inconnue
+  })
 }
 
 function mettreAJourBadges() {
