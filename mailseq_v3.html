@@ -8,16 +8,71 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
-  --bg:#fafafa; --w:#fff; --g50:#f9fafb; --g100:#f3f4f6; --g200:#e5e7eb;
+  --bg:#fafafa; --w:#fff;
+  --g50:#f9fafb; --g100:#f3f4f6; --g200:#e5e7eb;
   --g300:#d1d5db; --g400:#9ca3af; --g500:#6b7280; --g600:#4b5563;
   --g700:#374151; --g800:#1f2937; --g900:#111827;
   --accent:#6366f1; --accent-l:#eef2ff; --accent-d:#4f46e5;
-  --green:#10b981; --green-l:#d1fae5; --amber:#f59e0b; --amber-l:#fef3c7;
+  --green:#10b981; --green-l:#d1fae5;
+  --amber:#f59e0b; --amber-l:#fef3c7;
+  --orange:#fb923c; --orange-l:#fff7ed; --orange-d:#ea580c;
   --red:#ef4444; --red-l:#fee2e2; --blue:#3b82f6;
   --r:8px; --rm:12px; --rl:16px;
   --shadow:0 1px 3px rgba(0,0,0,0.06);
   --shadow-md:0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -1px rgba(0,0,0,.06);
   --shadow-glow:0 0 24px rgba(99,102,241,0.15);
+}
+
+/* DARK MODE — Style néon cyber */
+body.dark {
+  --bg:#0a0a14;
+  --w:#13131f;
+  --g50:#1a1a2e;
+  --g100:#1f1f33;
+  --g200:#2a2a44;
+  --g300:#3a3a55;
+  --g400:#6b6b85;
+  --g500:#8a8aa5;
+  --g600:#a8a8c0;
+  --g700:#c5c5d8;
+  --g800:#e0e0ee;
+  --g900:#f0f0fa;
+  --accent:#a78bfa;
+  --accent-l:#2a1f4d;
+  --accent-d:#8b5cf6;
+  --green:#34d399;
+  --green-l:#0a3024;
+  --amber:#fbbf24;
+  --amber-l:#3d2a0a;
+  --orange:#fb923c;
+  --orange-l:#3d1f0a;
+  --orange-d:#fdba74;
+  --red:#f87171;
+  --red-l:#3d0f0f;
+  --blue:#60a5fa;
+  --shadow:0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:0 4px 12px rgba(0,0,0,.5);
+  --shadow-glow:0 0 30px rgba(167,139,250,0.4);
+}
+body.dark .dot.actif {
+  box-shadow:0 0 8px rgba(167,139,250,.6), 0 0 16px rgba(167,139,250,.3);
+}
+body.dark .dot.repandu {
+  box-shadow:0 0 8px rgba(251,146,60,.6), 0 0 16px rgba(251,146,60,.3);
+}
+body.dark .quick-add {
+  background:linear-gradient(135deg, #1a0f2e 0%, #1a1a3e 50%, #0a1f3a 100%);
+  border-color:var(--accent);
+  box-shadow:0 0 24px rgba(167,139,250,.15);
+}
+body.dark .tunnel-col {
+  background:linear-gradient(180deg, #13131f 0%, #1a1a2e 100%);
+  border-color:var(--accent-l);
+}
+body.dark .tunnel-step-box {
+  background:linear-gradient(135deg, #1a1a2e, #1f1f3a);
+  border-color:var(--accent-l);
+  box-shadow:inset 0 0 12px rgba(167,139,250,.1);
 }
 * { box-sizing:border-box; margin:0; padding:0 }
 body {
@@ -673,6 +728,242 @@ textarea.input { min-height:80px; resize:vertical; }
   margin-left:6px;
 }
 
+
+/* === LAYOUT VERTICAL MULTI-TUNNELS === */
+.tunnels-grid {
+  display:grid;
+  gap:20px;
+  align-items:start;
+  padding-bottom:40px;
+}
+.tunnels-grid.cols-1 { grid-template-columns:1fr; max-width:520px; margin:0 auto; }
+.tunnels-grid.cols-2 { grid-template-columns:repeat(2, 1fr); }
+.tunnels-grid.cols-3 { grid-template-columns:repeat(3, 1fr); }
+.tunnels-grid.cols-4 { grid-template-columns:repeat(4, 1fr); }
+
+.tunnel-col {
+  background:var(--w);
+  border:1px solid var(--g100);
+  border-radius:var(--rm);
+  padding:14px;
+  display:flex; flex-direction:column;
+  gap:10px;
+}
+.tunnel-col-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding-bottom:10px; border-bottom:1px solid var(--g100);
+}
+.tunnel-col-name {
+  font-size:13px; font-weight:600; color:var(--g900);
+  display:flex; align-items:center; gap:6px;
+}
+.tunnel-col-stats {
+  font-size:11px; color:var(--g500);
+}
+.tunnel-col-stats strong { color:var(--accent); }
+
+/* Bouton "nouvelle email — clique pour ajouter" */
+.tunnel-add-btn {
+  border:2px dashed var(--accent);
+  background:var(--accent-l);
+  border-radius:var(--rm);
+  padding:14px;
+  text-align:center;
+  cursor:pointer;
+  transition:all .15s;
+}
+.tunnel-add-btn:hover {
+  background:var(--accent);
+  color:#fff;
+  transform:translateY(-1px);
+  box-shadow:var(--shadow-glow);
+}
+.tunnel-add-btn-title {
+  font-size:10px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.6px;
+  color:var(--accent-d);
+  margin-bottom:2px;
+}
+.tunnel-add-btn:hover .tunnel-add-btn-title { color:#fff; }
+.tunnel-add-btn-sub {
+  font-size:12px; font-weight:500; color:var(--g700);
+}
+.tunnel-add-btn:hover .tunnel-add-btn-sub { color:#fff; }
+
+/* Mini-form inline d'ajout (déployé) */
+.tunnel-inline-form {
+  background:var(--accent-l);
+  border:1.5px solid var(--accent);
+  border-radius:var(--rm);
+  padding:12px;
+  display:none;
+}
+.tunnel-inline-form.open { display:block; }
+.tunnel-inline-form input {
+  width:100%;
+  padding:8px 10px; margin-bottom:6px;
+  border:1px solid var(--g200); border-radius:6px;
+  font-size:12px; font-family:inherit;
+  background:var(--w); color:var(--g900);
+  outline:none;
+}
+.tunnel-inline-form input:focus { border-color:var(--accent); }
+.tunnel-inline-form .actions {
+  display:flex; gap:6px; margin-top:6px;
+}
+.tunnel-inline-form .actions button { flex:1; }
+
+/* Étapes verticales */
+.tunnel-steps-vert {
+  display:flex; flex-direction:column;
+  gap:0;
+}
+.tunnel-step-vert {
+  display:flex; align-items:stretch; gap:8px;
+}
+.tunnel-step-box {
+  flex:1;
+  background:var(--g50);
+  border:1.5px solid var(--g100);
+  border-radius:var(--rm);
+  padding:12px;
+  min-height:75px;
+  display:flex; flex-direction:column;
+  position:relative;
+}
+.tunnel-step-vert-header {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:8px;
+}
+.tunnel-step-vert-label {
+  font-size:10px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.5px;
+  color:var(--g600);
+  display:flex; align-items:center; gap:6px;
+}
+.tunnel-step-vert-num {
+  width:20px; height:20px; border-radius:50%;
+  background:var(--accent); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:700;
+}
+.tunnel-step-vert-time {
+  font-size:10px; color:var(--g400);
+}
+.tunnel-step-vert-dots {
+  display:flex; flex-wrap:wrap; gap:5px;
+  align-content:flex-start;
+  min-height:24px;
+}
+
+/* Flèche entre étapes (verticale) */
+.tunnel-arrow-vert {
+  display:flex; justify-content:center;
+  padding:4px 0;
+  color:var(--accent);
+  font-size:14px;
+  opacity:.5;
+}
+
+/* Colonne "répondu" à droite de chaque étape */
+.tunnel-step-vert-replies {
+  width:auto; min-width:30px;
+  display:flex; align-items:flex-start;
+  padding-top:34px;
+}
+.tunnel-step-vert-replies-dots {
+  display:flex; flex-wrap:wrap; gap:5px;
+  align-content:flex-start;
+  max-width:60px;
+}
+
+/* Mise à jour des couleurs dots */
+.dot.actif {
+  background:linear-gradient(135deg, var(--accent), var(--accent-d));
+  animation:pulse 2s infinite;
+}
+.dot.repandu {
+  background:linear-gradient(135deg, var(--orange), var(--orange-d));
+  animation:pulseOrange 2s infinite;
+}
+.dot.termine { background:var(--g400); }
+.dot.erreur { background:var(--red); }
+
+@keyframes pulseOrange {
+  0%, 100% { box-shadow:0 0 0 0 rgba(251,146,60,0.5); }
+  50% { box-shadow:0 0 0 5px rgba(251,146,60,0); }
+}
+
+/* Toggle dark mode */
+.theme-toggle {
+  margin:auto 12px 12px;
+  padding:10px;
+  border:1px solid var(--g200);
+  border-radius:var(--r);
+  background:var(--g50);
+  cursor:pointer;
+  display:flex; align-items:center; gap:8px;
+  font-size:12px; color:var(--g600);
+  transition:all .15s;
+}
+.theme-toggle:hover { border-color:var(--accent); color:var(--accent); }
+.theme-toggle-icon { font-size:14px; }
+.sb:not(.expanded) .theme-toggle { padding:10px 0; justify-content:center; }
+.sb:not(.expanded) .theme-toggle span:not(.theme-toggle-icon) { display:none; }
+
+/* Sélection multi-tunnels (checkbox dans sidebar) */
+.sb-tunnel-item {
+  position:relative;
+}
+.sb-tunnel-check {
+  width:14px; height:14px; border-radius:3px;
+  border:1.5px solid var(--g300);
+  margin-right:6px; flex-shrink:0;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:var(--w);
+  cursor:pointer;
+  transition:all .12s;
+}
+.sb-tunnel-check.checked {
+  background:var(--accent); border-color:var(--accent);
+  color:#fff;
+}
+.sb-tunnel-check.checked::after { content:'✓'; font-size:9px; }
+.sb:not(.expanded) .sb-tunnel-check { display:none; }
+
+/* Bouton "voir ce tunnel seul" */
+.sb-tunnel-solo {
+  margin-left:auto; opacity:.5;
+  cursor:pointer; padding:2px 4px;
+  border-radius:3px; font-size:10px;
+}
+.sb-tunnel-solo:hover { opacity:1; background:var(--g100); }
+.sb:not(.expanded) .sb-tunnel-solo { display:none; }
+
+/* Header avec contrôles vue d'ensemble */
+.overview-header {
+  display:flex; align-items:center; gap:12px;
+  margin-bottom:18px;
+  flex-wrap:wrap;
+}
+.cols-selector {
+  display:flex; gap:4px;
+  background:var(--g100);
+  padding:3px;
+  border-radius:var(--r);
+}
+.cols-selector button {
+  padding:5px 12px;
+  border:none; background:transparent;
+  font-family:inherit; font-size:12px; font-weight:500;
+  color:var(--g600); cursor:pointer;
+  border-radius:5px;
+}
+.cols-selector button.active {
+  background:var(--w); color:var(--accent);
+  box-shadow:var(--shadow);
+}
+
 </style>
 </head>
 <body>
@@ -705,6 +996,11 @@ textarea.input { min-height:80px; resize:vertical; }
   <div class="sb-section">Mes tunnels</div>
   <div id="sb-tunnels"></div>
   <div class="sb-tunnel-add" onclick="creerNouveauTunnel()">+ nouveau tunnel</div>
+
+  <div class="theme-toggle" onclick="toggleTheme()" title="Mode clair/sombre">
+    <span class="theme-toggle-icon" id="themeIcon">🌙</span>
+    <span id="themeLabel">Mode sombre</span>
+  </div>
 
   <div class="sb-section">Outils</div>
   <div class="sb-item" data-page="blacklist" onclick="aller('blacklist', this)">
@@ -1439,76 +1735,7 @@ function afficherTunnelActif(tid) {
   afficherTunnel(tid)
 }
 
-// ═══ SIDEBAR TUNNELS ═══
-function rafraichirSidebarTunnels() {
-  const el = document.getElementById('sb-tunnels')
-  if (!el) return
-  el.innerHTML = S.tunnels.map(t => {
-    const count = S.prospects.filter(p => p.tunnelId === t.id && !p.termine && !p.repandu).length
-    return '<div class="sb-item sb-tunnel-item" data-tid="' + t.id + '" onclick="afficherTunnelActif(\'' + t.id + '\')">' +
-      '<span class="sb-item-icon">🎯</span>' +
-      '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(t.nom) + '</span>' +
-      '<span class="sb-item-badge sb-tunnel-badge" data-tid="' + t.id + '">' + count + '</span>' +
-      '</div>'
-  }).join('')
-}
 
-// ═══ VUE D'ENSEMBLE ═══
-function afficherVueEnsemble() {
-  const el = document.getElementById('contenu-vue-ensemble')
-  if (!el) return
-  document.getElementById('vue-sub').textContent = S.tunnels.length + ' tunnel' + (S.tunnels.length > 1 ? 's' : '') + ' · ' + S.prospects.length + ' prospect' + (S.prospects.length > 1 ? 's' : '')
-
-  if (!S.tunnels.length) {
-    el.innerHTML = '<div class="empty">' +
-      '<div class="empty-icon">🎯</div>' +
-      '<div class="empty-title">Aucun tunnel</div>' +
-      '<p>Créez votre premier tunnel pour commencer à prospecter</p>' +
-      '<button class="btn btn-primary btn-lg" onclick="creerNouveauTunnel()" style="margin-top:16px">+ Créer un tunnel</button>' +
-      '</div>'
-    return
-  }
-
-  let html = ''
-  // Quick-add en haut si des tunnels existent
-  if (S.tunnels.length > 0) html += renderQuickAddForm(S.tunnels[0].id)
-  for (const tunnel of S.tunnels) {
-    const ps = S.prospects.filter(p => p.tunnelId === tunnel.id)
-    const actifs = ps.filter(p => !p.termine && !p.repandu).length
-    const rep = ps.filter(p => p.repandu).length
-    const term = ps.filter(p => p.termine && !p.repandu).length
-    const taux = pct(rep, ps.length)
-
-    html += '<div style="background:var(--w);border:1px solid var(--g100);border-radius:var(--rm);padding:18px;margin-bottom:14px;box-shadow:var(--shadow);cursor:pointer" onclick="afficherTunnelActif(\'' + tunnel.id + '\')">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
-      '<div>' +
-      '<div style="font-size:14px;font-weight:600;color:var(--g900)">' + escapeHtml(tunnel.nom) + '</div>' +
-      '<div style="font-size:11px;color:var(--g500);margin-top:2px">' + tunnel.etapes.length + ' étape' + (tunnel.etapes.length > 1 ? 's' : '') + ' · ' + ps.length + ' prospect' + (ps.length > 1 ? 's' : '') + '</div>' +
-      '</div>' +
-      '<div style="display:flex;gap:6px;align-items:center">' +
-      '<span class="badge ' + (actifs > 0 ? 'b-blue' : 'b-amber') + '">' + (actifs > 0 ? actifs + ' actif' + (actifs > 1 ? 's' : '') : 'inactif') + '</span>' +
-      '</div></div>' +
-
-      // Mini tunnel viz
-      '<div style="display:flex;gap:4px;margin-bottom:10px">'
-    for (let i = 0; i < tunnel.etapes.length; i++) {
-      const psEtape = ps.filter(p => p.etapeCourante === i && !p.termine && !p.repandu)
-      html += '<div style="flex:1;text-align:center;padding:8px 4px;background:var(--g50);border-radius:6px">' +
-        '<div style="font-size:11px;font-weight:600;color:var(--g700)">' + psEtape.length + '</div>' +
-        '<div style="font-size:9px;color:var(--g400);text-transform:uppercase">' + (i === 0 ? 'init' : 'r' + i) + '</div>' +
-        '</div>'
-    }
-    html += '<div style="flex:1;text-align:center;padding:8px 4px;background:var(--green-l);border-radius:6px">' +
-      '<div style="font-size:11px;font-weight:600;color:#065f46">' + rep + '</div>' +
-      '<div style="font-size:9px;color:var(--g500);text-transform:uppercase">répondu</div>' +
-      '</div>' +
-      '</div>'
-
-    html += '<div style="font-size:11px;color:var(--g500)">Taux de réponse : <strong style="color:var(--g900)">' + taux + '%</strong></div>'
-    html += '</div>'
-  }
-  el.innerHTML = html
-}
 
 // ═══ AFFICHER TUNNEL ═══
 function afficherTunnel(tid) {
@@ -1641,11 +1868,19 @@ function renderQuickAddForm(currentTid) {
 }
 
 function ajoutRapideProspect() {
-  const email = document.getElementById('qa-email').value.trim()
-  const prenom = document.getElementById('qa-prenom').value.trim()
-  const nom = document.getElementById('qa-nom').value.trim()
-  const societe = document.getElementById('qa-societe').value.trim()
-  const tunnelId = document.getElementById('qa-tunnel').value
+  // IMPORTANT: chercher uniquement dans la page active (pas dans les pages cachées)
+  const activePage = document.querySelector('.page.active')
+  if (!activePage) { alert('Erreur interne'); return }
+  const getVal = id => {
+    const el = activePage.querySelector('#' + id)
+    return el ? el.value.trim() : ''
+  }
+  const email = getVal('qa-email')
+  const prenom = getVal('qa-prenom')
+  const nom = getVal('qa-nom')
+  const societe = getVal('qa-societe')
+  const tunnelSel = activePage.querySelector('#qa-tunnel')
+  const tunnelId = tunnelSel ? tunnelSel.value : ''
 
   if (!email) { alert('Entrez un email'); return }
   if (!/.+@.+\..+/.test(email)) { alert('Email invalide'); return }
@@ -1680,8 +1915,8 @@ function ajoutRapideProspect() {
   sauver()
   ajouterJournal('✓ ' + email + ' ajouté au tunnel "' + tunnel.nom + '"', 'ok')
 
-  // Animation success
-  const btn = document.getElementById('qa-btn')
+  // Animation success (dans la page active)
+  const btn = activePage.querySelector('#qa-btn')
   if (btn) {
     btn.classList.add('success')
     btn.textContent = '✓ Ajouté !'
@@ -1691,12 +1926,14 @@ function ajoutRapideProspect() {
     }, 1200)
   }
 
-  // Vider les champs
-  document.getElementById('qa-email').value = ''
-  document.getElementById('qa-prenom').value = ''
-  document.getElementById('qa-nom').value = ''
-  document.getElementById('qa-societe').value = ''
-  document.getElementById('qa-email').focus()
+  // Vider les champs (dans la page active)
+  const activePage2 = document.querySelector('.page.active')
+  if (activePage2) {
+    const e = activePage2.querySelector('#qa-email'); if (e) { e.value = ''; e.focus() }
+    const p = activePage2.querySelector('#qa-prenom'); if (p) p.value = ''
+    const n = activePage2.querySelector('#qa-nom'); if (n) n.value = ''
+    const s = activePage2.querySelector('#qa-societe'); if (s) s.value = ''
+  }
 
   // Rafraîchir la vue du tunnel actif
   rafraichirSidebarTunnels()
@@ -2353,6 +2590,293 @@ function restoreSidebarState() {
   } catch(e){}
 }
 
+
+// ═══ DARK MODE ═══
+function toggleTheme() {
+  const body = document.body
+  const isDark = body.classList.toggle('dark')
+  try { localStorage.setItem('mailseq_theme', isDark ? 'dark' : 'light') } catch(e){}
+  const icon = document.getElementById('themeIcon')
+  const lbl = document.getElementById('themeLabel')
+  if (icon) icon.textContent = isDark ? '☀️' : '🌙'
+  if (lbl) lbl.textContent = isDark ? 'Mode clair' : 'Mode sombre'
+}
+
+function restoreTheme() {
+  try {
+    if (localStorage.getItem('mailseq_theme') === 'dark') {
+      document.body.classList.add('dark')
+      const icon = document.getElementById('themeIcon')
+      const lbl = document.getElementById('themeLabel')
+      if (icon) icon.textContent = '☀️'
+      if (lbl) lbl.textContent = 'Mode clair'
+    }
+  } catch(e){}
+}
+
+// ═══ MULTI-TUNNELS VISIBLES ═══
+let _selectedTunnels = []  // IDs des tunnels cochés
+let _displayCols = 2  // Nombre de colonnes par défaut
+
+function loadSelectedTunnels() {
+  try {
+    const saved = localStorage.getItem('mailseq_selected_tunnels')
+    if (saved) _selectedTunnels = JSON.parse(saved)
+  } catch(e){}
+  try {
+    const c = localStorage.getItem('mailseq_display_cols')
+    if (c) _displayCols = parseInt(c, 10) || 2
+  } catch(e){}
+  // Si rien sélectionné, prendre les N premiers tunnels
+  if (!_selectedTunnels.length && S.tunnels.length) {
+    _selectedTunnels = S.tunnels.slice(0, _displayCols).map(t => t.id)
+  }
+  // Nettoyer les IDs qui n'existent plus
+  _selectedTunnels = _selectedTunnels.filter(tid => S.tunnels.some(t => t.id === tid))
+}
+
+function saveSelectedTunnels() {
+  try {
+    localStorage.setItem('mailseq_selected_tunnels', JSON.stringify(_selectedTunnels))
+    localStorage.setItem('mailseq_display_cols', String(_displayCols))
+  } catch(e){}
+}
+
+function toggleTunnelVisibility(tid) {
+  if (_selectedTunnels.includes(tid)) {
+    _selectedTunnels = _selectedTunnels.filter(x => x !== tid)
+  } else {
+    _selectedTunnels.push(tid)
+  }
+  saveSelectedTunnels()
+  rafraichirSidebarTunnels()
+  if (document.getElementById('page-vue-ensemble').classList.contains('active')) {
+    afficherVueEnsemble()
+  }
+}
+
+function changerNbCols(n) {
+  _displayCols = n
+  saveSelectedTunnels()
+  afficherVueEnsemble()
+}
+
+// ═══ INLINE FORM PAR TUNNEL ═══
+function ouvrirInlineForm(tid) {
+  // Fermer les autres
+  document.querySelectorAll('.tunnel-inline-form').forEach(f => f.classList.remove('open'))
+  document.querySelectorAll('.tunnel-add-btn').forEach(b => b.style.display = 'block')
+  const form = document.getElementById('inline-form-' + tid)
+  if (form) {
+    form.classList.add('open')
+    const btn = document.getElementById('add-btn-' + tid)
+    if (btn) btn.style.display = 'none'
+    const emailInput = form.querySelector('input[type="email"]')
+    if (emailInput) setTimeout(() => emailInput.focus(), 50)
+  }
+}
+
+function fermerInlineForm(tid) {
+  const form = document.getElementById('inline-form-' + tid)
+  if (form) {
+    form.classList.remove('open')
+    const btn = document.getElementById('add-btn-' + tid)
+    if (btn) btn.style.display = 'block'
+  }
+}
+
+function soumettreInlineForm(tid) {
+  const form = document.getElementById('inline-form-' + tid)
+  if (!form) return
+  const email = form.querySelector('input[name="email"]').value.trim()
+  const prenom = form.querySelector('input[name="prenom"]').value.trim()
+  const nom = form.querySelector('input[name="nom"]').value.trim()
+  const societe = form.querySelector('input[name="societe"]').value.trim()
+
+  if (!email) { alert('Entrez un email'); return }
+  if (!/.+@.+\..+/.test(email)) { alert('Email invalide'); return }
+  if (estBlackliste(email)) { alert('Email blacklisté'); return }
+  if (S.prospects.some(p => p.tunnelId === tid && p.email.toLowerCase() === email.toLowerCase())) {
+    alert('Déjà dans ce tunnel'); return
+  }
+  const tunnel = S.tunnels.find(t => t.id === tid)
+  if (!tunnel) return
+
+  S.prospects.push({
+    id: uid(),
+    email: email, prenom: prenom, nom: nom, societe: societe,
+    tunnelId: tid, etapeCourante: 0,
+    prochainEnvoi: (tunnel.etapes[0].delaiVal || 0) === 0 ? isoMaint() : calculerProchainEnvoi(tunnel.etapes[0], new Date()),
+    historique: [], repandu: false, termine: false,
+    ajouteA: isoMaint()
+  })
+  sauver()
+  ajouterJournal('✓ ' + email + ' ajouté à "' + tunnel.nom + '"', 'ok')
+
+  // Vider et fermer
+  form.querySelector('input[name="email"]').value = ''
+  form.querySelector('input[name="prenom"]').value = ''
+  form.querySelector('input[name="nom"]').value = ''
+  form.querySelector('input[name="societe"]').value = ''
+  fermerInlineForm(tid)
+
+  rafraichirSidebarTunnels()
+  if (document.getElementById('page-vue-ensemble').classList.contains('active')) {
+    afficherVueEnsemble()
+  } else if (tunnelActifId === tid) {
+    afficherTunnel(tid)
+  }
+
+  if (S.accessToken && (tunnel.etapes[0].delaiVal || 0) === 0) {
+    setTimeout(() => lancerEnvois(), 500)
+  }
+}
+
+// ═══ RENDU D'UNE COLONNE TUNNEL (vertical) ═══
+function renderTunnelColumn(tunnel) {
+  const ps = S.prospects.filter(p => p.tunnelId === tunnel.id)
+  const actifs = ps.filter(p => !p.termine && !p.repandu).length
+  const repandus = ps.filter(p => p.repandu).length
+
+  let html = '<div class="tunnel-col">'
+
+  // Header
+  html += '<div class="tunnel-col-header">' +
+    '<div class="tunnel-col-name">🎯 ' + escapeHtml(tunnel.nom) + '</div>' +
+    '<div class="tunnel-col-stats"><strong>' + actifs + '</strong> actif · <strong style="color:var(--orange-d)">' + repandus + '</strong> répondu</div>' +
+    '</div>'
+
+  // Bouton "Nouvelle email — clique pour ajouter"
+  html += '<div class="tunnel-add-btn" id="add-btn-' + tunnel.id + '" onclick="ouvrirInlineForm(\'' + tunnel.id + '\')">' +
+    '<div class="tunnel-add-btn-title">+ Nouvelle email</div>' +
+    '<div class="tunnel-add-btn-sub">Clique pour ajouter</div>' +
+    '</div>'
+
+  // Mini-form (caché par défaut)
+  html += '<div class="tunnel-inline-form" id="inline-form-' + tunnel.id + '">' +
+    '<input type="email" name="email" placeholder="email@..." onkeypress="if(event.key===\'Enter\')soumettreInlineForm(\'' + tunnel.id + '\')">' +
+    '<input type="text" name="prenom" placeholder="Prénom (optionnel)">' +
+    '<input type="text" name="nom" placeholder="Nom (optionnel)">' +
+    '<input type="text" name="societe" placeholder="Société (optionnel)" onkeypress="if(event.key===\'Enter\')soumettreInlineForm(\'' + tunnel.id + '\')">' +
+    '<div class="actions">' +
+      '<button class="btn btn-sm" onclick="fermerInlineForm(\'' + tunnel.id + '\')">Annuler</button>' +
+      '<button class="btn btn-primary btn-sm" onclick="soumettreInlineForm(\'' + tunnel.id + '\')">→ Ajouter</button>' +
+    '</div></div>'
+
+  // Étapes verticales
+  html += '<div class="tunnel-steps-vert">'
+  tunnel.etapes.forEach((etape, i) => {
+    // Prospects à cette étape (actifs)
+    const psEtape = ps.filter(p => p.etapeCourante === i && !p.termine && !p.repandu)
+    // Prospects qui ont répondu APRÈS cette étape (donc historique contient cette étape comme dernière envoyée)
+    const psRepThisStep = ps.filter(p => {
+      if (!p.repandu) return false
+      const histo = p.historique || []
+      if (!histo.length) return false
+      // dernière étape envoyée = i
+      return histo[histo.length - 1].etape === i
+    })
+
+    const delLabel = i === 0 ? 'Immédiat' : 'J+' + (etape.delaiVal || 0) + (etape.heureEnvoi ? ' à ' + etape.heureEnvoi : '')
+
+    html += '<div class="tunnel-step-vert">' +
+      '<div class="tunnel-step-box">' +
+        '<div class="tunnel-step-vert-header">' +
+          '<div class="tunnel-step-vert-label"><span class="tunnel-step-vert-num">' + (i + 1) + '</span>' + (i === 0 ? 'Initial' : 'Relance ' + i) + '</div>' +
+          '<div class="tunnel-step-vert-time">' + delLabel + '</div>' +
+        '</div>' +
+        '<div class="tunnel-step-vert-dots">'
+    psEtape.forEach(p => {
+      html += '<div class="dot actif" data-email="' + escapeHtml(p.email) + '" onclick="voirProspect(\'' + p.id + '\')"></div>'
+    })
+    html += '</div></div>'
+
+    // Colonne réponses à droite de cette étape
+    html += '<div class="tunnel-step-vert-replies">' +
+      '<div class="tunnel-step-vert-replies-dots">'
+    psRepThisStep.forEach(p => {
+      html += '<div class="dot repandu" data-email="' + escapeHtml(p.email) + '" title="A répondu à l\'étape ' + (i+1) + '" onclick="voirProspect(\'' + p.id + '\')"></div>'
+    })
+    html += '</div></div></div>'
+
+    // Flèche entre étapes
+    if (i < tunnel.etapes.length - 1) {
+      html += '<div class="tunnel-arrow-vert">▼</div>'
+    }
+  })
+  html += '</div>'  // tunnel-steps-vert
+
+  html += '<div style="margin-top:8px;text-align:center"><button class="btn btn-ghost btn-sm" onclick="afficherTunnelActif(\'' + tunnel.id + '\')">Voir les détails →</button></div>'
+  html += '</div>'  // tunnel-col
+
+  return html
+}
+
+// ═══ VUE D'ENSEMBLE — NOUVELLE VERSION ═══
+function afficherVueEnsemble() {
+  loadSelectedTunnels()
+  const el = document.getElementById('contenu-vue-ensemble')
+  if (!el) return
+
+  const subEl = document.getElementById('vue-sub')
+  if (subEl) subEl.textContent = S.tunnels.length + ' tunnel' + (S.tunnels.length > 1 ? 's' : '') + ' · ' + S.prospects.length + ' prospect' + (S.prospects.length > 1 ? 's' : '')
+
+  if (!S.tunnels.length) {
+    el.innerHTML = '<div class="empty">' +
+      '<div class="empty-icon">🎯</div>' +
+      '<div class="empty-title">Aucun tunnel</div>' +
+      '<p>Créez votre premier tunnel pour commencer</p>' +
+      '<button class="btn btn-primary btn-lg" onclick="creerNouveauTunnel()" style="margin-top:16px">+ Créer un tunnel</button>' +
+      '</div>'
+    return
+  }
+
+  // Header avec sélecteur de colonnes
+  let html = '<div class="overview-header">' +
+    '<div style="font-size:12px;color:var(--g500);font-weight:500">Afficher</div>' +
+    '<div class="cols-selector">' +
+      '<button class="' + (_displayCols === 1 ? 'active' : '') + '" onclick="changerNbCols(1)">×1</button>' +
+      '<button class="' + (_displayCols === 2 ? 'active' : '') + '" onclick="changerNbCols(2)">×2</button>' +
+      '<button class="' + (_displayCols === 3 ? 'active' : '') + '" onclick="changerNbCols(3)">×3</button>' +
+      '<button class="' + (_displayCols === 4 ? 'active' : '') + '" onclick="changerNbCols(4)">×4</button>' +
+    '</div>' +
+    '<div style="font-size:11px;color:var(--g400)">colonne' + (_displayCols > 1 ? 's' : '') + ' · cochez vos tunnels dans la sidebar</div>' +
+    '</div>'
+
+  // Filtrer les tunnels à afficher
+  let tunnelsAAfficher = S.tunnels.filter(t => _selectedTunnels.includes(t.id))
+  if (!tunnelsAAfficher.length) {
+    // Si rien coché, afficher tous (limité par cols)
+    tunnelsAAfficher = S.tunnels.slice(0, _displayCols)
+  }
+
+  html += '<div class="tunnels-grid cols-' + Math.min(_displayCols, tunnelsAAfficher.length) + '">'
+  for (const tunnel of tunnelsAAfficher) {
+    html += renderTunnelColumn(tunnel)
+  }
+  html += '</div>'
+
+  el.innerHTML = html
+}
+
+// ═══ SIDEBAR TUNNELS AVEC CHECKBOX ═══
+function rafraichirSidebarTunnels() {
+  loadSelectedTunnels()
+  const el = document.getElementById('sb-tunnels')
+  if (!el) return
+  el.innerHTML = S.tunnels.map(t => {
+    const count = S.prospects.filter(p => p.tunnelId === t.id && !p.termine && !p.repandu).length
+    const isChecked = _selectedTunnels.includes(t.id)
+    return '<div class="sb-item sb-tunnel-item" data-tid="' + t.id + '">' +
+      '<span class="sb-tunnel-check' + (isChecked ? ' checked' : '') + '" onclick="event.stopPropagation();toggleTunnelVisibility(\'' + t.id + '\')"></span>' +
+      '<span class="sb-item-icon" onclick="afficherTunnelActif(\'' + t.id + '\')">🎯</span>' +
+      '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="afficherTunnelActif(\'' + t.id + '\')">' + escapeHtml(t.nom) + '</span>' +
+      '<span class="sb-item-badge sb-tunnel-badge" data-tid="' + t.id + '">' + count + '</span>' +
+      '</div>'
+  }).join('')
+}
+
+
 // ═══ INITIALISATION ═══
 (function init() {
   // Migration: ancien data model "msp_v3" → nouveau "mailseq_v2"
@@ -2373,6 +2897,7 @@ function restoreSidebarState() {
     }
   } catch (e) {}
 
+  restoreTheme()
   restoreSidebarState()
   // Afficher état connexion
   afficherStatutConnexion()
