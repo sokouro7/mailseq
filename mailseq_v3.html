@@ -1506,6 +1506,19 @@ function synchroniser() {
 
 // ═══ MOTEUR D'ENVOI ═══
 
+// Convertit le texte brut en HTML : remplace \n par <br>, échappe les < et >
+function textToHtml(txt) {
+  if (!txt) return ''
+  // Si le texte contient déjà des balises HTML (<br>, <p>, <div>, etc.), on suppose qu'il est déjà formaté
+  if (/<(br|p|div|span|h[1-6]|ul|ol|li|strong|em|b|i|a)\b/i.test(txt)) return txt
+  // Sinon, échapper < > & et convertir \n en <br>
+  return txt
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>')
+}
+
 async function envoyerEmail(prospect, sujet, corpsHtml) {
   if (estBlackliste(prospect.email)) {
     ajouterJournal('🚫 ' + prospect.email + ' — blacklisté, ignoré', 'warn')
@@ -1521,10 +1534,14 @@ async function envoyerEmail(prospect, sujet, corpsHtml) {
     return false
   }
 
-  const sig = JSON.parse(localStorage.getItem('mailseq_v2') || '{}').signature || ''
-  const corpsComplet = corpsHtml + (sig ? '<br><br><hr style="border:none;border-top:1px solid #eee;margin:16px 0">' + sig : '')
+  // 1. Interpoler les variables {{prenom}} {{nom}} etc. AVANT de convertir en HTML
   const subj = interp(sujet, prospect)
-  const body = interp(corpsComplet, prospect)
+  const corpsAvecVars = interp(corpsHtml, prospect)
+  // 2. Convertir le texte brut en HTML (sauts de ligne -> <br>)
+  const corpsHtmlPropre = textToHtml(corpsAvecVars)
+  // 3. Ajouter la signature
+  const sig = JSON.parse(localStorage.getItem('mailseq_v2') || '{}').signature || ''
+  const body = corpsHtmlPropre + (sig ? '<br><br><hr style="border:none;border-top:1px solid #eee;margin:16px 0">' + sig : '')
 
   try {
     if (S.provider === 'google') {
