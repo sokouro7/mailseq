@@ -964,6 +964,84 @@ textarea.input { min-height:80px; resize:vertical; }
   box-shadow:var(--shadow);
 }
 
+
+/* === RICH EDITOR === */
+.rich-editor {
+  border:1px solid var(--g200);
+  border-radius:var(--r);
+  background:var(--w);
+  display:flex; flex-direction:column;
+  overflow:hidden;
+}
+.rich-editor:focus-within { border-color:var(--accent); }
+
+.rich-toolbar {
+  display:flex; gap:2px; padding:6px;
+  background:var(--g50);
+  border-bottom:1px solid var(--g100);
+  flex-wrap:wrap;
+}
+.rich-btn {
+  width:28px; height:28px;
+  display:flex; align-items:center; justify-content:center;
+  background:transparent; border:none;
+  border-radius:4px; cursor:pointer;
+  color:var(--g700); font-size:13px;
+  font-family:inherit;
+  transition:all .12s;
+}
+.rich-btn:hover { background:var(--accent-l); color:var(--accent); }
+.rich-btn.active { background:var(--accent); color:#fff; }
+.rich-separator {
+  width:1px; background:var(--g200);
+  margin:4px 4px;
+}
+.rich-body {
+  min-height:120px;
+  padding:12px 14px;
+  font-size:14px; line-height:1.6;
+  outline:none;
+  color:var(--g900);
+  background:var(--w);
+}
+.rich-body:empty::before {
+  content:attr(data-placeholder);
+  color:var(--g400);
+  pointer-events:none;
+}
+.rich-body img {
+  max-width:100%; height:auto;
+  border-radius:6px;
+  margin:6px 0;
+}
+.rich-body a { color:var(--accent); }
+.rich-body p { margin:0 0 8px 0; }
+.rich-body ul, .rich-body ol { margin:8px 0; padding-left:24px; }
+
+body.dark .rich-body { background:var(--w); color:var(--g800); }
+body.dark .rich-toolbar { background:var(--g50); }
+
+/* Variable insert dropdown */
+.var-insert {
+  position:relative; display:inline-block;
+}
+.var-insert-menu {
+  position:absolute; top:100%; left:0; z-index:100;
+  background:var(--w); border:1px solid var(--g200);
+  border-radius:var(--r); box-shadow:var(--shadow-md);
+  padding:4px; margin-top:4px;
+  display:none; min-width:140px;
+}
+.var-insert-menu.open { display:block; }
+.var-insert-menu button {
+  display:block; width:100%; text-align:left;
+  padding:6px 10px; background:none; border:none;
+  font-family:inherit; font-size:12px;
+  color:var(--g700); cursor:pointer;
+  border-radius:4px;
+}
+.var-insert-menu button:hover { background:var(--accent-l); color:var(--accent); }
+
 </style>
 </head>
 <body>
@@ -1521,7 +1599,7 @@ function synchroniser() {
 function textToHtml(txt) {
   if (!txt) return ''
   // Si le texte contient déjà des balises HTML (<br>, <p>, <div>, etc.), on suppose qu'il est déjà formaté
-  if (/<(br|p|div|span|h[1-6]|ul|ol|li|strong|em|b|i|a)\b/i.test(txt)) return txt
+  if (/<(br|p|div|span|h[1-6]|ul|ol|li|strong|em|b|i|u|a|img)\b/i.test(txt)) return txt
   // Sinon, échapper < > & et convertir \n en <br>
   return txt
     .replace(/&/g, '&amp;')
@@ -2434,12 +2512,12 @@ function rafraichirEtapes() {
 
     html += '<div class="form-group">' +
       '<label class="label">Objet</label>' +
-      '<input class="input" value="' + escapeHtml(et.sujet || '') + '" oninput="majEtape(' + i + ',\'sujet\',this.value)" placeholder="Objet de l\'email">' +
+      '<input class="input" value="' + escapeHtml(et.sujet || '') + '" oninput="majEtape(' + i + ',\'sujet\',this.value)" placeholder="Objet de l\'email — utilisez {{prenom}}, {{nom}}, {{societe}}">' +
       '</div>' +
       '<div class="form-group">' +
       '<label class="label">Corps</label>' +
-      '<textarea class="input" rows="4" oninput="majEtape(' + i + ',\'corps\',this.value)" placeholder="Bonjour {{prenom}},...">' + escapeHtml(et.corps || '') + '</textarea>' +
-      '<div style="font-size:10px;color:var(--g500);margin-top:4px">Variables : {{prenom}} · {{nom}} · {{societe}} · {{email}}</div>' +
+      renderRichEditor('etape-' + i, et.corps || '', i) +
+      '<div style="font-size:10px;color:var(--g500);margin-top:6px">Variables disponibles : <code>{{prenom}}</code> · <code>{{nom}}</code> · <code>{{societe}}</code> · <code>{{email}}</code></div>' +
       '</div>'
 
     html += '</div>'
@@ -2903,6 +2981,114 @@ function rafraichirSidebarTunnels() {
       '</div>'
   }).join('')
 }
+
+
+
+// ═══ RICH TEXT EDITOR ═══
+function renderRichEditor(editorId, initialContent, etapeIdx) {
+  // Le contenu initial peut être du texte brut (legacy) ou du HTML
+  let initialHtml = initialContent || ''
+  // Si pas de balise HTML détectée, convertir les \n en <br>
+  if (initialHtml && !/<(br|p|div|span|h[1-6]|ul|ol|li|strong|em|b|i|a|img)\b/i.test(initialHtml)) {
+    initialHtml = initialHtml.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')
+  }
+
+  return '<div class="rich-editor">' +
+    '<div class="rich-toolbar">' +
+      '<button class="rich-btn" type="button" onclick="editorCmd(\'' + editorId + '\',\'bold\')" title="Gras (Ctrl+B)"><b>B</b></button>' +
+      '<button class="rich-btn" type="button" onclick="editorCmd(\'' + editorId + '\',\'italic\')" title="Italique (Ctrl+I)"><i>I</i></button>' +
+      '<button class="rich-btn" type="button" onclick="editorCmd(\'' + editorId + '\',\'underline\')" title="Souligné (Ctrl+U)"><u>U</u></button>' +
+      '<div class="rich-separator"></div>' +
+      '<button class="rich-btn" type="button" onclick="editorCmd(\'' + editorId + '\',\'insertUnorderedList\')" title="Liste à puces">•</button>' +
+      '<button class="rich-btn" type="button" onclick="editorCmd(\'' + editorId + '\',\'insertOrderedList\')" title="Liste numérotée">1.</button>' +
+      '<div class="rich-separator"></div>' +
+      '<button class="rich-btn" type="button" onclick="editorInsertLien(\'' + editorId + '\')" title="Lien">🔗</button>' +
+      '<button class="rich-btn" type="button" onclick="editorInsertImage(\'' + editorId + '\')" title="Image">📷</button>' +
+      '<div class="rich-separator"></div>' +
+      '<div class="var-insert">' +
+        '<button class="rich-btn" type="button" onclick="toggleVarMenu(\'' + editorId + '\')" title="Insérer une variable">{ }</button>' +
+        '<div class="var-insert-menu" id="varmenu-' + editorId + '">' +
+          '<button onclick="editorInsertVar(\'' + editorId + '\',\'{{prenom}}\')">{{prenom}}</button>' +
+          '<button onclick="editorInsertVar(\'' + editorId + '\',\'{{nom}}\')">{{nom}}</button>' +
+          '<button onclick="editorInsertVar(\'' + editorId + '\',\'{{societe}}\')">{{societe}}</button>' +
+          '<button onclick="editorInsertVar(\'' + editorId + '\',\'{{email}}\')">{{email}}</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="rich-separator"></div>' +
+      '<button class="rich-btn" type="button" onclick="editorCmd(\'' + editorId + '\',\'removeFormat\')" title="Effacer le formatage" style="font-size:11px">⌫</button>' +
+    '</div>' +
+    '<div class="rich-body" id="' + editorId + '" contenteditable="true" data-placeholder="Bonjour {{prenom}}, ..." oninput="editorOnInput(\'' + editorId + '\',' + etapeIdx + ')">' + initialHtml + '</div>' +
+  '</div>'
+}
+
+function editorCmd(editorId, cmd, value) {
+  const editor = document.getElementById(editorId)
+  if (!editor) return
+  editor.focus()
+  document.execCommand(cmd, false, value || null)
+  editorOnInput(editorId, parseInt(editorId.replace('etape-', '')))
+}
+
+function editorOnInput(editorId, etapeIdx) {
+  const editor = document.getElementById(editorId)
+  if (!editor) return
+  if (typeof etapeIdx === 'number' && !isNaN(etapeIdx)) {
+    majEtape(etapeIdx, 'corps', editor.innerHTML)
+  }
+}
+
+function editorInsertLien(editorId) {
+  const editor = document.getElementById(editorId)
+  if (!editor) return
+  editor.focus()
+  // Sauvegarder la sélection courante
+  const selection = window.getSelection()
+  const hasSelection = selection.toString().length > 0
+  const url = prompt('URL du lien :', 'https://')
+  if (!url) return
+  if (hasSelection) {
+    document.execCommand('createLink', false, url)
+  } else {
+    const texte = prompt('Texte du lien :', url) || url
+    document.execCommand('insertHTML', false, '<a href="' + url + '">' + texte + '</a>')
+  }
+  editorOnInput(editorId, parseInt(editorId.replace('etape-', '')))
+}
+
+function editorInsertImage(editorId) {
+  const editor = document.getElementById(editorId)
+  if (!editor) return
+  editor.focus()
+  const url = prompt('URL de l\'image (https://...) :', 'https://')
+  if (!url) return
+  document.execCommand('insertHTML', false, '<img src="' + url + '" style="max-width:100%;height:auto">')
+  editorOnInput(editorId, parseInt(editorId.replace('etape-', '')))
+}
+
+function editorInsertVar(editorId, varText) {
+  const editor = document.getElementById(editorId)
+  if (!editor) return
+  editor.focus()
+  document.execCommand('insertText', false, varText)
+  document.getElementById('varmenu-' + editorId).classList.remove('open')
+  editorOnInput(editorId, parseInt(editorId.replace('etape-', '')))
+}
+
+function toggleVarMenu(editorId) {
+  // Fermer les autres menus
+  document.querySelectorAll('.var-insert-menu').forEach(m => {
+    if (m.id !== 'varmenu-' + editorId) m.classList.remove('open')
+  })
+  const menu = document.getElementById('varmenu-' + editorId)
+  if (menu) menu.classList.toggle('open')
+}
+
+// Fermer le menu si on clique ailleurs
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.var-insert')) {
+    document.querySelectorAll('.var-insert-menu').forEach(m => m.classList.remove('open'))
+  }
+})
 
 
 // ═══ INITIALISATION ═══
