@@ -30,11 +30,50 @@ body {
 
 /* SIDEBAR */
 .sb {
-  width:240px; flex-shrink:0;
+  width:56px; flex-shrink:0;
   background:var(--w); border-right:1px solid var(--g100);
   display:flex; flex-direction:column;
-  overflow-y:auto;
+  overflow:hidden;
+  transition:width .25s ease;
+  position:relative;
 }
+.sb.expanded { width:240px; overflow-y:auto; }
+
+.sb-toggle {
+  position:absolute; top:12px; right:-12px;
+  width:24px; height:24px; border-radius:50%;
+  background:var(--w); border:1px solid var(--g200);
+  cursor:pointer; z-index:5;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; color:var(--g500);
+  box-shadow:var(--shadow);
+  transition:all .15s;
+}
+.sb-toggle:hover { color:var(--accent); border-color:var(--accent); }
+
+.sb:not(.expanded) .sb-conn-email,
+.sb:not(.expanded) .sb-conn-status span,
+.sb:not(.expanded) .sb-section,
+.sb:not(.expanded) .sb-item span:not(.sb-item-icon):not(.sb-item-badge),
+.sb:not(.expanded) .sb-logo-name,
+.sb:not(.expanded) .sb-tunnel-add { display:none; }
+
+.sb:not(.expanded) .sb-conn {
+  padding:8px; margin:8px;
+  display:flex; justify-content:center;
+}
+.sb:not(.expanded) .sb-conn-status { justify-content:center; }
+.sb:not(.expanded) .sb-item {
+  padding:10px 0; justify-content:center;
+  position:relative;
+}
+.sb:not(.expanded) .sb-item-icon { margin:0; }
+.sb:not(.expanded) .sb-item-badge {
+  position:absolute; top:6px; right:8px;
+  margin:0; min-width:18px; padding:1px 5px;
+  font-size:9px;
+}
+.sb:not(.expanded) .sb-logo { justify-content:center; padding:18px 0; }
 .sb-logo {
   padding:18px 20px; display:flex; align-items:center; gap:10px;
   border-bottom:1px solid var(--g100);
@@ -442,13 +481,106 @@ textarea.input { min-height:80px; resize:vertical; }
   display:flex; align-items:center; gap:10px;
   font-size:13px;
 }
+
+/* QUICK ADD FORM */
+.quick-add {
+  background:linear-gradient(135deg, #fef3ff 0%, #eef2ff 50%, #f0f9ff 100%);
+  border:2px solid var(--accent-l);
+  border-radius:var(--rl);
+  padding:24px;
+  margin-bottom:24px;
+  transition:all .2s;
+}
+.quick-add:focus-within {
+  border-color:var(--accent);
+  box-shadow:var(--shadow-glow);
+}
+.quick-add-title {
+  font-size:13px; font-weight:600; color:var(--accent-d);
+  margin-bottom:14px;
+  display:flex; align-items:center; gap:8px;
+}
+.quick-add-form {
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr 1.5fr auto auto;
+  gap:8px; align-items:end;
+}
+.quick-add-form .field { display:flex; flex-direction:column; gap:4px; }
+.quick-add-form .field label {
+  font-size:10px; font-weight:600; color:var(--g600);
+  text-transform:uppercase; letter-spacing:.4px;
+}
+.quick-add-form .field input,
+.quick-add-form .field select {
+  height:42px;
+  padding:0 12px;
+  border:1px solid var(--g200);
+  border-radius:var(--r);
+  font-size:13px; font-family:inherit;
+  background:var(--w);
+  outline:none;
+  transition:border-color .12s;
+}
+.quick-add-form .field input:focus,
+.quick-add-form .field select:focus { border-color:var(--accent); }
+.quick-add-form .btn-send {
+  height:42px;
+  padding:0 20px;
+  background:linear-gradient(135deg, var(--accent), var(--accent-d));
+  color:#fff;
+  border:none;
+  border-radius:var(--r);
+  font-weight:600; font-size:13px;
+  cursor:pointer;
+  display:flex; align-items:center; gap:6px;
+  transition:transform .12s, box-shadow .12s;
+  white-space:nowrap;
+}
+.quick-add-form .btn-send:hover {
+  transform:translateY(-1px);
+  box-shadow:0 4px 12px rgba(99,102,241,.4);
+}
+.quick-add-form .btn-send:active { transform:translateY(0); }
+.quick-add-bulk {
+  margin-top:12px; padding-top:12px;
+  border-top:1px solid var(--accent-l);
+  font-size:11px; color:var(--g500);
+  display:flex; align-items:center; gap:8px;
+}
+.quick-add-bulk a {
+  color:var(--accent); cursor:pointer; font-weight:500;
+}
+.quick-add-bulk a:hover { text-decoration:underline; }
+
+/* Animation success */
+@keyframes pop {
+  0% { transform:scale(1); }
+  50% { transform:scale(1.05); background:var(--green); }
+  100% { transform:scale(1); }
+}
+.quick-add-form .btn-send.success {
+  animation:pop .4s ease-out;
+  background:var(--green);
+}
+
+/* BULK MODAL */
+.bulk-textarea {
+  width:100%; min-height:200px;
+  padding:12px;
+  border:1px solid var(--g200);
+  border-radius:var(--r);
+  font-family:'JetBrains Mono', monospace;
+  font-size:12px;
+  resize:vertical;
+}
+
 </style>
 </head>
 <body>
 <div class="app">
 
 <!-- SIDEBAR -->
-<aside class="sb">
+<aside class="sb" id="sidebar"><div class="sb-toggle" onclick="toggleSidebar()" title="Réduire/agrandir">‹</div>
   <div class="sb-logo">
     <div class="sb-logo-icon">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l9 6 9-6"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
@@ -566,6 +698,32 @@ textarea.input { min-height:80px; resize:vertical; }
   </div>
 </main>
 </div>
+<!-- MODAL BULK ADD -->
+<div class="overlay" id="modalBulk" style="display:none">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Ajout en masse</div>
+        <div class="modal-sub">Collez une liste d'emails (un par ligne ou format CSV)</div>
+      </div>
+      <button class="close-btn" onclick="fermerModal('modalBulk')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="label">Tunnel cible</label>
+      <select class="input" id="bulkTunnelSel"></select>
+    </div>
+    <div class="form-group">
+      <label class="label">Liste de prospects</label>
+      <textarea class="bulk-textarea" id="bulkInput" placeholder="email@example.com&#10;autre@example.com&#10;email,Prénom,Nom,Société"></textarea>
+      <div style="font-size:11px;color:var(--g500);margin-top:6px">Format : email simple ou email,prénom,nom,société · un par ligne</div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px">
+      <button class="btn" onclick="fermerModal('modalBulk')">Annuler</button>
+      <button class="btn btn-primary" onclick="ajouterBulkProspects()">→ Ajouter au tunnel</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- MODAL CONNEXION -->
 <div class="overlay" id="modalConnexion" style="display:none">
@@ -1185,6 +1343,8 @@ function afficherVueEnsemble() {
   }
 
   let html = ''
+  // Quick-add en haut si des tunnels existent
+  if (S.tunnels.length > 0) html += renderQuickAddForm(S.tunnels[0].id)
   for (const tunnel of S.tunnels) {
     const ps = S.prospects.filter(p => p.tunnelId === tunnel.id)
     const actifs = ps.filter(p => !p.termine && !p.repandu).length
@@ -1238,14 +1398,8 @@ function afficherTunnel(tid) {
   const el = document.getElementById('contenu-tunnel')
   let html = ''
 
-  // DROP ZONE
-  html += '<div class="drop-zone" id="dropZone">' +
-    '<div class="drop-zone-title">📩 Glissez vos prospects dans le tunnel</div>' +
-    '<textarea class="drop-input" id="dropInput" placeholder="email@example.com&#10;autre@example.com&#10;email,Prénom,Nom,Société"></textarea>' +
-    '<div class="drop-actions">' +
-    '<div class="drop-hint">Format : email simple ou email,prénom,nom,société · un par ligne</div>' +
-    '<button class="btn btn-primary" onclick="ajouterProspectsAuTunnel()">→ Envoyer dans le tunnel</button>' +
-    '</div></div>'
+  // QUICK ADD FORM
+  html += renderQuickAddForm(tid)
 
   // VISUALISATION
   html += '<div class="tunnel-viz">' +
@@ -1332,7 +1486,164 @@ function afficherTunnel(tid) {
   el.innerHTML = html
 }
 
-// ═══ AJOUTER PROSPECTS AU TUNNEL ═══
+
+// ═══ QUICK ADD FORM ═══
+function renderQuickAddForm(currentTid) {
+  // Build tunnel dropdown
+  let tunOpts = ''
+  for (const t of S.tunnels) {
+    const sel = (t.id === currentTid) ? ' selected' : ''
+    tunOpts += '<option value="' + t.id + '"' + sel + '>' + escapeHtml(t.nom) + '</option>'
+  }
+  if (!tunOpts) tunOpts = '<option value="">Créez d\'abord un tunnel</option>'
+
+  return '<div class="quick-add" id="quickAdd">' +
+    '<div class="quick-add-title">⚡ Ajouter un prospect au tunnel</div>' +
+    '<div class="quick-add-form">' +
+      '<div class="field"><label>Email *</label><input type="email" id="qa-email" placeholder="prenom@entreprise.com" onkeypress="if(event.key===\'Enter\')ajoutRapideProspect()"></div>' +
+      '<div class="field"><label>Prénom</label><input type="text" id="qa-prenom" placeholder="Marie" onkeypress="if(event.key===\'Enter\')ajoutRapideProspect()"></div>' +
+      '<div class="field"><label>Nom</label><input type="text" id="qa-nom" placeholder="Dupont" onkeypress="if(event.key===\'Enter\')ajoutRapideProspect()"></div>' +
+      '<div class="field"><label>Société</label><input type="text" id="qa-societe" placeholder="Acme Corp" onkeypress="if(event.key===\'Enter\')ajoutRapideProspect()"></div>' +
+      '<div class="field"><label>Tunnel</label><select id="qa-tunnel">' + tunOpts + '</select></div>' +
+      '<button class="btn-send" id="qa-btn" onclick="ajoutRapideProspect()">→ Envoyer dans le tunnel</button>' +
+    '</div>' +
+    '<div class="quick-add-bulk">' +
+      '💡 Vous avez plusieurs emails ? <a onclick="ouvrirBulkAdd()">Ajouter en masse</a>' +
+    '</div>' +
+  '</div>'
+}
+
+function ajoutRapideProspect() {
+  const email = document.getElementById('qa-email').value.trim()
+  const prenom = document.getElementById('qa-prenom').value.trim()
+  const nom = document.getElementById('qa-nom').value.trim()
+  const societe = document.getElementById('qa-societe').value.trim()
+  const tunnelId = document.getElementById('qa-tunnel').value
+
+  if (!email) { alert('Entrez un email'); return }
+  if (!/.+@.+\..+/.test(email)) { alert('Email invalide'); return }
+  if (!tunnelId) { alert('Sélectionnez ou créez un tunnel'); return }
+  if (estBlackliste(email)) { alert('Cet email est dans la blacklist'); return }
+  if (S.prospects.some(p => p.tunnelId === tunnelId && p.email.toLowerCase() === email.toLowerCase())) {
+    alert('Ce prospect est déjà dans ce tunnel')
+    return
+  }
+
+  const tunnel = S.tunnels.find(t => t.id === tunnelId)
+  if (!tunnel || !tunnel.etapes || !tunnel.etapes.length) {
+    alert('Configurez d\'abord les étapes du tunnel')
+    return
+  }
+
+  const prospect = {
+    id: uid(),
+    email: email,
+    prenom: prenom,
+    nom: nom,
+    societe: societe,
+    tunnelId: tunnelId,
+    etapeCourante: 0,
+    prochainEnvoi: (tunnel.etapes[0].delaiVal || 0) === 0 ? isoMaint() : calculerProchainEnvoi(tunnel.etapes[0], new Date()),
+    historique: [],
+    repandu: false,
+    termine: false,
+    ajouteA: isoMaint()
+  }
+  S.prospects.push(prospect)
+  sauver()
+  ajouterJournal('✓ ' + email + ' ajouté au tunnel "' + tunnel.nom + '"', 'ok')
+
+  // Animation success
+  const btn = document.getElementById('qa-btn')
+  if (btn) {
+    btn.classList.add('success')
+    btn.textContent = '✓ Ajouté !'
+    setTimeout(() => {
+      btn.classList.remove('success')
+      btn.textContent = '→ Envoyer dans le tunnel'
+    }, 1200)
+  }
+
+  // Vider les champs
+  document.getElementById('qa-email').value = ''
+  document.getElementById('qa-prenom').value = ''
+  document.getElementById('qa-nom').value = ''
+  document.getElementById('qa-societe').value = ''
+  document.getElementById('qa-email').focus()
+
+  // Rafraîchir la vue du tunnel actif
+  rafraichirSidebarTunnels()
+  if (tunnelActifId === tunnelId) {
+    afficherTunnel(tunnelId)
+  } else {
+    afficherTunnelActif(tunnelId)
+  }
+
+  // Lancer envoi si connecté et étape 0 = immédiat
+  if (S.accessToken && (tunnel.etapes[0].delaiVal || 0) === 0) {
+    setTimeout(() => lancerEnvois(), 500)
+  }
+}
+
+function ouvrirBulkAdd() {
+  // Remplir dropdown
+  const sel = document.getElementById('bulkTunnelSel')
+  let opts = ''
+  for (const t of S.tunnels) {
+    const isCur = t.id === tunnelActifId ? ' selected' : ''
+    opts += '<option value="' + t.id + '"' + isCur + '>' + escapeHtml(t.nom) + '</option>'
+  }
+  if (!opts) opts = '<option value="">Aucun tunnel</option>'
+  sel.innerHTML = opts
+  document.getElementById('bulkInput').value = ''
+  document.getElementById('modalBulk').style.display = 'flex'
+}
+
+function ajouterBulkProspects() {
+  const tunnelId = document.getElementById('bulkTunnelSel').value
+  if (!tunnelId) { alert('Créez d\'abord un tunnel'); return }
+  const txt = document.getElementById('bulkInput').value.trim()
+  if (!txt) { alert('Collez au moins un email'); return }
+
+  const tunnel = S.tunnels.find(t => t.id === tunnelId)
+  if (!tunnel || !tunnel.etapes.length) { alert('Tunnel sans étapes'); return }
+
+  const lignes = txt.split('\n').map(l => l.trim()).filter(Boolean)
+  let nAjoutes = 0, nIgnores = 0
+
+  for (const ligne of lignes) {
+    const parts = ligne.split(/[,;\t]/).map(s => s.trim())
+    const email = parts[0]
+    if (!/.+@.+\..+/.test(email)) { nIgnores++; continue }
+    if (estBlackliste(email)) { nIgnores++; continue }
+    if (S.prospects.some(p => p.tunnelId === tunnelId && p.email.toLowerCase() === email.toLowerCase())) { nIgnores++; continue }
+
+    S.prospects.push({
+      id: uid(),
+      email: email,
+      prenom: parts[1] || '',
+      nom: parts[2] || '',
+      societe: parts[3] || '',
+      tunnelId: tunnelId,
+      etapeCourante: 0,
+      prochainEnvoi: (tunnel.etapes[0].delaiVal || 0) === 0 ? isoMaint() : calculerProchainEnvoi(tunnel.etapes[0], new Date()),
+      historique: [],
+      repandu: false,
+      termine: false,
+      ajouteA: isoMaint()
+    })
+    nAjoutes++
+  }
+
+  sauver()
+  ajouterJournal(nAjoutes + ' prospect' + (nAjoutes > 1 ? 's' : '') + ' ajouté' + (nAjoutes > 1 ? 's' : '') + (nIgnores > 0 ? ' (' + nIgnores + ' ignoré' + (nIgnores > 1 ? 's' : '') + ')' : ''), 'ok')
+  fermerModal('modalBulk')
+  rafraichirSidebarTunnels()
+  afficherTunnelActif(tunnelId)
+  if (S.accessToken) setTimeout(() => lancerEnvois(), 500)
+}
+
+// ═══ AJOUTER PROSPECTS AU TUNNEL (ancien, plus utilisé) ═══
 function ajouterProspectsAuTunnel() {
   const input = document.getElementById('dropInput')
   if (!input || !tunnelActifId) return
@@ -1695,6 +2006,34 @@ function effacerJournaux() {
   afficherJournaux()
 }
 
+
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar')
+  if (!sb) return
+  sb.classList.toggle('expanded')
+  const toggle = sb.querySelector('.sb-toggle')
+  if (toggle) toggle.textContent = sb.classList.contains('expanded') ? '‹' : '›'
+  try { localStorage.setItem('mailseq_sb_expanded', sb.classList.contains('expanded') ? '1' : '0') } catch(e){}
+}
+
+function restoreSidebarState() {
+  try {
+    const expanded = localStorage.getItem('mailseq_sb_expanded')
+    const sb = document.getElementById('sidebar')
+    if (sb) {
+      // Par défaut : réduite
+      if (expanded === '1') {
+        sb.classList.add('expanded')
+        const toggle = sb.querySelector('.sb-toggle')
+        if (toggle) toggle.textContent = '‹'
+      } else {
+        const toggle = sb.querySelector('.sb-toggle')
+        if (toggle) toggle.textContent = '›'
+      }
+    }
+  } catch(e){}
+}
+
 // ═══ INITIALISATION ═══
 (function init() {
   // Migration: ancien data model "msp_v3" → nouveau "mailseq_v2"
@@ -1715,6 +2054,7 @@ function effacerJournaux() {
     }
   } catch (e) {}
 
+  restoreSidebarState()
   // Afficher état connexion
   afficherStatutConnexion()
 
