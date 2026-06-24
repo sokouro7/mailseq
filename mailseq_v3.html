@@ -574,6 +574,105 @@ textarea.input { min-height:80px; resize:vertical; }
   resize:vertical;
 }
 
+
+/* MASS ADD MODAL */
+.mass-tabs {
+  display:flex; gap:4px; margin-bottom:18px;
+  border-bottom:1px solid var(--g100);
+}
+.mass-tab {
+  padding:10px 16px;
+  background:none; border:none;
+  font-family:inherit; font-size:13px; font-weight:500;
+  color:var(--g500); cursor:pointer;
+  border-bottom:2px solid transparent;
+  margin-bottom:-1px;
+}
+.mass-tab.active {
+  color:var(--accent); border-bottom-color:var(--accent);
+}
+.mass-tab-content { display:none; }
+.mass-tab-content.active { display:block; }
+
+/* Manual rows */
+.manual-row {
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr 1.5fr auto;
+  gap:6px; margin-bottom:6px;
+  align-items:center;
+}
+.manual-row input {
+  height:36px; padding:0 10px;
+  border:1px solid var(--g200); border-radius:6px;
+  font-size:12px; font-family:inherit; outline:none;
+}
+.manual-row input:focus { border-color:var(--accent); }
+.manual-row .remove-row {
+  width:32px; height:36px;
+  background:transparent; border:none;
+  color:var(--red); cursor:pointer;
+  font-size:16px; border-radius:6px;
+}
+.manual-row .remove-row:hover { background:var(--red-l); }
+
+.mass-footer {
+  margin-top:18px; padding-top:14px;
+  border-top:1px solid var(--g100);
+  display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end;
+}
+.mass-footer .field { display:flex; flex-direction:column; gap:4px; }
+.mass-footer .field label {
+  font-size:10px; font-weight:600; color:var(--g600);
+  text-transform:uppercase; letter-spacing:.4px;
+}
+.mass-footer input, .mass-footer select {
+  height:38px; padding:0 12px;
+  border:1px solid var(--g200); border-radius:6px;
+  font-size:13px; font-family:inherit; outline:none;
+}
+
+/* Excel import */
+.excel-step {
+  background:var(--g50);
+  border:1px solid var(--g100);
+  border-radius:var(--rm);
+  padding:14px 16px; margin-bottom:12px;
+}
+.excel-step-title {
+  font-size:12px; font-weight:600; color:var(--g700);
+  margin-bottom:8px;
+  display:flex; align-items:center; gap:8px;
+}
+.excel-step-num {
+  width:20px; height:20px; border-radius:50%;
+  background:var(--accent); color:#fff;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700;
+}
+.excel-preview {
+  max-height:200px; overflow:auto;
+  background:var(--w); border:1px solid var(--g200);
+  border-radius:6px; margin-top:8px;
+}
+.excel-preview table { width:100%; border-collapse:collapse; }
+.excel-preview th, .excel-preview td {
+  padding:6px 10px; font-size:11px;
+  border-bottom:1px solid var(--g100); text-align:left;
+}
+.excel-preview th {
+  background:var(--g50); font-weight:600;
+  color:var(--g600); position:sticky; top:0;
+}
+
+/* Tag in prospect row */
+.tag-badge {
+  display:inline-block;
+  padding:2px 8px; border-radius:10px;
+  background:var(--accent-l); color:var(--accent-d);
+  font-size:10px; font-weight:600;
+  margin-left:6px;
+}
+
 </style>
 </head>
 <body>
@@ -698,28 +797,56 @@ textarea.input { min-height:80px; resize:vertical; }
   </div>
 </main>
 </div>
-<!-- MODAL BULK ADD -->
+<!-- MODAL MASS ADD -->
 <div class="overlay" id="modalBulk" style="display:none">
   <div class="modal modal-lg">
     <div class="modal-header">
       <div>
-        <div class="modal-title">Ajout en masse</div>
-        <div class="modal-sub">Collez une liste d'emails (un par ligne ou format CSV)</div>
+        <div class="modal-title">Ajouter plusieurs prospects</div>
+        <div class="modal-sub">À la main ou via fichier Excel</div>
       </div>
       <button class="close-btn" onclick="fermerModal('modalBulk')">×</button>
     </div>
-    <div class="form-group">
-      <label class="label">Tunnel cible</label>
-      <select class="input" id="bulkTunnelSel"></select>
+
+    <div class="mass-tabs">
+      <button class="mass-tab active" data-tab="manuel" onclick="switchMassTab('manuel')">✏️ À la main</button>
+      <button class="mass-tab" data-tab="excel" onclick="switchMassTab('excel')">📥 Import Excel</button>
     </div>
-    <div class="form-group">
-      <label class="label">Liste de prospects</label>
-      <textarea class="bulk-textarea" id="bulkInput" placeholder="email@example.com&#10;autre@example.com&#10;email,Prénom,Nom,Société"></textarea>
-      <div style="font-size:11px;color:var(--g500);margin-top:6px">Format : email simple ou email,prénom,nom,société · un par ligne</div>
+
+    <!-- ONGLET MANUEL -->
+    <div class="mass-tab-content active" id="tab-manuel">
+      <div style="font-size:11px;color:var(--g500);margin-bottom:10px">Ajoutez vos prospects un par un, chaque champ dans sa bulle.</div>
+      <div id="manualRows"></div>
+      <button class="btn btn-sm" onclick="ajouterLigneManuel()" style="margin-top:6px">+ Ajouter une ligne</button>
     </div>
-    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px">
-      <button class="btn" onclick="fermerModal('modalBulk')">Annuler</button>
-      <button class="btn btn-primary" onclick="ajouterBulkProspects()">→ Ajouter au tunnel</button>
+
+    <!-- ONGLET EXCEL -->
+    <div class="mass-tab-content" id="tab-excel">
+      <div class="excel-step">
+        <div class="excel-step-title"><span class="excel-step-num">1</span> Téléchargez le template</div>
+        <button class="btn btn-sm" onclick="telechargerTemplateExcel()">📥 Télécharger MailSeq_template.xlsx</button>
+        <div style="font-size:11px;color:var(--g500);margin-top:6px">Colonnes : Email · Prénom · Nom · Société · Groupe</div>
+      </div>
+      <div class="excel-step">
+        <div class="excel-step-title"><span class="excel-step-num">2</span> Importez votre fichier rempli</div>
+        <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" onchange="chargerFichierExcel(this)" style="display:none">
+        <button class="btn" onclick="document.getElementById('excelFile').click()">📤 Choisir un fichier Excel ou CSV</button>
+        <div id="excelStatus" style="font-size:12px;color:var(--g600);margin-top:8px"></div>
+        <div id="excelPreview" class="excel-preview" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- FOOTER COMMUN -->
+    <div class="mass-footer">
+      <div class="field">
+        <label>Tunnel cible</label>
+        <select id="massTunnelSel"></select>
+      </div>
+      <div class="field">
+        <label>Groupe (optionnel)</label>
+        <input type="text" id="massGroupe" placeholder="Ex: BTP 2026, Salon Paris...">
+      </div>
+      <button class="btn btn-primary" onclick="envoyerMassDansTunnel()">→ Envoyer dans le tunnel</button>
     </div>
   </div>
 </div>
@@ -1471,7 +1598,7 @@ function afficherTunnel(tid) {
         '<span class="badge b-blue">actif</span>'
       const nomComplet = [p.prenom, p.nom].filter(Boolean).join(' ')
       html += '<tr>' +
-        '<td><div style="font-weight:500">' + escapeHtml(p.email) + '</div>' + (nomComplet ? '<div style="font-size:11px;color:var(--g500)">' + escapeHtml(nomComplet) + (p.societe ? ' · ' + escapeHtml(p.societe) : '') + '</div>' : '') + '</td>' +
+        '<td><div style="font-weight:500">' + escapeHtml(p.email) + '</div>' + (nomComplet || p.societe ? '<div style="font-size:11px;color:var(--g500)">' + escapeHtml(nomComplet) + (p.societe ? ' · ' + escapeHtml(p.societe) : '') + '</div>' : '') + (p.groupe ? '<span class="tag-badge">' + escapeHtml(p.groupe) + '</span>' : '') + '</td>' +
         '<td><span class="badge">' + (p.etapeCourante + 1) + '/' + tunnel.etapes.length + '</span></td>' +
         '<td>' + (p.repandu || p.termine ? '—' : fmtProchainEnvoi(p.prochainEnvoi)) + '</td>' +
         '<td>' + statut + '</td>' +
@@ -1585,19 +1712,211 @@ function ajoutRapideProspect() {
   }
 }
 
+let _excelData = null
+
 function ouvrirBulkAdd() {
-  // Remplir dropdown
-  const sel = document.getElementById('bulkTunnelSel')
+  // Remplir dropdown tunnels
+  const sel = document.getElementById('massTunnelSel')
   let opts = ''
   for (const t of S.tunnels) {
     const isCur = t.id === tunnelActifId ? ' selected' : ''
     opts += '<option value="' + t.id + '"' + isCur + '>' + escapeHtml(t.nom) + '</option>'
   }
-  if (!opts) opts = '<option value="">Aucun tunnel</option>'
+  if (!opts) opts = '<option value="">Aucun tunnel — créez-en un d\'abord</option>'
   sel.innerHTML = opts
-  document.getElementById('bulkInput').value = ''
+  document.getElementById('massGroupe').value = ''
+
+  // Reset manual
+  _manuelRows = [{email:'', prenom:'', nom:'', societe:''}]
+  rafraichirManuelRows()
+
+  // Reset excel
+  _excelData = null
+  document.getElementById('excelStatus').textContent = ''
+  document.getElementById('excelPreview').style.display = 'none'
+
+  // Onglet manuel par défaut
+  switchMassTab('manuel')
+
   document.getElementById('modalBulk').style.display = 'flex'
 }
+
+function switchMassTab(tab) {
+  document.querySelectorAll('.mass-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab))
+  document.querySelectorAll('.mass-tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab))
+}
+
+// ═══ MANUEL ROWS ═══
+let _manuelRows = [{email:'', prenom:'', nom:'', societe:''}]
+
+function rafraichirManuelRows() {
+  const el = document.getElementById('manualRows')
+  if (!el) return
+  let html = ''
+  _manuelRows.forEach((r, i) => {
+    html += '<div class="manual-row">' +
+      '<input type="email" placeholder="email@..." value="' + escapeHtml(r.email) + '" oninput="majManuelRow(' + i + ',\'email\',this.value)">' +
+      '<input type="text" placeholder="Prénom" value="' + escapeHtml(r.prenom) + '" oninput="majManuelRow(' + i + ',\'prenom\',this.value)">' +
+      '<input type="text" placeholder="Nom" value="' + escapeHtml(r.nom) + '" oninput="majManuelRow(' + i + ',\'nom\',this.value)">' +
+      '<input type="text" placeholder="Société" value="' + escapeHtml(r.societe) + '" oninput="majManuelRow(' + i + ',\'societe\',this.value)">' +
+      '<button class="remove-row" onclick="supprimerLigneManuel(' + i + ')" title="Supprimer">✕</button>' +
+      '</div>'
+  })
+  el.innerHTML = html
+}
+
+function majManuelRow(i, champ, val) {
+  if (_manuelRows[i]) _manuelRows[i][champ] = val
+}
+
+function ajouterLigneManuel() {
+  _manuelRows.push({email:'', prenom:'', nom:'', societe:''})
+  rafraichirManuelRows()
+  // Focus sur le nouveau champ email
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('#manualRows .manual-row input[type="email"]')
+    if (inputs.length) inputs[inputs.length-1].focus()
+  }, 50)
+}
+
+function supprimerLigneManuel(i) {
+  if (_manuelRows.length <= 1) {
+    _manuelRows = [{email:'', prenom:'', nom:'', societe:''}]
+  } else {
+    _manuelRows.splice(i, 1)
+  }
+  rafraichirManuelRows()
+}
+
+// ═══ EXCEL TEMPLATE ═══
+function telechargerTemplateExcel() {
+  if (typeof XLSX === 'undefined') { alert('Bibliothèque Excel non chargée'); return }
+  const data = [
+    ['Email', 'Prénom', 'Nom', 'Société', 'Groupe'],
+    ['marie.dupont@acme.com', 'Marie', 'Dupont', 'Acme Corp', 'BTP 2026'],
+    ['jean.martin@bigcorp.fr', 'Jean', 'Martin', 'BigCorp', 'BTP 2026'],
+    ['', '', '', '', '']
+  ]
+  const ws = XLSX.utils.aoa_to_sheet(data)
+  ws['!cols'] = [{wch:30},{wch:15},{wch:15},{wch:20},{wch:18}]
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Prospects')
+  XLSX.writeFile(wb, 'MailSeq_template.xlsx')
+  ajouterJournal('Template Excel téléchargé', 'info')
+}
+
+function chargerFichierExcel(input) {
+  const file = input.files[0]
+  if (!file) return
+  const status = document.getElementById('excelStatus')
+  status.textContent = 'Lecture de ' + file.name + '...'
+
+  const reader = new FileReader()
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result)
+      const wb = XLSX.read(data, {type:'array'})
+      const ws = wb.Sheets[wb.SheetNames[0]]
+      const json = XLSX.utils.sheet_to_json(ws, {defval:''})
+
+      if (!json.length) { status.textContent = '⚠ Fichier vide'; return }
+
+      // Détecter les colonnes (insensible casse + accents)
+      const norm = s => String(s||'').toLowerCase().replace(/[éèê]/g,'e').replace(/[^a-z0-9]/g,'')
+      _excelData = json.map(row => {
+        const out = {email:'', prenom:'', nom:'', societe:'', groupe:''}
+        for (const k of Object.keys(row)) {
+          const n = norm(k)
+          if (n === 'email' || n === 'mail' || n === 'adresseemail') out.email = String(row[k]).trim()
+          else if (n === 'prenom') out.prenom = String(row[k]).trim()
+          else if (n === 'nom' || n === 'lastname') out.nom = String(row[k]).trim()
+          else if (n === 'societe' || n === 'entreprise' || n === 'company') out.societe = String(row[k]).trim()
+          else if (n === 'groupe' || n === 'tag' || n === 'group') out.groupe = String(row[k]).trim()
+        }
+        return out
+      }).filter(r => r.email)
+
+      status.textContent = '✓ ' + _excelData.length + ' prospect' + (_excelData.length>1?'s':'') + ' détecté' + (_excelData.length>1?'s':'')
+
+      // Aperçu
+      const prev = document.getElementById('excelPreview')
+      let html = '<table><thead><tr><th>Email</th><th>Prénom</th><th>Nom</th><th>Société</th><th>Groupe</th></tr></thead><tbody>'
+      _excelData.slice(0,20).forEach(r => {
+        html += '<tr><td>' + escapeHtml(r.email) + '</td><td>' + escapeHtml(r.prenom) + '</td><td>' + escapeHtml(r.nom) + '</td><td>' + escapeHtml(r.societe) + '</td><td>' + escapeHtml(r.groupe) + '</td></tr>'
+      })
+      if (_excelData.length > 20) html += '<tr><td colspan="5" style="text-align:center;color:var(--g500)">... et ' + (_excelData.length-20) + ' autre(s)</td></tr>'
+      html += '</tbody></table>'
+      prev.innerHTML = html
+      prev.style.display = 'block'
+    } catch (err) {
+      status.textContent = '✗ Erreur : ' + err.message
+      _excelData = null
+    }
+  }
+  reader.readAsArrayBuffer(file)
+}
+
+// ═══ ENVOI MASSE ═══
+function envoyerMassDansTunnel() {
+  const tunnelId = document.getElementById('massTunnelSel').value
+  if (!tunnelId) { alert('Sélectionnez un tunnel'); return }
+  const tunnel = S.tunnels.find(t => t.id === tunnelId)
+  if (!tunnel || !tunnel.etapes.length) { alert('Tunnel sans étapes'); return }
+  const groupeDefaut = document.getElementById('massGroupe').value.trim()
+
+  // Détecter l\'onglet actif
+  const onglet = document.querySelector('.mass-tab.active').dataset.tab
+
+  let aTraiter = []
+  if (onglet === 'manuel') {
+    aTraiter = _manuelRows
+      .filter(r => r.email && /.+@.+\..+/.test(r.email))
+      .map(r => ({email:r.email, prenom:r.prenom, nom:r.nom, societe:r.societe, groupe:groupeDefaut}))
+  } else if (onglet === 'excel') {
+    if (!_excelData || !_excelData.length) { alert('Importez d\'abord un fichier'); return }
+    aTraiter = _excelData.map(r => ({
+      email:r.email, prenom:r.prenom, nom:r.nom, societe:r.societe,
+      groupe: r.groupe || groupeDefaut  // Excel groupe prioritaire, sinon défaut
+    }))
+  }
+
+  if (!aTraiter.length) { alert('Aucun prospect valide à ajouter'); return }
+
+  let nAjoutes = 0, nIgnores = 0
+  for (const r of aTraiter) {
+    const email = r.email.toLowerCase().trim()
+    if (!/.+@.+\..+/.test(email)) { nIgnores++; continue }
+    if (estBlackliste(email)) { nIgnores++; continue }
+    if (S.prospects.some(p => p.tunnelId === tunnelId && p.email.toLowerCase() === email)) { nIgnores++; continue }
+
+    S.prospects.push({
+      id: uid(),
+      email: r.email,
+      prenom: r.prenom || '',
+      nom: r.nom || '',
+      societe: r.societe || '',
+      groupe: r.groupe || '',
+      tunnelId: tunnelId,
+      etapeCourante: 0,
+      prochainEnvoi: (tunnel.etapes[0].delaiVal || 0) === 0 ? isoMaint() : calculerProchainEnvoi(tunnel.etapes[0], new Date()),
+      historique: [],
+      repandu: false,
+      termine: false,
+      ajouteA: isoMaint()
+    })
+    nAjoutes++
+  }
+
+  sauver()
+  ajouterJournal(nAjoutes + ' prospect' + (nAjoutes>1?'s':'') + ' ajouté' + (nAjoutes>1?'s':'') + (groupeDefaut?' (groupe: '+groupeDefaut+')':'') + (nIgnores>0?' · '+nIgnores+' ignoré'+(nIgnores>1?'s':''):''), 'ok')
+  fermerModal('modalBulk')
+  rafraichirSidebarTunnels()
+  afficherTunnelActif(tunnelId)
+  if (S.accessToken) setTimeout(() => lancerEnvois(), 500)
+}
+
+// Ancienne fonction conservée pour compat
+function ajouterBulkProspects() { envoyerMassDansTunnel() }
 
 function ajouterBulkProspects() {
   const tunnelId = document.getElementById('bulkTunnelSel').value
@@ -1710,7 +2029,7 @@ function voirProspect(pid) {
   const tunnel = S.tunnels.find(t => t.id === p.tunnelId)
 
   document.getElementById('prospectTitre').textContent = p.email
-  document.getElementById('prospectSub').textContent = [p.prenom, p.nom].filter(Boolean).join(' ') + (p.societe ? ' · ' + p.societe : '')
+  document.getElementById('prospectSub').textContent = [p.prenom, p.nom].filter(Boolean).join(' ') + (p.societe ? ' · ' + p.societe : '') + (p.groupe ? ' · 🏷 ' + p.groupe : '')
 
   const histo = (p.historique || []).map((h, i) => {
     const et = tunnel?.etapes[h.etape]
