@@ -3083,12 +3083,18 @@ function toggleVarMenu(editorId) {
   if (menu) menu.classList.toggle('open')
 }
 
-// Fermer le menu si on clique ailleurs
-document.addEventListener('click', function(e) {
-  if (!e.target.closest('.var-insert')) {
-    document.querySelectorAll('.var-insert-menu').forEach(m => m.classList.remove('open'))
-  }
-})
+// Fermer le menu si on clique ailleurs (sécurisé)
+function _setupVarMenuClose() {
+  try {
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      document.addEventListener('click', function(e) {
+        if (e.target && e.target.closest && !e.target.closest('.var-insert')) {
+          document.querySelectorAll('.var-insert-menu').forEach(m => m.classList.remove('open'))
+        }
+      })
+    }
+  } catch(e) {}
+}
 
 
 // ═══ INITIALISATION ═══
@@ -3111,6 +3117,7 @@ document.addEventListener('click', function(e) {
     }
   } catch (e) {}
 
+  _setupVarMenuClose()
   restoreTheme()
   restoreSidebarState()
   // Afficher état connexion
