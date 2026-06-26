@@ -1042,6 +1042,109 @@ body.dark .rich-toolbar { background:var(--g50); }
 }
 .var-insert-menu button:hover { background:var(--accent-l); color:var(--accent); }
 
+
+/* === GROUPES & PROSPECTS PAGE === */
+.groups-tabs {
+  display:flex; gap:4px; margin-bottom:18px;
+  border-bottom:1px solid var(--g100);
+}
+.groups-tab {
+  padding:10px 16px;
+  background:none; border:none;
+  font-family:inherit; font-size:13px; font-weight:500;
+  color:var(--g500); cursor:pointer;
+  border-bottom:2px solid transparent;
+  margin-bottom:-1px;
+}
+.groups-tab.active {
+  color:var(--accent); border-bottom-color:var(--accent);
+}
+.groups-tab-content { display:none; }
+.groups-tab-content.active { display:block; }
+
+.group-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
+  gap:14px;
+}
+.group-card {
+  background:var(--w);
+  border:1px solid var(--g100);
+  border-radius:var(--rm);
+  padding:16px;
+  cursor:pointer;
+  transition:all .15s;
+  box-shadow:var(--shadow);
+}
+.group-card:hover {
+  border-color:var(--accent);
+  transform:translateY(-1px);
+  box-shadow:var(--shadow-md);
+}
+.group-card-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:10px;
+}
+.group-card-name {
+  font-size:14px; font-weight:600; color:var(--g900);
+  display:flex; align-items:center; gap:6px;
+}
+.group-card-stats {
+  font-size:11px; color:var(--g500);
+}
+.group-card-stats strong { color:var(--accent); }
+.group-card-actions {
+  display:flex; gap:6px; margin-top:10px;
+  padding-top:10px; border-top:1px solid var(--g100);
+}
+
+.prospects-filter-bar {
+  display:flex; gap:8px; align-items:center;
+  margin-bottom:14px; flex-wrap:wrap;
+}
+.prospects-filter-bar select, .prospects-filter-bar input {
+  height:34px; padding:0 10px;
+  border:1px solid var(--g200); border-radius:var(--r);
+  font-size:12px; font-family:inherit;
+  background:var(--w); outline:none;
+}
+
+.group-create-card {
+  background:linear-gradient(135deg, var(--accent-l), var(--w));
+  border:2px dashed var(--accent);
+  border-radius:var(--rm);
+  padding:24px; text-align:center;
+  cursor:pointer;
+  display:flex; flex-direction:column; justify-content:center;
+  min-height:140px;
+  transition:all .15s;
+}
+.group-create-card:hover {
+  background:var(--accent);
+  color:#fff;
+}
+.group-create-card .icon { font-size:24px; margin-bottom:6px; }
+.group-create-card .label { font-size:13px; font-weight:600; }
+
+/* Import groupe modal */
+.import-group-list {
+  max-height:300px; overflow-y:auto;
+  border:1px solid var(--g100);
+  border-radius:var(--r);
+  padding:6px;
+}
+.import-group-item {
+  display:flex; align-items:center;
+  padding:10px;
+  border-radius:6px;
+  cursor:pointer;
+  transition:background .12s;
+}
+.import-group-item:hover { background:var(--g50); }
+.import-group-item input[type="radio"] { margin-right:10px; }
+.import-group-item-name { font-weight:500; flex:1; }
+.import-group-item-count { font-size:11px; color:var(--g500); }
+
 </style>
 </head>
 <body>
@@ -1074,6 +1177,13 @@ body.dark .rich-toolbar { background:var(--g50); }
   <div class="sb-section">Mes tunnels</div>
   <div id="sb-tunnels"></div>
   <div class="sb-tunnel-add" onclick="creerNouveauTunnel()">+ nouveau tunnel</div>
+
+  <div class="sb-section">Prospects</div>
+  <div class="sb-item" data-page="prospects" onclick="aller('prospects', this)">
+    <span class="sb-item-icon">👥</span>
+    <span>Tous & groupes</span>
+    <span class="sb-item-badge" id="badge-prospects">0</span>
+  </div>
 
   <div class="theme-toggle" onclick="toggleTheme()" title="Mode clair/sombre">
     <span class="theme-toggle-icon" id="themeIcon">🌙</span>
@@ -1161,6 +1271,18 @@ body.dark .rich-toolbar { background:var(--g50); }
     </div>
   </div>
 
+  <!-- PROSPECTS -->
+  <div id="page-prospects" class="page">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Prospects</div>
+        <div class="topbar-sub" id="prospects-sub"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="creerNouveauGroupe()">+ nouveau groupe</button>
+    </div>
+    <div class="content" id="contenu-prospects"></div>
+  </div>
+
   <!-- JOURNAUX -->
   <div id="page-journaux" class="page">
     <div class="topbar">
@@ -1171,6 +1293,45 @@ body.dark .rich-toolbar { background:var(--g50); }
   </div>
 </main>
 </div>
+<!-- MODAL NOUVEAU GROUPE -->
+<div class="overlay" id="modalGroupe" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="groupeModalTitre">Nouveau groupe</div>
+        <div class="modal-sub">Créez un groupe pour organiser vos prospects</div>
+      </div>
+      <button class="close-btn" onclick="fermerModal('modalGroupe')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="label">Nom du groupe</label>
+      <input class="input" id="groupeNomInput" placeholder="Ex: BTP 2026, Salon Paris...">
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+      <button class="btn" onclick="fermerModal('modalGroupe')">Annuler</button>
+      <button class="btn btn-primary" onclick="sauverGroupe()">Créer le groupe</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IMPORT GROUPE -->
+<div class="overlay" id="modalImportGroupe" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Importer un groupe de prospects</div>
+        <div class="modal-sub">Sélectionnez un groupe à importer dans ce tunnel</div>
+      </div>
+      <button class="close-btn" onclick="fermerModal('modalImportGroupe')">×</button>
+    </div>
+    <div class="import-group-list" id="importGroupList"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+      <button class="btn" onclick="fermerModal('modalImportGroupe')">Annuler</button>
+      <button class="btn btn-primary" onclick="importerGroupeDansTunnel()">→ Importer dans le tunnel</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL MASS ADD -->
 <div class="overlay" id="modalBulk" style="display:none">
   <div class="modal modal-lg">
@@ -1298,6 +1459,16 @@ body.dark .rich-toolbar { background:var(--g50); }
     <div class="form-group">
       <label class="label">Nom du tunnel</label>
       <input class="input" id="tunnelNom" placeholder="Ex: Démo Weclosed">
+    </div>
+    <div class="form-group">
+      <label class="label">Groupe de prospects associé (optionnel)</label>
+      <input class="input" id="tunnelGroupeNom" placeholder="Ex: BTP 2026 — laisser vide pour mode one-shot">
+      <div style="font-size:11px;color:var(--g500);margin-top:4px">Si renseigné, les prospects ajoutés à ce tunnel seront automatiquement taggés avec ce groupe.</div>
+    </div>
+    <div class="form-group" id="importGroupSection" style="display:none">
+      <label class="label">Importer rapidement des prospects</label>
+      <button class="btn btn-sm" onclick="ouvrirImportGroupe()">📥 Importer depuis un groupe existant</button>
+      <div style="font-size:11px;color:var(--g500);margin-top:4px">Tous les prospects du groupe entreront dans le tunnel d'un coup.</div>
     </div>
     <div class="form-group">
       <label class="label">Étapes</label>
@@ -1429,6 +1600,8 @@ function interp(tpl, prospect) {
 function mettreAJourBadges() {
   const blEl = document.getElementById('badge-blacklist')
   if (blEl) blEl.textContent = (S.blacklist || []).length
+  const psEl = document.getElementById('badge-prospects')
+  if (psEl) psEl.textContent = S.prospects.length
 
   // Update tunnel badges in sidebar
   document.querySelectorAll('.sb-tunnel-badge').forEach(el => {
@@ -1752,14 +1925,20 @@ async function verifierReponses() {
 
   try {
     const prospectsActifs = {}
-    S.prospects.filter(p => !p.repandu && p.etapeCourante > 0 && !p.termine).forEach(p => {
-      prospectsActifs[p.email.toLowerCase()] = p
+    // Inclure tous les prospects qui ont reçu au moins un email (historique non vide)
+    // PAS p.etapeCourante > 0 car après envoi étape 0, etapeCourante passe à 1 mais on doit toujours surveiller
+    S.prospects.filter(p => !p.repandu && p.historique && p.historique.length > 0).forEach(p => {
+      prospectsActifs[p.email.toLowerCase().trim()] = p
     })
-    if (!Object.keys(prospectsActifs).length) return
+    if (!Object.keys(prospectsActifs).length) {
+      ajouterJournal('Synchronisation : aucun prospect à surveiller', 'info')
+      return
+    }
+    ajouterJournal('Synchronisation : ' + Object.keys(prospectsActifs).length + ' prospect(s) surveillé(s)', 'info')
 
     let messages = []
     if (S.provider === 'google') {
-      const r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?q=in:inbox+is:unread&maxResults=50', { headers: { Authorization: 'Bearer ' + S.accessToken } })
+      const r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?q=in:inbox&maxResults=50', { headers: { Authorization: 'Bearer ' + S.accessToken } })
       if (r.status === 401) { S.accessToken = null; sauver(); afficherStatutConnexion(); return }
       const data = await r.json()
       const ids = (data.messages || []).slice(0, 30)
@@ -1792,7 +1971,12 @@ async function verifierReponses() {
       if (!p) continue
       if (p.repandu) continue
       const dernierEnvoi = p.historique && p.historique.length ? p.historique[p.historique.length - 1].envoyeA : null
-      if (dernierEnvoi && new Date(msg.receivedDateTime) < new Date(dernierEnvoi)) continue
+      if (dernierEnvoi) {
+        const tDernierEnvoi = new Date(dernierEnvoi).getTime()
+        const tMsg = new Date(msg.receivedDateTime).getTime()
+        // Tolérance 1 minute (cas où la réponse est avant l'envoi à cause de décalages d'horloge)
+        if (tMsg < tDernierEnvoi - 60000) continue
+      }
       p.repandu = true
       p.termine = true
       p.prochainEnvoi = null
@@ -1829,6 +2013,7 @@ function aller(page, el) {
   else if (page === 'blacklist') afficherBlacklist()
   else if (page === 'signature') chargerSignature()
   else if (page === 'journaux') afficherJournaux()
+  else if (page === 'prospects') afficherProspects()
 }
 
 function afficherTunnelActif(tid) {
@@ -2009,6 +2194,7 @@ function ajoutRapideProspect() {
     prenom: prenom,
     nom: nom,
     societe: societe,
+    groupe: tunnel.groupeDefault || null,
     tunnelId: tunnelId,
     etapeCourante: 0,
     prochainEnvoi: (tunnel.etapes[0].delaiVal || 0) === 0 ? isoMaint() : calculerProchainEnvoi(tunnel.etapes[0], new Date()),
@@ -2238,7 +2424,7 @@ function envoyerMassDansTunnel() {
       prenom: r.prenom || '',
       nom: r.nom || '',
       societe: r.societe || '',
-      groupe: r.groupe || '',
+      groupe: r.groupe || tunnel.groupeDefault || null,
       tunnelId: tunnelId,
       etapeCourante: 0,
       prochainEnvoi: (tunnel.etapes[0].delaiVal || 0) === 0 ? isoMaint() : calculerProchainEnvoi(tunnel.etapes[0], new Date()),
@@ -2456,6 +2642,10 @@ let _editingEtapes = []
 
 function creerNouveauTunnel() {
   _editingTunnelId = null
+  document.getElementById('tunnelGroupeNom').value = ''
+  // Masquer la section import (car le tunnel n'existe pas encore)
+  const imp = document.getElementById('importGroupSection')
+  if (imp) imp.style.display = 'none'
   _editingEtapes = [
     { delaiVal: 0, delaiUnite: 'jours', sujet: 'Bonjour {{prenom}}', corps: 'Bonjour {{prenom}},\n\nVotre message ici...', condition: 'pas_de_reponse', heureEnvoi: '' },
     { delaiVal: 3, delaiUnite: 'jours', heureEnvoi: '12:00', sujet: 'Re: Bonjour {{prenom}}', corps: 'Bonjour {{prenom}},\n\nJe me permets de revenir vers vous...', condition: 'pas_de_reponse' },
@@ -2475,6 +2665,10 @@ function ouvrirConfigTunnel() {
   _editingEtapes = JSON.parse(JSON.stringify(tunnel.etapes))
   document.getElementById('tunnelModalTitre').textContent = 'Modifier : ' + tunnel.nom
   document.getElementById('tunnelNom').value = tunnel.nom
+  document.getElementById('tunnelGroupeNom').value = tunnel.groupeDefault || ''
+  // Afficher la section import groupe (seulement quand on modifie un tunnel existant)
+  const imp = document.getElementById('importGroupSection')
+  if (imp) imp.style.display = 'block'
   rafraichirEtapes()
   document.getElementById('modalTunnel').style.display = 'flex'
 }
@@ -2551,14 +2745,27 @@ function sauverTunnel() {
   const nom = document.getElementById('tunnelNom').value.trim()
   if (!nom) { alert('Donnez un nom au tunnel'); return }
   if (!_editingEtapes.length) { alert('Au moins une étape requise'); return }
+  const groupeDefault = document.getElementById('tunnelGroupeNom').value.trim() || null
 
   if (_editingTunnelId) {
     const t = S.tunnels.find(x => x.id === _editingTunnelId)
-    if (t) { t.nom = nom; t.etapes = JSON.parse(JSON.stringify(_editingEtapes)) }
+    if (t) {
+      t.nom = nom
+      t.etapes = JSON.parse(JSON.stringify(_editingEtapes))
+      t.groupeDefault = groupeDefault
+    }
   } else {
-    const newT = { id: uid(), nom: nom, etapes: JSON.parse(JSON.stringify(_editingEtapes)), creee: isoMaint() }
+    const newT = { id: uid(), nom: nom, etapes: JSON.parse(JSON.stringify(_editingEtapes)), creee: isoMaint(), groupeDefault: groupeDefault }
     S.tunnels.push(newT)
     _editingTunnelId = newT.id
+  }
+
+  // Si nouveau groupe, l'enregistrer dans S.groupes pour qu'il apparaisse même sans prospects
+  if (groupeDefault) {
+    if (!S.groupes) S.groupes = []
+    if (!S.groupes.some(g => g.nom === groupeDefault)) {
+      S.groupes.push({ nom: groupeDefault, creee: isoMaint() })
+    }
   }
   sauver()
   ajouterJournal('Tunnel "' + nom + '" sauvegardé', 'ok')
@@ -2808,9 +3015,12 @@ function soumettreInlineForm(tid) {
   const tunnel = S.tunnels.find(t => t.id === tid)
   if (!tunnel) return
 
+  // Récupérer le groupe par défaut du tunnel
+  const groupeDefault = tunnel.groupeDefault || null
   S.prospects.push({
     id: uid(),
     email: email, prenom: prenom, nom: nom, societe: societe,
+    groupe: groupeDefault,
     tunnelId: tid, etapeCourante: 0,
     prochainEnvoi: (tunnel.etapes[0].delaiVal || 0) === 0 ? isoMaint() : calculerProchainEnvoi(tunnel.etapes[0], new Date()),
     historique: [], repandu: false, termine: false,
@@ -3094,6 +3304,290 @@ function _setupVarMenuClose() {
       })
     }
   } catch(e) {}
+}
+
+
+
+// ═══ GROUPES DE PROSPECTS ═══
+
+// Helper : récupérer la liste des groupes uniques
+function listeGroupes() {
+  const groupes = {}
+  // Groupes formels (S.groupes pour ceux créés sans prospects encore)
+  if (S.groupes) {
+    for (const g of S.groupes) groupes[g.nom] = { nom: g.nom, count: 0 }
+  }
+  // Comptage des prospects par groupe
+  for (const p of S.prospects) {
+    if (p.groupe) {
+      if (!groupes[p.groupe]) groupes[p.groupe] = { nom: p.groupe, count: 0 }
+      groupes[p.groupe].count++
+    }
+  }
+  return Object.values(groupes).sort((a, b) => b.count - a.count)
+}
+
+// ─── Affichage page Prospects ───
+function afficherProspects() {
+  const el = document.getElementById('contenu-prospects')
+  if (!el) return
+  // Init S.groupes si pas existant
+  if (!S.groupes) S.groupes = []
+  if (!window._prospectsTab) window._prospectsTab = 'groupes'
+
+  const groupes = listeGroupes()
+  const nbProspectsAvecGroupe = S.prospects.filter(p => p.groupe).length
+  const nbProspectsSansGroupe = S.prospects.filter(p => !p.groupe).length
+  document.getElementById('prospects-sub').textContent =
+    S.prospects.length + ' prospect' + (S.prospects.length > 1 ? 's' : '') + ' · ' +
+    groupes.length + ' groupe' + (groupes.length > 1 ? 's' : '')
+
+  // Tabs
+  let html = '<div class="groups-tabs">' +
+    '<button class="groups-tab' + (window._prospectsTab === 'groupes' ? ' active' : '') + '" onclick="switchProspectsTab(\'groupes\')">🏷 Groupes (' + groupes.length + ')</button>' +
+    '<button class="groups-tab' + (window._prospectsTab === 'tous' ? ' active' : '') + '" onclick="switchProspectsTab(\'tous\')">👥 Tous les prospects (' + S.prospects.length + ')</button>' +
+    '</div>'
+
+  // === Onglet GROUPES ===
+  html += '<div class="groups-tab-content' + (window._prospectsTab === 'groupes' ? ' active' : '') + '" id="ptab-groupes">'
+  html += '<div class="group-grid">'
+
+  // Carte "Nouveau groupe"
+  html += '<div class="group-create-card" onclick="creerNouveauGroupe()">' +
+    '<div class="icon">➕</div>' +
+    '<div class="label">Créer un nouveau groupe</div>' +
+    '</div>'
+
+  // Carte "Sans groupe" si y a des prospects sans groupe
+  if (nbProspectsSansGroupe > 0) {
+    html += '<div class="group-card" onclick="voirGroupe(\'__sans_groupe__\')">' +
+      '<div class="group-card-header">' +
+      '<div class="group-card-name">📂 Sans groupe</div>' +
+      '<span class="badge">' + nbProspectsSansGroupe + '</span>' +
+      '</div>' +
+      '<div class="group-card-stats"><strong>' + nbProspectsSansGroupe + '</strong> prospects non taggés</div>' +
+      '</div>'
+  }
+
+  for (const g of groupes) {
+    html += '<div class="group-card">' +
+      '<div class="group-card-header">' +
+      '<div class="group-card-name" onclick="voirGroupe(\'' + escapeAttr(g.nom) + '\')">🏷 ' + escapeHtml(g.nom) + '</div>' +
+      '<span class="badge b-blue">' + g.count + '</span>' +
+      '</div>' +
+      '<div class="group-card-stats" onclick="voirGroupe(\'' + escapeAttr(g.nom) + '\')"><strong>' + g.count + '</strong> prospect' + (g.count > 1 ? 's' : '') + '</div>' +
+      '<div class="group-card-actions">' +
+      '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();voirGroupe(\'' + escapeAttr(g.nom) + '\')">👁 voir</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();renommerGroupe(\'' + escapeAttr(g.nom) + '\')">✏️ renommer</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();supprimerGroupe(\'' + escapeAttr(g.nom) + '\')" style="color:var(--red)">🗑</button>' +
+      '</div></div>'
+  }
+
+  html += '</div></div>'
+
+  // === Onglet TOUS LES PROSPECTS ===
+  html += '<div class="groups-tab-content' + (window._prospectsTab === 'tous' ? ' active' : '') + '" id="ptab-tous">'
+
+  // Filtres
+  const filterGroupe = window._prospectsFilterGroupe || ''
+  const filterTunnel = window._prospectsFilterTunnel || ''
+  const filterSearch = window._prospectsFilterSearch || ''
+
+  let groupesOpts = '<option value="">Tous les groupes</option>'
+  for (const g of groupes) groupesOpts += '<option value="' + escapeAttr(g.nom) + '"' + (filterGroupe === g.nom ? ' selected' : '') + '>🏷 ' + escapeHtml(g.nom) + '</option>'
+  if (nbProspectsSansGroupe > 0) groupesOpts += '<option value="__sans_groupe__"' + (filterGroupe === '__sans_groupe__' ? ' selected' : '') + '>📂 Sans groupe</option>'
+
+  let tunnelsOpts = '<option value="">Tous les tunnels</option>'
+  for (const t of S.tunnels) tunnelsOpts += '<option value="' + t.id + '"' + (filterTunnel === t.id ? ' selected' : '') + '>🎯 ' + escapeHtml(t.nom) + '</option>'
+
+  html += '<div class="prospects-filter-bar">' +
+    '<select onchange="window._prospectsFilterGroupe=this.value;afficherProspects()">' + groupesOpts + '</select>' +
+    '<select onchange="window._prospectsFilterTunnel=this.value;afficherProspects()">' + tunnelsOpts + '</select>' +
+    '<input type="text" placeholder="🔍 Rechercher..." value="' + escapeAttr(filterSearch) + '" oninput="window._prospectsFilterSearch=this.value;clearTimeout(window._fsT);window._fsT=setTimeout(()=>afficherProspects(),300)" style="flex:1;min-width:200px">' +
+    '<button class="btn btn-sm" onclick="window._prospectsFilterGroupe=\'\';window._prospectsFilterTunnel=\'\';window._prospectsFilterSearch=\'\';afficherProspects()">✕ effacer filtres</button>' +
+    '</div>'
+
+  // Filter prospects
+  let ps = S.prospects.slice()
+  if (filterGroupe === '__sans_groupe__') ps = ps.filter(p => !p.groupe)
+  else if (filterGroupe) ps = ps.filter(p => p.groupe === filterGroupe)
+  if (filterTunnel) ps = ps.filter(p => p.tunnelId === filterTunnel)
+  if (filterSearch) {
+    const s = filterSearch.toLowerCase()
+    ps = ps.filter(p =>
+      (p.email || '').toLowerCase().includes(s) ||
+      (p.prenom || '').toLowerCase().includes(s) ||
+      (p.nom || '').toLowerCase().includes(s) ||
+      (p.societe || '').toLowerCase().includes(s)
+    )
+  }
+
+  if (ps.length === 0) {
+    html += '<div class="empty" style="padding:40px"><div class="empty-icon">📭</div><div class="empty-title">Aucun prospect</div><p>Ajoutez des prospects à un tunnel pour les voir apparaître ici</p></div>'
+  } else {
+    html += '<div class="prospects-list" style="margin-top:0"><table class="prospects-table">'
+    html += '<thead><tr><th>Email</th><th>Nom</th><th>Société</th><th>Groupe</th><th>Tunnel</th><th>Statut</th><th></th></tr></thead><tbody>'
+    for (const p of ps) {
+      const tunnel = S.tunnels.find(t => t.id === p.tunnelId)
+      const nomComplet = [p.prenom, p.nom].filter(Boolean).join(' ')
+      const statut = p.repandu ? '<span class="badge b-green">répondu</span>' :
+        p.termine ? '<span class="badge b-amber">terminé</span>' :
+        '<span class="badge b-blue">étape ' + (p.etapeCourante + 1) + '</span>'
+      html += '<tr>' +
+        '<td style="font-family:monospace;font-size:11.5px">' + escapeHtml(p.email) + '</td>' +
+        '<td>' + escapeHtml(nomComplet || '—') + '</td>' +
+        '<td>' + escapeHtml(p.societe || '—') + '</td>' +
+        '<td>' + (p.groupe ? '<span class="tag-badge">' + escapeHtml(p.groupe) + '</span>' : '—') + '</td>' +
+        '<td>' + (tunnel ? '🎯 ' + escapeHtml(tunnel.nom) : '—') + '</td>' +
+        '<td>' + statut + '</td>' +
+        '<td><button class="btn btn-ghost btn-sm" onclick="voirProspect(\'' + p.id + '\')">voir</button></td>' +
+        '</tr>'
+    }
+    html += '</tbody></table></div>'
+  }
+
+  html += '</div>'
+
+  el.innerHTML = html
+}
+
+function switchProspectsTab(tab) {
+  window._prospectsTab = tab
+  afficherProspects()
+}
+
+function escapeAttr(s) { return String(s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;') }
+
+// ─── Voir un groupe (filtre vers l'onglet "tous") ───
+function voirGroupe(nomGroupe) {
+  window._prospectsTab = 'tous'
+  window._prospectsFilterGroupe = nomGroupe
+  window._prospectsFilterTunnel = ''
+  window._prospectsFilterSearch = ''
+  afficherProspects()
+}
+
+// ─── Créer / Renommer / Supprimer groupes ───
+let _editingGroupeNom = null
+function creerNouveauGroupe() {
+  _editingGroupeNom = null
+  document.getElementById('groupeModalTitre').textContent = 'Nouveau groupe'
+  document.getElementById('groupeNomInput').value = ''
+  document.getElementById('modalGroupe').style.display = 'flex'
+  setTimeout(() => document.getElementById('groupeNomInput').focus(), 100)
+}
+
+function renommerGroupe(nomActuel) {
+  _editingGroupeNom = nomActuel
+  document.getElementById('groupeModalTitre').textContent = 'Renommer le groupe'
+  document.getElementById('groupeNomInput').value = nomActuel
+  document.getElementById('modalGroupe').style.display = 'flex'
+  setTimeout(() => document.getElementById('groupeNomInput').focus(), 100)
+}
+
+function sauverGroupe() {
+  const nouveauNom = document.getElementById('groupeNomInput').value.trim()
+  if (!nouveauNom) { alert('Entrez un nom'); return }
+
+  if (!S.groupes) S.groupes = []
+
+  if (_editingGroupeNom) {
+    // Renommage : update tous les prospects avec ce groupe
+    for (const p of S.prospects) {
+      if (p.groupe === _editingGroupeNom) p.groupe = nouveauNom
+    }
+    // Update S.groupes aussi
+    const g = S.groupes.find(g => g.nom === _editingGroupeNom)
+    if (g) g.nom = nouveauNom
+    ajouterJournal('Groupe "' + _editingGroupeNom + '" renommé en "' + nouveauNom + '"', 'ok')
+  } else {
+    // Nouveau groupe : juste l'ajouter dans S.groupes (existera dans la liste même sans prospects)
+    if (!S.groupes.some(g => g.nom === nouveauNom)) {
+      S.groupes.push({ nom: nouveauNom, creee: isoMaint() })
+    }
+    ajouterJournal('Groupe "' + nouveauNom + '" créé', 'ok')
+  }
+
+  _editingGroupeNom = null
+  sauver()
+  fermerModal('modalGroupe')
+  afficherProspects()
+}
+
+function supprimerGroupe(nomGroupe) {
+  const count = S.prospects.filter(p => p.groupe === nomGroupe).length
+  if (!confirm('Supprimer le groupe "' + nomGroupe + '" ?\n\n' + count + ' prospect(s) seront détaggués (ils ne sont PAS supprimés, juste sans groupe).')) return
+  // Détag les prospects
+  for (const p of S.prospects) {
+    if (p.groupe === nomGroupe) delete p.groupe
+  }
+  // Retirer de S.groupes
+  if (S.groupes) S.groupes = S.groupes.filter(g => g.nom !== nomGroupe)
+  sauver()
+  ajouterJournal('Groupe "' + nomGroupe + '" supprimé', 'warn')
+  afficherProspects()
+}
+
+// ─── Import groupe dans tunnel (depuis modal tunnel) ───
+let _importGroupeSelected = null
+function ouvrirImportGroupe() {
+  const groupes = listeGroupes()
+  const el = document.getElementById('importGroupList')
+  if (groupes.length === 0) {
+    el.innerHTML = '<div class="empty" style="padding:20px"><div class="empty-title">Aucun groupe disponible</div><p>Créez d\'abord un groupe dans la section Prospects</p></div>'
+  } else {
+    el.innerHTML = groupes.map(g =>
+      '<label class="import-group-item">' +
+        '<input type="radio" name="impGroupe" value="' + escapeAttr(g.nom) + '" onchange="_importGroupeSelected=this.value">' +
+        '<span class="import-group-item-name">🏷 ' + escapeHtml(g.nom) + '</span>' +
+        '<span class="import-group-item-count">' + g.count + ' prospect' + (g.count > 1 ? 's' : '') + '</span>' +
+      '</label>'
+    ).join('')
+  }
+  _importGroupeSelected = null
+  document.getElementById('modalImportGroupe').style.display = 'flex'
+}
+
+function importerGroupeDansTunnel() {
+  if (!_importGroupeSelected) { alert('Sélectionnez un groupe'); return }
+  // Récupérer tous les prospects de ce groupe
+  const psSource = S.prospects.filter(p => p.groupe === _importGroupeSelected)
+  if (!psSource.length) { alert('Aucun prospect dans ce groupe'); return }
+
+  // _editingTunnelId est l'id du tunnel en édition
+  const tunnelCible = _editingTunnelId
+  if (!tunnelCible) { alert('Sauvegardez d\'abord le tunnel'); return }
+  const tunnel = S.tunnels.find(t => t.id === tunnelCible)
+  if (!tunnel) return
+
+  let nAjoutes = 0, nIgnores = 0
+  for (const src of psSource) {
+    // Vérif si déjà dans ce tunnel
+    if (S.prospects.some(p => p.tunnelId === tunnelCible && p.email.toLowerCase() === src.email.toLowerCase())) {
+      nIgnores++; continue
+    }
+    // Créer une nouvelle entrée dans ce tunnel (le prospect peut donc être dans plusieurs tunnels)
+    S.prospects.push({
+      id: uid(),
+      email: src.email,
+      prenom: src.prenom || '',
+      nom: src.nom || '',
+      societe: src.societe || '',
+      groupe: src.groupe,
+      tunnelId: tunnelCible,
+      etapeCourante: 0,
+      prochainEnvoi: (tunnel.etapes[0].delaiVal || 0) === 0 ? isoMaint() : calculerProchainEnvoi(tunnel.etapes[0], new Date()),
+      historique: [],
+      repandu: false, termine: false,
+      ajouteA: isoMaint()
+    })
+    nAjoutes++
+  }
+  sauver()
+  ajouterJournal(nAjoutes + ' prospect(s) du groupe "' + _importGroupeSelected + '" importé(s) dans "' + tunnel.nom + '"' + (nIgnores > 0 ? ' (' + nIgnores + ' déjà présents)' : ''), 'ok')
+  fermerModal('modalImportGroupe')
+  rafraichirSidebarTunnels()
+  if (S.accessToken) setTimeout(() => lancerEnvois(), 500)
 }
 
 
