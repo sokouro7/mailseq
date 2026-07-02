@@ -1456,6 +1456,14 @@ body.dark .rich-toolbar { background:var(--g50); }
       </div>
       <button class="close-btn" onclick="fermerModal('modalTunnel')">×</button>
     </div>
+    <div id="modeleSelector" class="form-group">
+      <label class="label">Modèle de départ</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn btn-sm" onclick="chargerModele('cold')">📧 Cold outreach (3 emails)</button>
+        <button type="button" class="btn btn-sm" onclick="chargerModele('postrdv')">🤝 Relance post-RDV (silencieux)</button>
+        <button type="button" class="btn btn-sm" onclick="chargerModele('vide')">➕ Vierge</button>
+      </div>
+    </div>
     <div class="form-group">
       <label class="label">Nom du tunnel</label>
       <input class="input" id="tunnelNom" placeholder="Ex: Démo Weclosed">
@@ -1871,10 +1879,59 @@ function calculerProchainEnvoi(etape, depuisDate) {
 }
 
 // Boucle d'envoi : pour chaque prospect dont prochainEnvoi <= maintenant, envoie l'étape courante
+// Parse une date au format JJ/MM/AAAA en ISO
+function parseDateFr(str) {
+  if (!str) return null
+  const m = str.trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/)
+  if (!m) return null
+  let [, j, mo, a] = m
+  j = parseInt(j, 10); mo = parseInt(mo, 10); a = parseInt(a, 10)
+  if (a < 100) a += 2000
+  if (mo < 1 || mo > 12 || j < 1 || j > 31) return null
+  const d = new Date(a, mo - 1, j, 9, 0, 0) // 9h par défaut
+  return isNaN(d.getTime()) ? null : d.toISOString()
+}
+
+// ═══ CALCUL POINT DE DÉPART INITIAL ═══
+// Retourne { prochainEnvoi, dateRdv } selon la config de l'étape 0 du tunnel
+// Si l'étape 0 est silencieuse en mode "date", demande la date de RDV
+function calculerDepartProspect(tunnel, dateRdvFournie) {
+  const etape0 = tunnel.etapes[0]
+  if (!etape0) return { prochainEnvoi: isoMaint(), dateRdv: null }
+
+  // Étape 0 silencieuse
+  if (etape0.silencieuse === true) {
+    let base
+    if (etape0.departMode === 'date' && dateRdvFournie) {
+      base = new Date(dateRdvFournie)
+    } else {
+      base = new Date() // mode 'ajout' ou pas de date fournie
+    }
+    // Le prochainEnvoi = base + délai de l'étape 0
+    return {
+      prochainEnvoi: calculerProchainEnvoi(etape0, base),
+      dateRdv: (etape0.departMode === 'date' && dateRdvFournie) ? dateRdvFournie : null
+    }
+  }
+
+  // Étape 0 normale (envoi immédiat ou selon délai)
+  return {
+    prochainEnvoi: (etape0.delaiVal || 0) === 0 ? isoMaint() : calculerProchainEnvoi(etape0, new Date()),
+    dateRdv: null
+  }
+}
+
+// Est-ce que ce tunnel demande une date de RDV à l'ajout ?
+function tunnelDemandeDateRdv(tunnel) {
+  const e0 = tunnel.etapes[0]
+  return e0 && e0.silencieuse === true && e0.departMode === 'date'
+}
+
 async function lancerEnvois() {
   if (!S.accessToken) return
   const maint = new Date()
   let nEnvoyes = 0
+  let changement = false
 
   for (const p of S.prospects) {
     if (p.termine || p.repandu) continue
@@ -1887,12 +1944,30 @@ async function lancerEnvois() {
     const etape = tunnel.etapes[p.etapeCourante]
     if (!etape) { p.termine = true; continue }
 
+    // ÉTAPE SILENCIEUSE : ne rien envoyer, juste avancer le compteur
+    if (etape.silencieuse === true) {
+      if (!p.historique) p.historique = []
+      p.historique.push({ etape: p.etapeCourante, envoyeA: isoMaint(), silencieux: true })
+      p.etapeCourante++
+      changement = true
+      const nextEtape = tunnel.etapes[p.etapeCourante]
+      if (nextEtape) {
+        p.prochainEnvoi = calculerProchainEnvoi(nextEtape, new Date())
+      } else {
+        p.termine = true
+        p.prochainEnvoi = null
+      }
+      sauver()
+      continue
+    }
+
     const ok = await envoyerEmail(p, etape.sujet, etape.corps)
     if (ok) {
       if (!p.historique) p.historique = []
       p.historique.push({ etape: p.etapeCourante, envoyeA: isoMaint() })
       p.etapeCourante++
       nEnvoyes++
+      changement = true
 
       // Programmer la prochaine étape s'il en reste
       const nextEtape = tunnel.etapes[p.etapeCourante]
@@ -1912,8 +1987,10 @@ async function lancerEnvois() {
 
   if (nEnvoyes > 0) {
     ajouterJournal(nEnvoyes + ' email' + (nEnvoyes > 1 ? 's' : '') + ' envoyé' + (nEnvoyes > 1 ? 's' : ''), 'ok')
+  }
+  if (changement) {
     if (tunnelActifId) afficherTunnel(tunnelActifId)
-    else afficherVueEnsemble()
+    else if (document.getElementById('page-vue-ensemble').classList.contains('active')) afficherVueEnsemble()
   }
 }
 
@@ -2188,6 +2265,14 @@ function ajoutRapideProspect() {
     return
   }
 
+  let dateRdvQA = null
+  if (tunnelDemandeDateRdv(tunnel)) {
+    const saisie = prompt('Date du rendez-vous / point de départ (format JJ/MM/AAAA) :', new Date().toLocaleDateString('fr-FR'))
+    if (saisie === null) return
+    dateRdvQA = parseDateFr(saisie)
+    if (!dateRdvQA) { alert('Date invalide, utilisez le format JJ/MM/AAAA'); return }
+  }
+  const departQA = calculerDepartProspect(tunnel, dateRdvQA)
   const prospect = {
     id: uid(),
     email: email,
@@ -2197,7 +2282,8 @@ function ajoutRapideProspect() {
     groupe: tunnel.groupeDefault || null,
     tunnelId: tunnelId,
     etapeCourante: 0,
-    prochainEnvoi: (tunnel.etapes[0].delaiVal || 0) === 0 ? isoMaint() : calculerProchainEnvoi(tunnel.etapes[0], new Date()),
+    prochainEnvoi: departQA.prochainEnvoi,
+    dateRdv: departQA.dateRdv,
     historique: [],
     repandu: false,
     termine: false,
@@ -2562,8 +2648,9 @@ function voirProspect(pid) {
 
   const histo = (p.historique || []).map((h, i) => {
     const et = tunnel?.etapes[h.etape]
+    const label = h.silencieux ? '⏸ Point de départ (aucun email)' : ('📧 Étape ' + (h.etape + 1) + (et && et.sujet ? ' · ' + et.sujet : ''))
     return '<div style="padding:8px 0;border-bottom:1px solid var(--g100);font-size:12px">' +
-      '<strong>Étape ' + (h.etape + 1) + '</strong> · ' + (et ? et.sujet : '') + '<br>' +
+      '<strong>' + label + '</strong><br>' +
       '<span style="color:var(--g500);font-size:11px">' + fmt(h.envoyeA) + '</span></div>'
   }).join('')
 
@@ -2573,8 +2660,11 @@ function voirProspect(pid) {
       '<span class="badge b-blue">Étape ' + (p.etapeCourante + 1) + '/' + (tunnel?.etapes.length || 0) + '</span>') +
     '</div>'
 
+  if (p.dateRdv) {
+    html += '<div class="form-group"><label class="label">Date de rendez-vous</label><div>🤝 ' + fmt(p.dateRdv) + '</div></div>'
+  }
   if (!p.repandu && !p.termine && p.prochainEnvoi) {
-    html += '<div class="form-group"><label class="label">Prochain envoi</label><div>' + fmt(p.prochainEnvoi) + ' (' + fmtProchainEnvoi(p.prochainEnvoi) + ')</div></div>'
+    html += '<div class="form-group"><label class="label">Prochaine action</label><div>' + fmt(p.prochainEnvoi) + ' (' + fmtProchainEnvoi(p.prochainEnvoi) + ')</div></div>'
   }
 
   if (histo) {
@@ -2637,6 +2727,29 @@ function blacklisterProspect(pid) {
 }
 
 // ═══ GESTION TUNNELS ═══
+// ═══ MODÈLES DE TUNNEL ═══
+function chargerModele(type) {
+  if (type === 'cold') {
+    _editingEtapes = [
+      { delaiVal: 0, delaiUnite: 'jours', silencieuse: false, sujet: 'Bonjour {{prenom}}', corps: 'Bonjour {{prenom}},<br><br>Votre message ici...', condition: 'pas_de_reponse', heureEnvoi: '' },
+      { delaiVal: 3, delaiUnite: 'jours', heureEnvoi: '12:00', sujet: 'Re: Bonjour {{prenom}}', corps: 'Bonjour {{prenom}},<br><br>Je me permets de revenir vers vous...', condition: 'pas_de_reponse' },
+      { delaiVal: 7, delaiUnite: 'jours', heureEnvoi: '', sujet: 'Dernière relance', corps: 'Bonjour {{prenom}},<br><br>Un dernier message avant que je ne vous dérange plus...', condition: 'pas_de_reponse' }
+    ]
+  } else if (type === 'postrdv') {
+    _editingEtapes = [
+      { delaiVal: 7, delaiUnite: 'jours', heureEnvoi: '09:00', silencieuse: true, departMode: 'ajout', sujet: '', corps: '', condition: 'pas_de_reponse' },
+      { delaiVal: 7, delaiUnite: 'jours', heureEnvoi: '09:00', sujet: 'Suite à notre échange', corps: 'Bonjour {{prenom}},<br><br>Je reviens vers vous suite à notre échange. Avez-vous eu le temps de regarder ma proposition ?<br><br>Bien cordialement,', condition: 'pas_de_reponse' },
+      { delaiVal: 7, delaiUnite: 'jours', heureEnvoi: '09:00', sujet: 'Relance', corps: 'Bonjour {{prenom}},<br><br>Sans retour de votre part, je me permets une dernière relance...', condition: 'pas_de_reponse' }
+    ]
+  } else {
+    _editingEtapes = [
+      { delaiVal: 0, delaiUnite: 'jours', silencieuse: false, sujet: '', corps: '', condition: 'pas_de_reponse', heureEnvoi: '' }
+    ]
+  }
+  rafraichirEtapes()
+}
+
+
 let _editingTunnelId = null
 let _editingEtapes = []
 
@@ -2653,6 +2766,8 @@ function creerNouveauTunnel() {
   ]
   document.getElementById('tunnelModalTitre').textContent = 'Nouveau tunnel'
   document.getElementById('tunnelNom').value = ''
+  const ms = document.getElementById('modeleSelector')
+  if (ms) ms.style.display = 'block'
   rafraichirEtapes()
   document.getElementById('modalTunnel').style.display = 'flex'
 }
@@ -2669,6 +2784,9 @@ function ouvrirConfigTunnel() {
   // Afficher la section import groupe (seulement quand on modifie un tunnel existant)
   const imp = document.getElementById('importGroupSection')
   if (imp) imp.style.display = 'block'
+  // Masquer le sélecteur de modèle en édition
+  const ms = document.getElementById('modeleSelector')
+  if (ms) ms.style.display = 'none'
   rafraichirEtapes()
   document.getElementById('modalTunnel').style.display = 'flex'
 }
@@ -2678,16 +2796,47 @@ function rafraichirEtapes() {
   let html = ''
   _editingEtapes.forEach((et, i) => {
     const isFirst = i === 0
+    const isSilencieuse = et.silencieuse === true
+
     html += '<div class="etape-card">' +
       '<div style="display:flex;align-items:center;margin-bottom:12px">' +
-      '<span class="etape-card-num">' + (i + 1) + '</span>' +
-      '<span style="font-size:13px;font-weight:600;flex:1">' + (isFirst ? 'Email initial' : 'Relance ' + i) + '</span>' +
+      '<span class="etape-card-num"' + (isSilencieuse ? ' style="background:var(--g400)"' : '') + '>' + (isSilencieuse ? '⏸' : (i + 1)) + '</span>' +
+      '<span style="font-size:13px;font-weight:600;flex:1">' + (isFirst ? 'Point de départ' : 'Relance ' + i) + (isSilencieuse ? ' <span style="font-size:11px;font-weight:400;color:var(--g400)">(silencieuse)</span>' : '') + '</span>' +
       (i > 0 ? '<button class="btn btn-ghost btn-sm" onclick="supprimerEtape(' + i + ')" style="color:var(--red)">✕</button>' : '') +
       '</div>'
 
-    if (!isFirst) {
+    // Case à cocher "étape silencieuse" — sur la première étape uniquement
+    if (isFirst) {
+      html += '<div class="etape-row" style="background:var(--accent-l);padding:10px;border-radius:6px;margin-bottom:10px;display:flex;flex-direction:column;gap:8px">' +
+        '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--g700)">' +
+        '<input type="checkbox"' + (isSilencieuse ? ' checked' : '') + ' onchange="majEtape(0,\'silencieuse\',this.checked);rafraichirEtapes()" style="width:16px;height:16px">' +
+        '<strong>Étape silencieuse</strong> (aucun email envoyé, juste démarrer le suivi)' +
+        '</label>' +
+        '<div style="font-size:11px;color:var(--g500);padding-left:24px">Utile après un rendez-vous : MailSeq surveille la boîte mail et relance seulement si le client ne répond pas.</div>'
+
+      if (isSilencieuse) {
+        // Choix du point de départ du compteur
+        html += '<div style="padding-left:24px;padding-top:6px;border-top:1px solid rgba(0,0,0,.06)">' +
+          '<label style="font-size:11px;font-weight:600;color:var(--g600);display:block;margin-bottom:6px">Point de départ du compteur de relance :</label>' +
+          '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;margin-bottom:4px">' +
+          '<input type="radio" name="departMode" value="ajout"' + ((et.departMode || 'ajout') === 'ajout' ? ' checked' : '') + ' onchange="majEtape(0,\'departMode\',\'ajout\');rafraichirEtapes()">' +
+          'À partir du moment où j\'ajoute le prospect' +
+          '</label>' +
+          '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px">' +
+          '<input type="radio" name="departMode" value="date"' + (et.departMode === 'date' ? ' checked' : '') + ' onchange="majEtape(0,\'departMode\',\'date\');rafraichirEtapes()">' +
+          'À partir d\'une date de rendez-vous (demandée à l\'ajout de chaque prospect)' +
+          '</label>' +
+          '</div>'
+      }
+      html += '</div>'
+    }
+
+    // Délai (sauf étape 0 non-silencieuse qui est immédiate)
+    const montreDelai = !isFirst || (isFirst && isSilencieuse)
+    if (montreDelai) {
+      const labelDelai = isFirst ? 'Envoyer la 1re relance après :' : 'Délai après l\'étape précédente :'
       html += '<div class="etape-row" style="background:var(--g50);padding:8px;border-radius:6px;margin-bottom:10px">' +
-        '<label>Délai après l\'étape précédente :</label>' +
+        '<label>' + labelDelai + '</label>' +
         '<input type="number" class="input" style="width:70px" value="' + (et.delaiVal || 0) + '" min="0" max="365" onchange="majEtape(' + i + ',\'delaiVal\',+this.value)">' +
         '<select class="input" style="width:90px" onchange="majEtape(' + i + ',\'delaiUnite\',this.value);rafraichirEtapes()">' +
         '<option value="jours"' + ((et.delaiUnite || 'jours') === 'jours' ? ' selected' : '') + '>jours</option>' +
@@ -2700,19 +2849,24 @@ function rafraichirEtapes() {
           '<span style="font-size:10px;color:var(--g400)">(vide = même heure que ce moment-là)</span>'
       }
       html += '</div>'
-    } else {
+    } else if (isFirst && !isSilencieuse) {
       html += '<div style="font-size:11px;color:var(--g500);background:var(--accent-l);padding:8px;border-radius:6px;margin-bottom:10px">⚡ Envoi immédiat dès qu\'un prospect est ajouté au tunnel</div>'
     }
 
-    html += '<div class="form-group">' +
-      '<label class="label">Objet</label>' +
-      '<input class="input" value="' + escapeHtml(et.sujet || '') + '" oninput="majEtape(' + i + ',\'sujet\',this.value)" placeholder="Objet de l\'email — utilisez {{prenom}}, {{nom}}, {{societe}}">' +
-      '</div>' +
-      '<div class="form-group">' +
-      '<label class="label">Corps</label>' +
-      renderRichEditor('etape-' + i, et.corps || '', i) +
-      '<div style="font-size:10px;color:var(--g500);margin-top:6px">Variables disponibles : <code>{{prenom}}</code> · <code>{{nom}}</code> · <code>{{societe}}</code> · <code>{{email}}</code></div>' +
-      '</div>'
+    // Objet + corps (sauf si étape silencieuse : rien à écrire)
+    if (!isSilencieuse) {
+      html += '<div class="form-group">' +
+        '<label class="label">Objet</label>' +
+        '<input class="input" value="' + escapeHtml(et.sujet || '') + '" oninput="majEtape(' + i + ',\'sujet\',this.value)" placeholder="Objet de l\'email — utilisez {{prenom}}, {{nom}}, {{societe}}">' +
+        '</div>' +
+        '<div class="form-group">' +
+        '<label class="label">Corps</label>' +
+        renderRichEditor('etape-' + i, et.corps || '', i) +
+        '<div style="font-size:10px;color:var(--g500);margin-top:6px">Variables disponibles : <code>{{prenom}}</code> · <code>{{nom}}</code> · <code>{{societe}}</code> · <code>{{email}}</code></div>' +
+        '</div>'
+    } else {
+      html += '<div style="font-size:12px;color:var(--g500);background:var(--g50);padding:12px;border-radius:6px;text-align:center">✓ Aucun email envoyé à cette étape. Le suivi démarre ici.</div>'
+    }
 
     html += '</div>'
   })
@@ -3017,12 +3171,22 @@ function soumettreInlineForm(tid) {
 
   // Récupérer le groupe par défaut du tunnel
   const groupeDefault = tunnel.groupeDefault || null
+  // Si le tunnel démarre sur une date de RDV, la demander
+  let dateRdv = null
+  if (tunnelDemandeDateRdv(tunnel)) {
+    const saisie = prompt('Date du rendez-vous / point de départ (format JJ/MM/AAAA) :', new Date().toLocaleDateString('fr-FR'))
+    if (saisie === null) return // annulé
+    dateRdv = parseDateFr(saisie)
+    if (!dateRdv) { alert('Date invalide, utilisez le format JJ/MM/AAAA'); return }
+  }
+  const depart = calculerDepartProspect(tunnel, dateRdv)
   S.prospects.push({
     id: uid(),
     email: email, prenom: prenom, nom: nom, societe: societe,
     groupe: groupeDefault,
     tunnelId: tid, etapeCourante: 0,
-    prochainEnvoi: (tunnel.etapes[0].delaiVal || 0) === 0 ? isoMaint() : calculerProchainEnvoi(tunnel.etapes[0], new Date()),
+    prochainEnvoi: depart.prochainEnvoi,
+    dateRdv: depart.dateRdv,
     historique: [], repandu: false, termine: false,
     ajouteA: isoMaint()
   })
@@ -3093,12 +3257,19 @@ function renderTunnelColumn(tunnel) {
       return histo[histo.length - 1].etape === i
     })
 
-    const delLabel = i === 0 ? 'Immédiat' : 'J+' + (etape.delaiVal || 0) + (etape.heureEnvoi ? ' à ' + etape.heureEnvoi : '')
+    let delLabel
+    if (etape.silencieuse === true) {
+      delLabel = '⏸ Suivi (J+' + (etape.delaiVal || 0) + ')'
+    } else if (i === 0) {
+      delLabel = 'Immédiat'
+    } else {
+      delLabel = 'J+' + (etape.delaiVal || 0) + (etape.heureEnvoi ? ' à ' + etape.heureEnvoi : '')
+    }
 
     html += '<div class="tunnel-step-vert">' +
       '<div class="tunnel-step-box">' +
         '<div class="tunnel-step-vert-header">' +
-          '<div class="tunnel-step-vert-label"><span class="tunnel-step-vert-num">' + (i + 1) + '</span>' + (i === 0 ? 'Initial' : 'Relance ' + i) + '</div>' +
+          '<div class="tunnel-step-vert-label"><span class="tunnel-step-vert-num"' + (etape.silencieuse ? ' style="background:var(--g400)"' : '') + '>' + (etape.silencieuse ? '⏸' : (i + 1)) + '</span>' + (etape.silencieuse ? 'Départ' : (i === 0 ? 'Initial' : 'Relance ' + i)) + '</div>' +
           '<div class="tunnel-step-vert-time">' + delLabel + '</div>' +
         '</div>' +
         '<div class="tunnel-step-vert-dots">'
