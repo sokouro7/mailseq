@@ -732,14 +732,31 @@ textarea.input { min-height:80px; resize:vertical; }
 /* === LAYOUT VERTICAL MULTI-TUNNELS === */
 .tunnels-grid {
   display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));
   gap:20px;
   align-items:start;
   padding-bottom:40px;
 }
-.tunnels-grid.cols-1 { grid-template-columns:1fr; max-width:520px; margin:0 auto; }
-.tunnels-grid.cols-2 { grid-template-columns:repeat(2, 1fr); }
-.tunnels-grid.cols-3 { grid-template-columns:repeat(3, 1fr); }
-.tunnels-grid.cols-4 { grid-template-columns:repeat(4, 1fr); }
+.tunnels-grid.single { max-width:520px; }
+
+/* Bandeau de stats */
+.stats-bar {
+  display:flex; gap:8px; flex-wrap:wrap;
+  margin-bottom:18px;
+}
+.stat-chip {
+  background:var(--w);
+  border:1px solid var(--g100);
+  border-radius:var(--rm);
+  padding:10px 16px;
+  display:flex; flex-direction:column; gap:1px;
+  box-shadow:var(--shadow);
+  min-width:110px;
+}
+.stat-chip .v { font-size:18px; font-weight:700; color:var(--g900); }
+.stat-chip .l { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.4px; color:var(--g500); }
+.stat-chip.accent .v { color:var(--accent-d); }
+.stat-chip.orange .v { color:var(--orange-d); }
 
 .tunnel-col {
   background:var(--w);
@@ -748,6 +765,9 @@ textarea.input { min-height:80px; resize:vertical; }
   padding:14px;
   display:flex; flex-direction:column;
   gap:10px;
+  box-sizing:border-box;
+  min-width:0;
+  overflow:hidden;
 }
 .tunnel-col-header {
   display:flex; align-items:center; justify-content:space-between;
@@ -1236,9 +1256,14 @@ body.dark .rich-toolbar { background:var(--g50); }
 
 /* === QUICK ADD DIRECT (colonne tunnel) === */
 .tunnel-quick-add {
-  display:grid;
-  grid-template-columns:1.6fr 1fr auto;
+  display:flex; flex-direction:column;
   gap:6px;
+}
+.tunnel-quick-add .tqa-row1 {
+  display:grid; grid-template-columns:1fr auto; gap:6px;
+}
+.tunnel-quick-add .tqa-row2 {
+  display:grid; grid-template-columns:1fr 1fr 1.2fr; gap:6px;
 }
 .tunnel-quick-add input {
   height:38px; padding:0 10px;
@@ -3720,11 +3745,17 @@ function renderTunnelColumn(tunnel) {
     '<div class="tunnel-col-stats"><strong>' + actifs + '</strong> actif · <strong style="color:var(--orange-d)">' + repandus + '</strong> répondu</div>' +
     '</div>'
 
-  // Formulaire d'ajout direct, toujours visible : email + prénom + bouton
+  // Formulaire d'ajout direct, toujours visible : email, prénom, nom, société
   html += '<div class="tunnel-quick-add" id="inline-form-' + tunnel.id + '">' +
+    '<div class="tqa-row1">' +
     '<input type="email" name="email" placeholder="email@..." onkeypress="if(event.key===\'Enter\')soumettreInlineForm(\'' + tunnel.id + '\')">' +
-    '<input type="text" name="prenom" placeholder="Prénom" onkeypress="if(event.key===\'Enter\')soumettreInlineForm(\'' + tunnel.id + '\')">' +
     '<button class="tunnel-quick-btn" onclick="soumettreInlineForm(\'' + tunnel.id + '\')" title="Ajouter au tunnel">+</button>' +
+    '</div>' +
+    '<div class="tqa-row2">' +
+    '<input type="text" name="prenom" placeholder="Prénom" onkeypress="if(event.key===\'Enter\')soumettreInlineForm(\'' + tunnel.id + '\')">' +
+    '<input type="text" name="nom" placeholder="Nom" onkeypress="if(event.key===\'Enter\')soumettreInlineForm(\'' + tunnel.id + '\')">' +
+    '<input type="text" name="societe" placeholder="Société" onkeypress="if(event.key===\'Enter\')soumettreInlineForm(\'' + tunnel.id + '\')">' +
+    '</div>' +
     '</div>'
 
   // Étapes verticales
@@ -3803,26 +3834,27 @@ function afficherVueEnsemble() {
     return
   }
 
-  // Header avec sélecteur de colonnes
-  let html = '<div class="overview-header">' +
-    '<div style="font-size:12px;color:var(--g500);font-weight:500">Afficher</div>' +
-    '<div class="cols-selector">' +
-      '<button class="' + (_displayCols === 1 ? 'active' : '') + '" onclick="changerNbCols(1)">×1</button>' +
-      '<button class="' + (_displayCols === 2 ? 'active' : '') + '" onclick="changerNbCols(2)">×2</button>' +
-      '<button class="' + (_displayCols === 3 ? 'active' : '') + '" onclick="changerNbCols(3)">×3</button>' +
-      '<button class="' + (_displayCols === 4 ? 'active' : '') + '" onclick="changerNbCols(4)">×4</button>' +
-    '</div>' +
-    '<div style="font-size:11px;color:var(--g400)">colonne' + (_displayCols > 1 ? 's' : '') + ' · cochez vos tunnels dans la sidebar</div>' +
+  // Tunnels à afficher = tunnels cochés dans la sidebar (tous si rien coché)
+  let tunnelsAAfficher = S.tunnels.filter(t => _selectedTunnels.includes(t.id))
+  if (!tunnelsAAfficher.length) tunnelsAAfficher = S.tunnels.slice()
+
+  // Stats dynamiques calculées sur les tunnels affichés
+  const idsAffiches = tunnelsAAfficher.map(t => t.id)
+  const psAffiches = S.prospects.filter(p => idsAffiches.includes(p.tunnelId))
+  const nbActifs = psAffiches.filter(p => !p.termine && !p.repandu).length
+  const nbRepondus = psAffiches.filter(p => p.repandu).length
+  const finJour = new Date(); finJour.setHours(23, 59, 59, 999)
+  const nbAujourdhui = psAffiches.filter(p => !p.termine && !p.repandu && p.prochainEnvoi && new Date(p.prochainEnvoi) <= finJour).length
+  const tauxRep = psAffiches.length > 0 ? Math.round(nbRepondus / psAffiches.length * 100) : 0
+
+  let html = '<div class="stats-bar">' +
+    '<div class="stat-chip accent"><span class="v">' + nbActifs + '</span><span class="l">prospects actifs</span></div>' +
+    '<div class="stat-chip"><span class="v">' + nbAujourdhui + '</span><span class="l">envois pr\u00e9vus aujourd\u2019hui</span></div>' +
+    '<div class="stat-chip orange"><span class="v">' + nbRepondus + '</span><span class="l">r\u00e9ponses</span></div>' +
+    '<div class="stat-chip"><span class="v">' + tauxRep + '%</span><span class="l">taux de r\u00e9ponse</span></div>' +
     '</div>'
 
-  // Filtrer les tunnels à afficher
-  let tunnelsAAfficher = S.tunnels.filter(t => _selectedTunnels.includes(t.id))
-  if (!tunnelsAAfficher.length) {
-    // Si rien coché, afficher tous (limité par cols)
-    tunnelsAAfficher = S.tunnels.slice(0, _displayCols)
-  }
-
-  html += '<div class="tunnels-grid cols-' + Math.min(_displayCols, tunnelsAAfficher.length) + '">'
+  html += '<div class="tunnels-grid' + (tunnelsAAfficher.length === 1 ? ' single' : '') + '">'
   for (const tunnel of tunnelsAAfficher) {
     html += renderTunnelColumn(tunnel)
   }
@@ -4259,7 +4291,20 @@ function afficherNewsletter() {
   const sub = document.getElementById('nl-sub')
   if (sub) sub.textContent = actifs.length + ' abonn\u00e9' + (actifs.length > 1 ? 's' : '') + ' actif' + (actifs.length > 1 ? 's' : '') + ' \u00b7 ' + S.newsletters.length + ' envoi' + (S.newsletters.length > 1 ? 's' : '')
 
-  let html = '<div class="nl-tabs">' +
+  // Stats newsletter
+  const il30j = new Date(Date.now() - 30 * 24 * 3600 * 1000)
+  const nouveaux30j = S.abonnes.filter(a => !a.desinscrit && a.inscritA && new Date(a.inscritA) >= il30j).length
+  const desinscrits = S.abonnes.filter(a => a.desinscrit).length
+  const nlEnvoyees = S.newsletters.filter(n => n.statut === 'terminee').length
+
+  let html = '<div class="stats-bar">' +
+    '<div class="stat-chip accent"><span class="v">' + actifs.length + '</span><span class="l">abonn\u00e9s actifs</span></div>' +
+    '<div class="stat-chip"><span class="v">+' + nouveaux30j + '</span><span class="l">nouveaux (30 j)</span></div>' +
+    '<div class="stat-chip"><span class="v">' + desinscrits + '</span><span class="l">d\u00e9sinscrits</span></div>' +
+    '<div class="stat-chip orange"><span class="v">' + nlEnvoyees + '</span><span class="l">newsletters envoy\u00e9es</span></div>' +
+    '</div>'
+
+  html += '<div class="nl-tabs">' +
     '<button class="nl-tab' + (_nlTab === 'rediger' ? ' active' : '') + '" onclick="switchNlTab(\'rediger\')">\u270d\ufe0f R\u00e9diger</button>' +
     '<button class="nl-tab' + (_nlTab === 'abonnes' ? ' active' : '') + '" onclick="switchNlTab(\'abonnes\')">\ud83d\udc65 Abonn\u00e9s (' + actifs.length + ')</button>' +
     '<button class="nl-tab' + (_nlTab === 'historique' ? ' active' : '') + '" onclick="switchNlTab(\'historique\')">\ud83d\udcca Historique</button>' +
