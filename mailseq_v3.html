@@ -1787,6 +1787,7 @@ const S = (() => {
     nlTitre: '',
     nlDesc: '',
     nlPhoto: '',
+    nlFond: '',
     blacklist: [],
     journaux: [],
     templates: [],
@@ -4443,8 +4444,12 @@ function renderNlAbonnes() {
       '<input class="input" id="nl-desc" placeholder="Une phrase de description" value="' + escapeHtml(S.nlDesc || '') + '" onchange="S.nlDesc=this.value;sauver();afficherNewsletter()">' +
     '</div>' +
     '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">' +
-      '<input class="input" id="nl-photo" placeholder="URL de votre photo ou logo (optionnel, ex: https://.../photo.jpg)" value="' + escapeHtml(S.nlPhoto || '') + '" onchange="S.nlPhoto=this.value.trim();sauver();afficherNewsletter()" style="flex:1">' +
+      '<input class="input" id="nl-photo" placeholder="URL de votre photo ou logo (rond central, ex: https://.../photo.jpg)" value="' + escapeHtml(S.nlPhoto || '') + '" onchange="S.nlPhoto=this.value.trim();sauver();afficherNewsletter()" style="flex:1">' +
       (S.nlPhoto ? '<img src="' + escapeHtml(S.nlPhoto) + '" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid var(--accent)" onerror="this.style.display=\'none\'">' : '') +
+    '</div>' +
+    '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">' +
+      '<input class="input" id="nl-fond" placeholder="URL image de fond (optionnel, un voile sombre est ajout\u00e9 par-dessus)" value="' + escapeHtml(S.nlFond || '') + '" onchange="S.nlFond=this.value.trim();sauver();afficherNewsletter()" style="flex:1">' +
+      (S.nlFond ? '<img src="' + escapeHtml(S.nlFond) + '" style="width:38px;height:38px;border-radius:6px;object-fit:cover;border:2px solid var(--accent)" onerror="this.style.display=\'none\'">' : '') +
     '</div>' +
     (lpUrl
       ? '<div class="nl-lp-url" id="nl-lp-url">' + escapeHtml(lpUrl) + '</div>' +
@@ -4554,6 +4559,7 @@ function construireLienLP() {
   if (!S.userEmail) return null
   const payload = { e: S.userEmail, t: S.nlTitre || 'Ma newsletter', d: S.nlDesc || '' }
   if (S.nlPhoto) payload.p = S.nlPhoto
+  if (S.nlFond) payload.f = S.nlFond
   try {
     const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
     return window.location.href.split('?')[0].split('#')[0] + '?nl=' + b64
@@ -4585,8 +4591,12 @@ function detecterModeLP() {
 
 function renderLandingPage(p) {
   window._lpEmail = p.e
+  // Fond : image personnalisée avec voile sombre, sinon dégradé par défaut
+  const fondStyle = p.f
+    ? 'background:linear-gradient(rgba(10,10,20,.72),rgba(10,15,35,.82)),url(\'' + p.f.replace(/'/g, "%27") + '\') center/cover no-repeat fixed'
+    : 'background:linear-gradient(135deg,#0a0a14 0%,#1a1a3e 45%,#0a1f3a 100%)'
   document.body.innerHTML =
-    '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a0a14 0%,#1a1a3e 45%,#0a1f3a 100%);padding:24px;font-family:Inter,-apple-system,sans-serif;overflow:auto">' +
+    '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;' + fondStyle + ';padding:24px;font-family:Inter,-apple-system,sans-serif;overflow:auto">' +
     '<div style="max-width:560px;width:100%;background:#fff;border-radius:24px;padding:56px 48px;text-align:center;box-shadow:0 32px 100px rgba(0,0,0,.5)">' +
     (p.p
       ? '<img src="' + escapeHtml(p.p) + '" style="width:104px;height:104px;border-radius:50%;object-fit:cover;margin-bottom:24px;border:4px solid #eef2ff;box-shadow:0 10px 30px rgba(99,102,241,.3)" onerror="this.style.display=\'none\'">'
