@@ -4520,6 +4520,21 @@ function renderNlAbonnes() {
       : '<div style="font-size:12px;color:var(--amber)">\u26a0 Connectez-vous \u00e0 votre bo\u00eete email pour g\u00e9n\u00e9rer votre lien d\u2019abonnement.</div>') +
     '</div>'
 
+  // Encart Tally (formulaire fluide sans clic email)
+  html += '<details class="nl-lp-box" style="margin-bottom:16px">' +
+    '<summary style="font-size:13px;font-weight:600;cursor:pointer;list-style:none">\u26a1 Utiliser un formulaire Tally (inscription en 1 clic, sans email)</summary>' +
+    '<div style="font-size:12px;color:var(--g600);line-height:1.7;margin-top:10px">' +
+    'La page ci-dessus demande au visiteur d\u2019envoyer un email. Pour une inscription plus fluide (formulaire classique, z\u00e9ro clic email), vous pouvez utiliser <strong>Tally</strong> (gratuit) :' +
+    '<div style="margin-top:8px">' +
+    '1. Cr\u00e9ez un formulaire Tally avec les champs <strong>Pr\u00e9nom, Email, Entreprise, Secteur</strong>.<br>' +
+    '2. Dans Tally, allez dans <strong>Int\u00e9grations \u2192 Email notifications</strong> et activez l\u2019envoi vers <strong>' + (S.userEmail ? escapeHtml(S.userEmail) : 'votre adresse connect\u00e9e') + '</strong>.<br>' +
+    '3. Dans l\u2019objet de la notification, ajoutez le mot <strong>newsletter</strong> ou <strong>abonnement</strong> (ex : \u00ab Nouvelle inscription newsletter \u00bb).<br>' +
+    '4. C\u2019est tout. MailSeq lira ces notifications \u00e0 chaque synchro et ajoutera l\u2019abonn\u00e9 automatiquement, comme pour la page.' +
+    '</div>' +
+    '<div style="margin-top:10px;font-size:11px;color:var(--g500)">MailSeq reconna\u00eet automatiquement les emails venant de Tally et en extrait pr\u00e9nom, email, entreprise et secteur.</div>' +
+    '</div>' +
+    '</details>'
+
   html += '<div class="nl-abonne-add">' +
     '<input type="email" id="ab-email" placeholder="email@..." onkeypress="if(event.key===\'Enter\')ajouterAbonne()">' +
     '<input type="text" id="ab-prenom" placeholder="Pr\u00e9nom" onkeypress="if(event.key===\'Enter\')ajouterAbonne()">' +
@@ -4819,24 +4834,38 @@ async function verifierNewsletterInbox() {
     for (const msg of messages) {
       if (!msg.from) continue
 
-      // 1. Abonnement via landing page
-      if (/ABONNEMENT NEWSLETTER/i.test(msg.subject)) {
-        if (!S.abonnes.some(a => a.email.toLowerCase() === msg.from)) {
-          // Extraire prénom, entreprise et secteur du corps du formulaire
-          const texte = (msg.snippet || '')
-          const extraire = (label) => {
-            const m = texte.match(new RegExp(label + '\\s*:\\s*([^\\n\\r]{2,40}?)(?=\\s+(?:Pr\u00e9nom|Email|Entreprise|Secteur)\\s*:|\\s+Envoyez|\\s*$|\\n)', 'i'))
-            return m ? m[1].trim() : ''
+      // 1. Abonnement via landing page (mailto direct OU notification Tally)
+      const estTally = /tally/i.test(msg.from) || /nouvelle r\u00e9ponse|new submission|new response/i.test(msg.subject)
+      if (/ABONNEMENT NEWSLETTER/i.test(msg.subject) || (estTally && /newsletter|abonnement|inscription/i.test(msg.subject + ' ' + (msg.snippet || '')))) {
+        const texte = (msg.snippet || '')
+        const extraire = (labels) => {
+          for (const label of labels) {
+            const m = texte.match(new RegExp(label + '\\s*:?\\s*([^\\n\\r]{2,50}?)(?=\\s+(?:Pr\u00e9nom|Pr\u00e9nom|Nom|Email|E-mail|Mail|Entreprise|Soci\u00e9t\u00e9|Secteur|Envoyez)\\s*:?|\\s+Envoyez|\\s*$|\\n)', 'i'))
+            if (m && m[1].trim()) return m[1].trim()
           }
-          let prenom = extraire('Pr\u00e9nom')
-          if (!prenom && msg.fromName) prenom = msg.fromName.split(' ')[0]
-          const societe = extraire('Entreprise')
-          const secteur = extraire('Secteur')
-          const nouvelAbonne = { id: uid(), email: msg.from, prenom: prenom, societe: societe, secteur: secteur, source: 'lp', inscritA: isoMaint(), desinscrit: false }
+          return ''
+        }
+        // Email : soit l'expéditeur direct (mailto), soit extrait du corps (Tally)
+        let email = ''
+        if (!estTally && msg.from && /.+@.+\..+/.test(msg.from)) {
+          email = msg.from
+        } else {
+          email = extraire(['Email', 'E-mail', 'Mail', 'Adresse'])
+          // Nettoyer si l'email a été capturé avec du texte autour
+          const em = email.match(/[\w.\-+]+@[\w.\-]+\.[a-z]{2,}/i)
+          email = em ? em[0] : ''
+        }
+        email = email.toLowerCase().trim()
+
+        if (email && /.+@.+\..+/.test(email) && !S.abonnes.some(a => a.email.toLowerCase() === email)) {
+          let prenom = extraire(['Pr\u00e9nom', 'Prenom'])
+          if (!prenom && !estTally && msg.fromName) prenom = msg.fromName.split(' ')[0]
+          const societe = extraire(['Entreprise', 'Soci\u00e9t\u00e9'])
+          const secteur = extraire(['Secteur'])
+          const nouvelAbonne = { id: uid(), email: email, prenom: prenom, societe: societe, secteur: secteur, source: 'lp', inscritA: isoMaint(), desinscrit: false }
           S.abonnes.push(nouvelAbonne)
-          ajouterJournal('\ud83c\udf10 Nouvel abonn\u00e9 via la page : ' + msg.from + (societe ? ' (' + societe + ')' : ''), 'ok')
+          ajouterJournal('\ud83c\udf10 Nouvel abonn\u00e9 ' + (estTally ? '(Tally)' : '(page)') + ' : ' + email + (societe ? ' (' + societe + ')' : ''), 'ok')
           changements++
-          // Email de bienvenue automatique
           if (S.nlBienvenueActif) { envoyerBienvenue(nouvelAbonne) }
         }
         continue
