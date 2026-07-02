@@ -1145,6 +1145,220 @@ body.dark .rich-toolbar { background:var(--g50); }
 .import-group-item-name { font-weight:500; flex:1; }
 .import-group-item-count { font-size:11px; color:var(--g500); }
 
+
+/* === PAGE BUILDER TUNNEL === */
+.builder-layout {
+  max-width:860px; margin:0 auto;
+  padding-bottom:60px;
+}
+.builder-section {
+  background:var(--w);
+  border:1px solid var(--g100);
+  border-radius:var(--rm);
+  padding:20px;
+  margin-bottom:18px;
+  box-shadow:var(--shadow);
+}
+.builder-section-title {
+  font-size:13px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.5px;
+  color:var(--g600);
+  margin-bottom:14px;
+  display:flex; align-items:center; gap:8px;
+}
+.builder-section-title .num {
+  width:22px; height:22px; border-radius:50%;
+  background:var(--accent); color:#fff;
+  display:inline-flex; align-items:center; justify-content:center;
+  font-size:11px;
+}
+
+/* Cartes de modèles */
+.modele-cat {
+  font-size:11px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.6px; color:var(--g400);
+  margin:14px 0 8px;
+}
+.modele-cat:first-child { margin-top:0; }
+.modele-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
+  gap:10px;
+}
+.modele-card {
+  border:1.5px solid var(--g200);
+  border-radius:var(--rm);
+  padding:14px;
+  cursor:pointer;
+  transition:all .15s;
+  background:var(--w);
+  position:relative;
+}
+.modele-card:hover {
+  border-color:var(--accent);
+  transform:translateY(-1px);
+  box-shadow:var(--shadow-md);
+}
+.modele-card.selected {
+  border-color:var(--accent);
+  background:var(--accent-l);
+  box-shadow:0 0 0 1px var(--accent);
+}
+.modele-card.selected::after {
+  content:'✓';
+  position:absolute; top:10px; right:10px;
+  width:20px; height:20px; border-radius:50%;
+  background:var(--accent); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700;
+}
+.modele-card-emoji { font-size:22px; margin-bottom:6px; }
+.modele-card-nom { font-size:13px; font-weight:600; color:var(--g900); margin-bottom:4px; }
+.modele-card-desc { font-size:11px; color:var(--g500); line-height:1.45; margin-bottom:8px; }
+.modele-card-detail {
+  font-size:10px; font-weight:600;
+  color:var(--accent-d);
+  background:var(--accent-l);
+  display:inline-block;
+  padding:2px 8px; border-radius:8px;
+}
+
+/* Footer sticky du builder */
+.builder-footer {
+  position:sticky; bottom:0;
+  background:var(--bg);
+  padding:14px 0;
+  display:flex; justify-content:flex-end; gap:10px;
+  border-top:1px solid var(--g100);
+  z-index:10;
+}
+
+
+/* === QUICK ADD DIRECT (colonne tunnel) === */
+.tunnel-quick-add {
+  display:grid;
+  grid-template-columns:1.6fr 1fr auto;
+  gap:6px;
+}
+.tunnel-quick-add input {
+  height:38px; padding:0 10px;
+  border:1.5px dashed var(--accent);
+  border-radius:var(--r);
+  font-size:12px; font-family:inherit;
+  background:var(--accent-l); color:var(--g900);
+  outline:none;
+  transition:all .15s;
+}
+.tunnel-quick-add input:focus {
+  border-style:solid;
+  background:var(--w);
+}
+.tunnel-quick-add input::placeholder { color:var(--g500); }
+.tunnel-quick-btn {
+  width:38px; height:38px;
+  border:none; border-radius:var(--r);
+  background:linear-gradient(135deg, var(--accent), var(--accent-d));
+  color:#fff; font-size:18px; font-weight:700;
+  cursor:pointer;
+  transition:transform .12s, box-shadow .12s;
+}
+.tunnel-quick-btn:hover {
+  transform:translateY(-1px);
+  box-shadow:0 4px 12px rgba(99,102,241,.4);
+}
+body.dark .tunnel-quick-add input { background:var(--accent-l); color:var(--g900); }
+
+/* === SPLIT VIOLET / ORANGE dans la bulle d'étape === */
+.step-dots-split {
+  display:flex;
+  align-items:stretch;
+  min-height:30px;
+  gap:8px;
+}
+.step-dots-left {
+  flex:1;
+  display:flex; flex-wrap:wrap; gap:5px;
+  align-content:flex-start;
+}
+.step-dots-right {
+  display:flex; flex-wrap:wrap; gap:5px;
+  align-content:flex-start;
+  justify-content:flex-end;
+  min-width:34px; max-width:45%;
+  border-left:1.5px dashed var(--orange);
+  padding-left:8px;
+}
+.step-counts {
+  display:flex; justify-content:space-between;
+  margin-top:8px;
+  font-size:10px; font-weight:600;
+}
+.sc-actifs { color:var(--accent-d); }
+.sc-rep { color:var(--orange-d); }
+
+
+/* === NEWSLETTER === */
+.nl-tabs { display:flex; gap:4px; margin-bottom:18px; border-bottom:1px solid var(--g100); }
+.nl-tab {
+  padding:10px 16px; background:none; border:none;
+  font-family:inherit; font-size:13px; font-weight:500;
+  color:var(--g500); cursor:pointer;
+  border-bottom:2px solid transparent; margin-bottom:-1px;
+}
+.nl-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+.nl-tab-content { display:none; }
+.nl-tab-content.active { display:block; }
+
+.nl-send-bar {
+  display:flex; gap:10px; align-items:end;
+  background:var(--accent-l);
+  border:1.5px solid var(--accent);
+  border-radius:var(--rm);
+  padding:14px; margin-top:14px;
+  flex-wrap:wrap;
+}
+.nl-send-bar .field { display:flex; flex-direction:column; gap:4px; }
+.nl-send-bar .field label { font-size:10px; font-weight:700; text-transform:uppercase; color:var(--g600); }
+.nl-send-bar select { height:38px; padding:0 10px; border:1px solid var(--g200); border-radius:var(--r); font-family:inherit; font-size:12px; background:var(--w); }
+
+.nl-card {
+  background:var(--w); border:1px solid var(--g100);
+  border-radius:var(--rm); padding:16px; margin-bottom:12px;
+  box-shadow:var(--shadow);
+}
+.nl-card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.nl-card-title { font-size:14px; font-weight:600; }
+.nl-progress-track { height:8px; background:var(--g100); border-radius:4px; overflow:hidden; margin:8px 0; }
+.nl-progress-fill { height:100%; background:linear-gradient(90deg, var(--accent), var(--accent-d)); border-radius:4px; transition:width .4s; }
+.nl-card-stats { font-size:11px; color:var(--g500); display:flex; gap:14px; }
+.nl-card-stats strong { color:var(--g900); }
+
+.nl-abonne-add {
+  display:grid; grid-template-columns:1.6fr 1fr auto; gap:6px;
+  margin-bottom:14px;
+}
+.nl-abonne-add input {
+  height:38px; padding:0 10px;
+  border:1.5px dashed var(--accent); border-radius:var(--r);
+  font-size:12px; font-family:inherit;
+  background:var(--accent-l); outline:none;
+}
+.nl-abonne-add input:focus { border-style:solid; background:var(--w); }
+
+.nl-lp-box {
+  background:linear-gradient(135deg, #fef3ff 0%, #eef2ff 100%);
+  border:1.5px solid var(--accent);
+  border-radius:var(--rm); padding:16px; margin-bottom:16px;
+}
+body.dark .nl-lp-box { background:linear-gradient(135deg, #1a0f2e, #1a1a3e); }
+.nl-lp-url {
+  font-family:monospace; font-size:11px;
+  background:var(--w); border:1px solid var(--g200);
+  border-radius:6px; padding:8px 10px;
+  word-break:break-all; margin:8px 0;
+  color:var(--g700);
+}
+
 </style>
 </head>
 <body>
@@ -1177,6 +1391,13 @@ body.dark .rich-toolbar { background:var(--g50); }
   <div class="sb-section">Mes tunnels</div>
   <div id="sb-tunnels"></div>
   <div class="sb-tunnel-add" onclick="creerNouveauTunnel()">+ nouveau tunnel</div>
+
+  <div class="sb-section">Newsletter</div>
+  <div class="sb-item" data-page="newsletter" onclick="aller('newsletter', this)">
+    <span class="sb-item-icon">📰</span>
+    <span>Newsletter</span>
+    <span class="sb-item-badge" id="badge-newsletter">0</span>
+  </div>
 
   <div class="sb-section">Prospects</div>
   <div class="sb-item" data-page="prospects" onclick="aller('prospects', this)">
@@ -1271,6 +1492,18 @@ body.dark .rich-toolbar { background:var(--g50); }
     </div>
   </div>
 
+  <!-- NEWSLETTER -->
+  <div id="page-newsletter" class="page">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Newsletter</div>
+        <div class="topbar-sub" id="nl-sub"></div>
+      </div>
+      <button class="btn btn-sm" onclick="synchroniser()">↻ synchroniser</button>
+    </div>
+    <div class="content" id="contenu-newsletter"></div>
+  </div>
+
   <!-- PROSPECTS -->
   <div id="page-prospects" class="page">
     <div class="topbar">
@@ -1281,6 +1514,59 @@ body.dark .rich-toolbar { background:var(--g50); }
       <button class="btn btn-primary btn-sm" onclick="creerNouveauGroupe()">+ nouveau groupe</button>
     </div>
     <div class="content" id="contenu-prospects"></div>
+  </div>
+
+  <!-- BUILDER TUNNEL (page pleine) -->
+  <div id="page-builder" class="page">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="tunnelModalTitre">Nouveau tunnel</div>
+        <div class="topbar-sub">Choisissez un modèle, personnalisez, sauvegardez</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm" onclick="annulerBuilder()">Annuler</button>
+        <button class="btn btn-primary btn-sm" onclick="sauverTunnel()">💾 Sauvegarder le tunnel</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="builder-layout">
+
+        <div class="builder-section" id="modeleSelector">
+          <div class="builder-section-title"><span class="num">1</span> Partir d'un modèle</div>
+          <div id="modelesContainer"></div>
+        </div>
+
+        <div class="builder-section">
+          <div class="builder-section-title"><span class="num">2</span> Informations du tunnel</div>
+          <div class="form-group">
+            <label class="label">Nom du tunnel</label>
+            <input class="input" id="tunnelNom" placeholder="Ex: Cold BTP janvier, Relance propositions...">
+          </div>
+          <div class="form-group">
+            <label class="label">Groupe de prospects associé (optionnel)</label>
+            <input class="input" id="tunnelGroupeNom" placeholder="Ex: BTP 2026. Laisser vide pour mode one-shot">
+            <div style="font-size:11px;color:var(--g500);margin-top:4px">Si renseigné, les prospects ajoutés à ce tunnel seront automatiquement taggués avec ce groupe.</div>
+          </div>
+          <div class="form-group" id="importGroupSection" style="display:none;margin-bottom:0">
+            <label class="label">Importer rapidement des prospects</label>
+            <button class="btn btn-sm" onclick="ouvrirImportGroupe()">📥 Importer depuis un groupe existant</button>
+          </div>
+        </div>
+
+        <div class="builder-section">
+          <div class="builder-section-title"><span class="num">3</span> Les emails de la séquence</div>
+          <div id="modeleLoadedBanner" style="display:none;background:var(--green-l);color:#065f46;padding:10px 14px;border-radius:8px;font-size:12.5px;margin-bottom:12px"></div>
+          <div id="etapesContainer"></div>
+          <button class="btn btn-sm" onclick="ajouterEtape()" style="margin-top:10px">+ ajouter une étape</button>
+        </div>
+
+        <div class="builder-footer">
+          <button class="btn" onclick="annulerBuilder()">Annuler</button>
+          <button class="btn btn-primary btn-lg" onclick="sauverTunnel()">💾 Sauvegarder le tunnel</button>
+        </div>
+
+      </div>
+    </div>
   </div>
 
   <!-- JOURNAUX -->
@@ -1446,50 +1732,6 @@ body.dark .rich-toolbar { background:var(--g50); }
   </div>
 </div>
 
-<!-- MODAL NOUVEAU TUNNEL -->
-<div class="overlay" id="modalTunnel" style="display:none">
-  <div class="modal modal-lg">
-    <div class="modal-header">
-      <div>
-        <div class="modal-title" id="tunnelModalTitre">Nouveau tunnel</div>
-        <div class="modal-sub">Configurez les étapes et délais</div>
-      </div>
-      <button class="close-btn" onclick="fermerModal('modalTunnel')">×</button>
-    </div>
-    <div id="modeleSelector" class="form-group">
-      <label class="label">Modèle de départ</label>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button type="button" class="btn btn-sm" onclick="chargerModele('cold')">📧 Cold outreach (3 emails)</button>
-        <button type="button" class="btn btn-sm" onclick="chargerModele('postrdv')">🤝 Relance post-RDV (silencieux)</button>
-        <button type="button" class="btn btn-sm" onclick="chargerModele('vide')">➕ Vierge</button>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="label">Nom du tunnel</label>
-      <input class="input" id="tunnelNom" placeholder="Ex: Démo Weclosed">
-    </div>
-    <div class="form-group">
-      <label class="label">Groupe de prospects associé (optionnel)</label>
-      <input class="input" id="tunnelGroupeNom" placeholder="Ex: BTP 2026 — laisser vide pour mode one-shot">
-      <div style="font-size:11px;color:var(--g500);margin-top:4px">Si renseigné, les prospects ajoutés à ce tunnel seront automatiquement taggés avec ce groupe.</div>
-    </div>
-    <div class="form-group" id="importGroupSection" style="display:none">
-      <label class="label">Importer rapidement des prospects</label>
-      <button class="btn btn-sm" onclick="ouvrirImportGroupe()">📥 Importer depuis un groupe existant</button>
-      <div style="font-size:11px;color:var(--g500);margin-top:4px">Tous les prospects du groupe entreront dans le tunnel d'un coup.</div>
-    </div>
-    <div class="form-group">
-      <label class="label">Étapes</label>
-      <div id="etapesContainer"></div>
-      <button class="btn btn-sm" onclick="ajouterEtape()" style="margin-top:8px">+ ajouter une étape</button>
-    </div>
-    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--g100)">
-      <button class="btn" onclick="fermerModal('modalTunnel')">Annuler</button>
-      <button class="btn btn-primary" onclick="sauverTunnel()">💾 Sauvegarder</button>
-    </div>
-  </div>
-</div>
-
 <!-- MODAL PROSPECT DETAILS -->
 <div class="overlay" id="modalProspect" style="display:none">
   <div class="modal">
@@ -1515,6 +1757,11 @@ const S = (() => {
   const d = {
     tunnels: [],
     prospects: [],
+    abonnes: [],
+    newsletters: [],
+    nlTitre: '',
+    nlDesc: '',
+    nlPhoto: '',
     blacklist: [],
     journaux: [],
     templates: [],
@@ -1610,6 +1857,8 @@ function mettreAJourBadges() {
   if (blEl) blEl.textContent = (S.blacklist || []).length
   const psEl = document.getElementById('badge-prospects')
   if (psEl) psEl.textContent = S.prospects.length
+  const nlEl = document.getElementById('badge-newsletter')
+  if (nlEl) nlEl.textContent = (S.abonnes || []).filter(a => !a.desinscrit).length
 
   // Update tunnel badges in sidebar
   document.querySelectorAll('.sb-tunnel-badge').forEach(el => {
@@ -1762,7 +2011,7 @@ function reprendreApresConnexion() {
 
 function demarrerSynchroAuto() {
   if (intervalSynchro) return
-  intervalSynchro = setInterval(() => { lancerEnvois(); verifierReponses() }, 5 * 60 * 1000)
+  intervalSynchro = setInterval(() => { lancerEnvois(); verifierReponses(); verifierNewsletterInbox() }, 5 * 60 * 1000)
 }
 
 function synchroniser() {
@@ -1772,6 +2021,7 @@ function synchroniser() {
   }
   lancerEnvois()
   verifierReponses()
+  verifierNewsletterInbox()
 }
 
 // ═══ MOTEUR D'ENVOI ═══
@@ -2091,6 +2341,7 @@ function aller(page, el) {
   else if (page === 'signature') chargerSignature()
   else if (page === 'journaux') afficherJournaux()
   else if (page === 'prospects') afficherProspects()
+  else if (page === 'newsletter') afficherNewsletter()
 }
 
 function afficherTunnelActif(tid) {
@@ -2726,27 +2977,262 @@ function blacklisterProspect(pid) {
   ajouterJournal('🚫 ' + p.email + ' blacklisté', 'warn')
 }
 
-// ═══ GESTION TUNNELS ═══
-// ═══ MODÈLES DE TUNNEL ═══
-function chargerModele(type) {
-  if (type === 'cold') {
-    _editingEtapes = [
-      { delaiVal: 0, delaiUnite: 'jours', silencieuse: false, sujet: 'Bonjour {{prenom}}', corps: 'Bonjour {{prenom}},<br><br>Votre message ici...', condition: 'pas_de_reponse', heureEnvoi: '' },
-      { delaiVal: 3, delaiUnite: 'jours', heureEnvoi: '12:00', sujet: 'Re: Bonjour {{prenom}}', corps: 'Bonjour {{prenom}},<br><br>Je me permets de revenir vers vous...', condition: 'pas_de_reponse' },
-      { delaiVal: 7, delaiUnite: 'jours', heureEnvoi: '', sujet: 'Dernière relance', corps: 'Bonjour {{prenom}},<br><br>Un dernier message avant que je ne vous dérange plus...', condition: 'pas_de_reponse' }
+// ═══ BIBLIOTHÈQUE DE MODÈLES D'EMAILS v2 ═══
+const MODELES_TUNNELS = {
+
+  cold_signal: {
+    nom: 'Le signal observ\u00e9',
+    categorie: 'cold',
+    emoji: '🎯',
+    description: "Le plus performant en 2026. On ouvre sur un fait r\u00e9el et v\u00e9rifiable chez le prospect (recrutement, actu, post LinkedIn), puis on relie \u00e0 son probl\u00e8me probable.",
+    detail: '3 emails · J+0, J+4, J+9',
+    etapes: [
+      {
+        delaiVal: 0, delaiUnite: 'jours', heureEnvoi: '', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Question sur [le signal observ\u00e9]',
+        corps: "Bonjour {{prenom}},<br><br>J'ai vu que [signal r\u00e9el et v\u00e9rifiable : vous recrutez un commercial, vous ouvrez une agence \u00e0 Lyon, votre post LinkedIn sur X...].<br><br>Quand [ce signal] arrive, c'est souvent que [le probl\u00e8me probable qui va avec, formul\u00e9 avec leurs mots].<br><br>On aide justement les [m\u00e9tier de votre cible] \u00e0 [r\u00e9sultat concret], comme [client similaire] qui [chiffre pr\u00e9cis].<br><br>Est-ce un sujet sur lequel vous travaillez en ce moment ?<br><br>Bonne journ\u00e9e,"
+      },
+      {
+        delaiVal: 4, delaiUnite: 'jours', heureEnvoi: '09:30', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Re: Question sur [le signal observ\u00e9]',
+        corps: "Bonjour {{prenom}},<br><br>Un exemple concret plut\u00f4t qu'un long discours :<br><br>[Client similaire] avait exactement [le m\u00eame contexte / probl\u00e8me]. R\u00e9sultat apr\u00e8s [dur\u00e9e] : [chiffre pr\u00e9cis, pas de \u00ab nombreux clients satisfaits \u00bb].<br><br>Je peux vous montrer comment en 15 minutes, sans engagement. \u00c7a vous parle, ou ce n'est pas la priorit\u00e9 du moment ?<br><br>Bonne journ\u00e9e,"
+      },
+      {
+        delaiVal: 5, delaiUnite: 'jours', heureEnvoi: '09:30', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Re: Question sur [le signal observ\u00e9]',
+        corps: "Bonjour {{prenom}},<br><br>Je n'insiste pas apr\u00e8s ce message.<br><br>Si le timing n'est pas bon, un simple \u00ab pas maintenant \u00bb me suffit, et je reviendrai plus tard. Et si ce n'est pas vous qui g\u00e9rez ce sujet chez {{societe}}, vers qui puis-je me tourner ?<br><br>Merci d'avance, et bonne continuation.<br>"
+      }
     ]
-  } else if (type === 'postrdv') {
-    _editingEtapes = [
-      { delaiVal: 7, delaiUnite: 'jours', heureEnvoi: '09:00', silencieuse: true, departMode: 'ajout', sujet: '', corps: '', condition: 'pas_de_reponse' },
-      { delaiVal: 7, delaiUnite: 'jours', heureEnvoi: '09:00', sujet: 'Suite à notre échange', corps: 'Bonjour {{prenom}},<br><br>Je reviens vers vous suite à notre échange. Avez-vous eu le temps de regarder ma proposition ?<br><br>Bien cordialement,', condition: 'pas_de_reponse' },
-      { delaiVal: 7, delaiUnite: 'jours', heureEnvoi: '09:00', sujet: 'Relance', corps: 'Bonjour {{prenom}},<br><br>Sans retour de votre part, je me permets une dernière relance...', condition: 'pas_de_reponse' }
+  },
+
+  cold_question: {
+    nom: 'La question simple',
+    categorie: 'cold',
+    emoji: '💬',
+    description: "Approche consultative et douce. On s'int\u00e9resse \u00e0 comment ils font aujourd'hui, avant de parler de soi. Parfait pour ouvrir une vraie conversation.",
+    detail: '3 emails · J+0, J+4, J+9',
+    etapes: [
+      {
+        delaiVal: 0, delaiUnite: 'jours', heureEnvoi: '', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Question rapide {{prenom}}',
+        corps: "Bonjour {{prenom}},<br><br>Comment g\u00e9rez-vous [le probl\u00e8me que vous r\u00e9solvez] chez {{societe}} aujourd'hui ?<br><br>Je pose la question parce que la plupart des [m\u00e9tier de votre cible] que je rencontre me disent [le pain point avec leurs mots \u00e0 eux, une phrase courte].<br><br>Curieux d'avoir votre retour, m\u00eame en une ligne.<br><br>Bonne journ\u00e9e,"
+      },
+      {
+        delaiVal: 4, delaiUnite: 'jours', heureEnvoi: '09:30', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Re: Question rapide {{prenom}}',
+        corps: "Bonjour {{prenom}},<br><br>Mon message a d\u00fb passer \u00e0 la trappe, \u00e7a arrive.<br><br>Le contexte en une phrase : [ce que vous faites] et [client ou secteur similaire] a obtenu [r\u00e9sultat chiffr\u00e9] en [dur\u00e9e].<br><br>15 minutes suffisent pour voir si \u00e7a vaut le coup chez {{societe}}. Cette semaine ou la suivante ?<br><br>Bonne journ\u00e9e,"
+      },
+      {
+        delaiVal: 5, delaiUnite: 'jours', heureEnvoi: '09:30', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Re: Question rapide {{prenom}}',
+        corps: "Bonjour {{prenom}},<br><br>Dernier message de ma part, promis.<br><br>Si le sujet n'est pas d'actualit\u00e9, aucun souci. S'il le devient un jour, vous savez o\u00f9 me trouver.<br><br>Et si je me suis tromp\u00e9 d'interlocuteur, n'h\u00e9sitez pas \u00e0 me rediriger vers la bonne personne chez {{societe}}.<br><br>Bonne continuation,"
+      }
     ]
-  } else {
-    _editingEtapes = [
-      { delaiVal: 0, delaiUnite: 'jours', silencieuse: false, sujet: '', corps: '', condition: 'pas_de_reponse', heureEnvoi: '' }
+  },
+
+  cold_constat: {
+    nom: 'Le constat march\u00e9',
+    categorie: 'cold',
+    emoji: '📊',
+    description: "Approche affirm\u00e9e pour les cibles qui aiment le concret. Un constat percutant, une cons\u00e9quence business, une preuve chiffr\u00e9e. Chaque relance apporte un angle nouveau.",
+    detail: '3 emails · J+0, J+4, J+9',
+    etapes: [
+      {
+        delaiVal: 0, delaiUnite: 'jours', heureEnvoi: '', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: '[Le probl\u00e8me] chez {{societe}} ?',
+        corps: "Bonjour {{prenom}},<br><br>Un constat qui revient dans quasiment tous mes \u00e9changes avec des [m\u00e9tier de votre cible] :<br><br>[Le constat, une phrase simple et vraie, avec leurs mots].<br><br>Cons\u00e9quence : [ce que \u00e7a co\u00fbte concr\u00e8tement : temps, argent, opportunit\u00e9s perdues].<br><br>On a construit [votre solution] pour r\u00e9gler exactement \u00e7a. [Client similaire] : [chiffre pr\u00e9cis] en [dur\u00e9e].<br><br>\u00c7a m\u00e9rite 15 minutes ? R\u00e9pondez juste \u00ab oui \u00bb et je vous propose un cr\u00e9neau.<br><br>Bonne journ\u00e9e,"
+      },
+      {
+        delaiVal: 4, delaiUnite: 'jours', heureEnvoi: '09:30', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Re: [Le probl\u00e8me] chez {{societe}} ?',
+        corps: "Bonjour {{prenom}},<br><br>Angle diff\u00e9rent de mon premier message : le co\u00fbt de ne rien faire.<br><br>Chaque [semaine/mois] sans [solution au probl\u00e8me], c'est [la perte concr\u00e8te : X heures, X euros, X opportunit\u00e9s].<br><br>La mise en place prend [dur\u00e9e courte], sans [l'objection principale : changer d'outil, former les \u00e9quipes, engagement long].<br><br>On regarde \u00e7a ensemble 15 minutes ?<br><br>Bonne journ\u00e9e,"
+      },
+      {
+        delaiVal: 5, delaiUnite: 'jours', heureEnvoi: '09:30', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Re: [Le probl\u00e8me] chez {{societe}} ?',
+        corps: "Bonjour {{prenom}},<br><br>Je cl\u00f4ture le sujet de mon c\u00f4t\u00e9 pour ne pas encombrer votre bo\u00eete mail.<br><br>Si [le probl\u00e8me] devient une priorit\u00e9 chez {{societe}}, ma porte reste ouverte. Et si c'est quelqu'un d'autre qui g\u00e8re \u00e7a, un nom me suffit.<br><br>Merci de m'avoir lu, bonne continuation.<br>"
+      }
+    ]
+  },
+
+  cold_court: {
+    nom: "L'ultra court",
+    categorie: 'cold',
+    emoji: '⚡',
+    description: "Trois lignes maximum. Le style \u00ab tape sur l'\u00e9paule \u00bb qui respecte le temps du prospect. Tr\u00e8s efficace sur les dirigeants et d\u00e9cideurs sursollicit\u00e9s.",
+    detail: '3 emails · J+0, J+5, J+10',
+    etapes: [
+      {
+        delaiVal: 0, delaiUnite: 'jours', heureEnvoi: '', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: '{{societe}}',
+        corps: "Bonjour {{prenom}},<br><br>Est-ce que [le pain point en une question simple] est un sujet chez {{societe}} en ce moment ?<br><br>Si oui, j'ai quelque chose d'utile \u00e0 vous montrer. 2 minutes, pas plus.<br><br>Bonne journ\u00e9e,"
+      },
+      {
+        delaiVal: 5, delaiUnite: 'jours', heureEnvoi: '09:30', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Re: {{societe}}',
+        corps: "Bonjour {{prenom}},<br><br>Pas de retour, je tente une derni\u00e8re fois.<br><br>[Ce que vous faites + un chiffre, en une phrase].<br><br>Int\u00e9ress\u00e9 ? Un simple \u00ab oui \u00bb suffit, je m'occupe du reste.<br>"
+      },
+      {
+        delaiVal: 5, delaiUnite: 'jours', heureEnvoi: '09:30', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Re: {{societe}}',
+        corps: "{{prenom}}, je clos le sujet de mon c\u00f4t\u00e9.<br><br>Si un jour [le pain point] devient une priorit\u00e9, vous savez o\u00f9 me trouver.<br><br>Bonne continuation,"
+      }
+    ]
+  },
+
+  cold_aide: {
+    nom: "La demande d'avis",
+    categorie: 'cold',
+    emoji: '🙋',
+    description: "Le champion des taux de r\u00e9ponse (jusqu'\u00e0 14%). On ne vend rien, on demande un avis en une ligne. Z\u00e9ro pression, et \u00e7a rouvre des conversations des mois plus tard.",
+    detail: '2 emails · J+0, J+6',
+    etapes: [
+      {
+        delaiVal: 0, delaiUnite: 'jours', heureEnvoi: '', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Votre avis {{prenom}} ?',
+        corps: "Bonjour {{prenom}},<br><br>Je ne vends rien dans ce message, je cherche un avis terrain.<br><br>Je travaille sur [votre solution / sujet] pour les [m\u00e9tier de votre cible], et je pr\u00e9f\u00e8re confronter mes id\u00e9es \u00e0 de vrais [m\u00e9tier] plut\u00f4t que de rester dans ma bulle.<br><br>Ma question : [une question simple et pr\u00e9cise sur leur quotidien / leur fa\u00e7on de faire].<br><br>Une r\u00e9ponse en une ligne me suffit, et \u00e7a m'aide \u00e9norm\u00e9ment.<br><br>Merci d'avance,"
+      },
+      {
+        delaiVal: 6, delaiUnite: 'jours', heureEnvoi: '09:30', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Re: Votre avis {{prenom}} ?',
+        corps: "Bonjour {{prenom}},<br><br>Je me permets une derni\u00e8re relance, votre retour m'int\u00e9resse vraiment.<br><br>Pour vous faciliter la r\u00e9ponse : [reformulez la question en oui/non ou en choix A/B].<br><br>M\u00eame un \u00ab pas le temps \u00bb me va. Merci !<br>"
+      }
+    ]
+  },
+
+  relance_rdv: {
+    nom: 'Relance post-rendez-vous',
+    categorie: 'relance',
+    emoji: '🤝',
+    description: "Vous avez fait un RDV ou envoy\u00e9 une proposition. Aucun email au d\u00e9part : MailSeq surveille votre bo\u00eete et relance seulement si le client ne r\u00e9pond pas.",
+    detail: 'Suivi silencieux · relances J+7, J+14, J+24',
+    etapes: [
+      {
+        delaiVal: 7, delaiUnite: 'jours', heureEnvoi: '09:00', silencieuse: true, departMode: 'date', condition: 'pas_de_reponse',
+        sujet: '', corps: ''
+      },
+      {
+        delaiVal: 0, delaiUnite: 'jours', heureEnvoi: '09:30', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Suite \u00e0 notre \u00e9change',
+        corps: "Bonjour {{prenom}},<br><br>J'esp\u00e8re que vous allez bien depuis notre \u00e9change.<br><br>O\u00f9 en \u00eates-vous sur la proposition ? S'il manque un \u00e9l\u00e9ment de votre c\u00f4t\u00e9 pour avancer (chiffrage, r\u00e9f\u00e9rence, pr\u00e9cision technique), dites-le moi et je vous l'envoie dans la journ\u00e9e.<br><br>Bonne journ\u00e9e,"
+      },
+      {
+        delaiVal: 7, delaiUnite: 'jours', heureEnvoi: '09:30', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Re: Suite \u00e0 notre \u00e9change',
+        corps: "Bonjour {{prenom}},<br><br>Je me doute que les journ\u00e9es sont charg\u00e9es, alors je fais court.<br><br>Souvent \u00e0 ce stade, il reste soit une question de budget, soit un point technique, soit un timing \u00e0 caler. Dites-moi lequel des trois et on le r\u00e8gle en 10 minutes au t\u00e9l\u00e9phone.<br><br>Bonne journ\u00e9e,"
+      },
+      {
+        delaiVal: 10, delaiUnite: 'jours', heureEnvoi: '09:30', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Re: Suite \u00e0 notre \u00e9change',
+        corps: "Bonjour {{prenom}},<br><br>Sans retour de votre part, je mets le dossier en pause de mon c\u00f4t\u00e9 pour ne pas encombrer votre bo\u00eete mail.<br><br>Si le projet est simplement d\u00e9cal\u00e9, dites-moi quand revenir vers vous et je le note. Si vous \u00eates parti sur une autre solution, merci pour le temps accord\u00e9, et bonne route avec votre choix.<br><br>Bonne continuation,"
+      }
+    ]
+  },
+
+  relance_dormant: {
+    nom: 'R\u00e9veil de contact dormant',
+    categorie: 'relance',
+    emoji: '☕',
+    description: "Un prospect ou client silencieux depuis des mois. On reprend contact naturellement, avec une vraie raison de se reparler et z\u00e9ro pression.",
+    detail: 'Suivi silencieux · reprises J+1, J+8',
+    etapes: [
+      {
+        delaiVal: 1, delaiUnite: 'jours', heureEnvoi: '09:00', silencieuse: true, departMode: 'ajout', condition: 'pas_de_reponse',
+        sujet: '', corps: ''
+      },
+      {
+        delaiVal: 0, delaiUnite: 'jours', heureEnvoi: '09:30', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Des nouvelles de {{societe}} ?',
+        corps: "Bonjour {{prenom}},<br><br>\u00c7a fait un moment qu'on n'a pas \u00e9chang\u00e9, et je pensais \u00e0 vous en travaillant sur [une actualit\u00e9, un cas client similaire, une nouveaut\u00e9 de votre c\u00f4t\u00e9].<br><br>O\u00f9 en \u00eates-vous sur [le sujet dont vous aviez parl\u00e9] ? Les choses ont peut-\u00eatre \u00e9volu\u00e9 depuis.<br><br>Si c'est le bon moment pour reprendre la discussion, je suis disponible cette semaine ou la suivante.<br><br>Bonne journ\u00e9e,"
+      },
+      {
+        delaiVal: 7, delaiUnite: 'jours', heureEnvoi: '09:30', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Re: Des nouvelles de {{societe}} ?',
+        corps: "Bonjour {{prenom}},<br><br>Je r\u00e9essaie une derni\u00e8re fois, au cas o\u00f9 mon message serait tomb\u00e9 au mauvais moment.<br><br>Depuis notre dernier \u00e9change, [une nouveaut\u00e9 concr\u00e8te : nouvelle offre, nouveau r\u00e9sultat client, \u00e9volution]. C'est peut-\u00eatre plus pertinent pour vous aujourd'hui qu'\u00e0 l'\u00e9poque.<br><br>Si vous pr\u00e9f\u00e9rez que je revienne plus tard dans l'ann\u00e9e, un mot suffit et je le note.<br><br>Bonne journ\u00e9e,"
+      }
+    ]
+  },
+
+  vierge: {
+    nom: 'Partir de z\u00e9ro',
+    categorie: 'vierge',
+    emoji: '📝',
+    description: "Une seule \u00e9tape vide, vous construisez tout vous-m\u00eame.",
+    detail: '1 email vide',
+    etapes: [
+      { delaiVal: 0, delaiUnite: 'jours', heureEnvoi: '', silencieuse: false, sujet: '', corps: '', condition: 'pas_de_reponse' }
     ]
   }
+}
+
+// ═══ RENDU DES CARTES MODÈLES ═══
+let _selectedModele = null
+
+function renderModelesCards() {
+  const el = document.getElementById('modelesContainer')
+  if (!el) return
+  const cats = [
+    { key: 'cold', label: '📧 Cold emailing (premier contact)' },
+    { key: 'relance', label: '🔁 Relances (apr\u00e8s RDV ou contact existant)' },
+    { key: 'vierge', label: '✏️ Ou construire soi-m\u00eame' }
+  ]
+  let html = ''
+  for (const cat of cats) {
+    html += '<div class="modele-cat">' + cat.label + '</div>'
+    html += '<div class="modele-grid">'
+    for (const [key, m] of Object.entries(MODELES_TUNNELS)) {
+      if (m.categorie !== cat.key) continue
+      html += '<div class="modele-card' + (_selectedModele === key ? ' selected' : '') + '" onclick="chargerModele(\'' + key + '\')">' +
+        '<div class="modele-card-emoji">' + m.emoji + '</div>' +
+        '<div class="modele-card-nom">' + m.nom + '</div>' +
+        '<div class="modele-card-desc">' + m.description + '</div>' +
+        '<div class="modele-card-detail">' + m.detail + '</div>' +
+        '</div>'
+    }
+    html += '</div>'
+  }
+  el.innerHTML = html
+}
+
+function annulerBuilder() {
+  // Revenir à la vue d'ensemble ou au tunnel selon le contexte
+  if (_editingTunnelId && S.tunnels.some(t => t.id === _editingTunnelId)) {
+    afficherTunnelActif(_editingTunnelId)
+  } else {
+    aller('vue-ensemble', document.querySelector('.sb-item[data-page="vue-ensemble"]'))
+  }
+}
+
+
+// ═══ GESTION TUNNELS ═══
+// ═══ CHARGER UN MODÈLE ═══
+function chargerModele(key) {
+  const m = MODELES_TUNNELS[key]
+  if (!m) return
+  _selectedModele = key
+  _editingEtapes = JSON.parse(JSON.stringify(m.etapes))
+  // Pré-remplir le nom si vide
+  const nomInput = document.getElementById('tunnelNom')
+  if (nomInput && !nomInput.value.trim() && key !== 'vierge') {
+    nomInput.value = m.nom
+  }
+  renderModelesCards()
   rafraichirEtapes()
+  // UX : scroll direct vers les emails pour les modifier, avec un petit temps pour le rendu
+  setTimeout(() => {
+    const target = document.getElementById('etapesContainer')
+    if (target && target.scrollIntoView) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+    // Bandeau de confirmation au-dessus des étapes
+    const banner = document.getElementById('modeleLoadedBanner')
+    if (banner) {
+      banner.style.display = 'block'
+      banner.innerHTML = '✓ Mod\u00e8le \u00ab ' + m.nom + ' \u00bb charg\u00e9. <strong>Tout est modifiable ci-dessous</strong> : personnalisez les passages entre [crochets], puis sauvegardez en haut \u00e0 droite.'
+      clearTimeout(window._bannerT)
+      window._bannerT = setTimeout(() => { banner.style.display = 'none' }, 8000)
+    }
+  }, 120)
 }
 
 
@@ -2755,21 +3241,26 @@ let _editingEtapes = []
 
 function creerNouveauTunnel() {
   _editingTunnelId = null
+  _selectedModele = null
   document.getElementById('tunnelGroupeNom').value = ''
+  document.getElementById('tunnelNom').value = ''
+  document.getElementById('tunnelModalTitre').textContent = 'Nouveau tunnel'
   // Masquer la section import (car le tunnel n'existe pas encore)
   const imp = document.getElementById('importGroupSection')
   if (imp) imp.style.display = 'none'
-  _editingEtapes = [
-    { delaiVal: 0, delaiUnite: 'jours', sujet: 'Bonjour {{prenom}}', corps: 'Bonjour {{prenom}},\n\nVotre message ici...', condition: 'pas_de_reponse', heureEnvoi: '' },
-    { delaiVal: 3, delaiUnite: 'jours', heureEnvoi: '12:00', sujet: 'Re: Bonjour {{prenom}}', corps: 'Bonjour {{prenom}},\n\nJe me permets de revenir vers vous...', condition: 'pas_de_reponse' },
-    { delaiVal: 7, delaiUnite: 'jours', heureEnvoi: '', sujet: 'Dernière relance', corps: 'Bonjour {{prenom}},\n\nUn dernier message avant que je ne vous dérange plus...', condition: 'pas_de_reponse' }
-  ]
-  document.getElementById('tunnelModalTitre').textContent = 'Nouveau tunnel'
-  document.getElementById('tunnelNom').value = ''
+  // Afficher le sélecteur de modèles
   const ms = document.getElementById('modeleSelector')
   if (ms) ms.style.display = 'block'
+  // Étape vierge par défaut
+  _editingEtapes = [
+    { delaiVal: 0, delaiUnite: 'jours', heureEnvoi: '', silencieuse: false, sujet: '', corps: '', condition: 'pas_de_reponse' }
+  ]
+  // Naviguer vers la page builder
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+  document.getElementById('page-builder').classList.add('active')
+  document.querySelectorAll('.sb-item').forEach(n => n.classList.remove('active'))
+  renderModelesCards()
   rafraichirEtapes()
-  document.getElementById('modalTunnel').style.display = 'flex'
 }
 
 function ouvrirConfigTunnel() {
@@ -2777,6 +3268,7 @@ function ouvrirConfigTunnel() {
   const tunnel = S.tunnels.find(t => t.id === tunnelActifId)
   if (!tunnel) return
   _editingTunnelId = tunnelActifId
+  _selectedModele = null
   _editingEtapes = JSON.parse(JSON.stringify(tunnel.etapes))
   document.getElementById('tunnelModalTitre').textContent = 'Modifier : ' + tunnel.nom
   document.getElementById('tunnelNom').value = tunnel.nom
@@ -2787,8 +3279,11 @@ function ouvrirConfigTunnel() {
   // Masquer le sélecteur de modèle en édition
   const ms = document.getElementById('modeleSelector')
   if (ms) ms.style.display = 'none'
+  // Naviguer vers la page builder
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+  document.getElementById('page-builder').classList.add('active')
+  document.querySelectorAll('.sb-item').forEach(n => n.classList.remove('active'))
   rafraichirEtapes()
-  document.getElementById('modalTunnel').style.display = 'flex'
 }
 
 function rafraichirEtapes() {
@@ -2923,7 +3418,6 @@ function sauverTunnel() {
   }
   sauver()
   ajouterJournal('Tunnel "' + nom + '" sauvegardé', 'ok')
-  fermerModal('modalTunnel')
   rafraichirSidebarTunnels()
   afficherTunnelActif(_editingTunnelId)
 }
@@ -3155,10 +3649,11 @@ function fermerInlineForm(tid) {
 function soumettreInlineForm(tid) {
   const form = document.getElementById('inline-form-' + tid)
   if (!form) return
-  const email = form.querySelector('input[name="email"]').value.trim()
-  const prenom = form.querySelector('input[name="prenom"]').value.trim()
-  const nom = form.querySelector('input[name="nom"]').value.trim()
-  const societe = form.querySelector('input[name="societe"]').value.trim()
+  const getV = n => { const el = form.querySelector('input[name="' + n + '"]'); return el ? el.value.trim() : '' }
+  const email = getV('email')
+  const prenom = getV('prenom')
+  const nom = getV('nom')
+  const societe = getV('societe')
 
   if (!email) { alert('Entrez un email'); return }
   if (!/.+@.+\..+/.test(email)) { alert('Email invalide'); return }
@@ -3193,12 +3688,11 @@ function soumettreInlineForm(tid) {
   sauver()
   ajouterJournal('✓ ' + email + ' ajouté à "' + tunnel.nom + '"', 'ok')
 
-  // Vider et fermer
-  form.querySelector('input[name="email"]').value = ''
-  form.querySelector('input[name="prenom"]').value = ''
-  form.querySelector('input[name="nom"]').value = ''
-  form.querySelector('input[name="societe"]').value = ''
-  fermerInlineForm(tid)
+  // Vider les champs et re-focus sur l'email pour enchaîner
+  const setV = n => { const el = form.querySelector('input[name="' + n + '"]'); if (el) el.value = '' }
+  setV('email'); setV('prenom'); setV('nom'); setV('societe')
+  const emailEl = form.querySelector('input[name="email"]')
+  if (emailEl) emailEl.focus()
 
   rafraichirSidebarTunnels()
   if (document.getElementById('page-vue-ensemble').classList.contains('active')) {
@@ -3226,34 +3720,23 @@ function renderTunnelColumn(tunnel) {
     '<div class="tunnel-col-stats"><strong>' + actifs + '</strong> actif · <strong style="color:var(--orange-d)">' + repandus + '</strong> répondu</div>' +
     '</div>'
 
-  // Bouton "Nouvelle email — clique pour ajouter"
-  html += '<div class="tunnel-add-btn" id="add-btn-' + tunnel.id + '" onclick="ouvrirInlineForm(\'' + tunnel.id + '\')">' +
-    '<div class="tunnel-add-btn-title">+ Nouvelle email</div>' +
-    '<div class="tunnel-add-btn-sub">Clique pour ajouter</div>' +
-    '</div>'
-
-  // Mini-form (caché par défaut)
-  html += '<div class="tunnel-inline-form" id="inline-form-' + tunnel.id + '">' +
+  // Formulaire d'ajout direct, toujours visible : email + prénom + bouton
+  html += '<div class="tunnel-quick-add" id="inline-form-' + tunnel.id + '">' +
     '<input type="email" name="email" placeholder="email@..." onkeypress="if(event.key===\'Enter\')soumettreInlineForm(\'' + tunnel.id + '\')">' +
-    '<input type="text" name="prenom" placeholder="Prénom (optionnel)">' +
-    '<input type="text" name="nom" placeholder="Nom (optionnel)">' +
-    '<input type="text" name="societe" placeholder="Société (optionnel)" onkeypress="if(event.key===\'Enter\')soumettreInlineForm(\'' + tunnel.id + '\')">' +
-    '<div class="actions">' +
-      '<button class="btn btn-sm" onclick="fermerInlineForm(\'' + tunnel.id + '\')">Annuler</button>' +
-      '<button class="btn btn-primary btn-sm" onclick="soumettreInlineForm(\'' + tunnel.id + '\')">→ Ajouter</button>' +
-    '</div></div>'
+    '<input type="text" name="prenom" placeholder="Prénom" onkeypress="if(event.key===\'Enter\')soumettreInlineForm(\'' + tunnel.id + '\')">' +
+    '<button class="tunnel-quick-btn" onclick="soumettreInlineForm(\'' + tunnel.id + '\')" title="Ajouter au tunnel">+</button>' +
+    '</div>'
 
   // Étapes verticales
   html += '<div class="tunnel-steps-vert">'
   tunnel.etapes.forEach((etape, i) => {
-    // Prospects à cette étape (actifs)
+    // Prospects actifs à cette étape (violet, à gauche)
     const psEtape = ps.filter(p => p.etapeCourante === i && !p.termine && !p.repandu)
-    // Prospects qui ont répondu APRÈS cette étape (donc historique contient cette étape comme dernière envoyée)
+    // Prospects qui ont répondu après cette étape (orange, à droite)
     const psRepThisStep = ps.filter(p => {
       if (!p.repandu) return false
       const histo = p.historique || []
       if (!histo.length) return false
-      // dernière étape envoyée = i
       return histo[histo.length - 1].etape === i
     })
 
@@ -3266,25 +3749,27 @@ function renderTunnelColumn(tunnel) {
       delLabel = 'J+' + (etape.delaiVal || 0) + (etape.heureEnvoi ? ' à ' + etape.heureEnvoi : '')
     }
 
-    html += '<div class="tunnel-step-vert">' +
-      '<div class="tunnel-step-box">' +
-        '<div class="tunnel-step-vert-header">' +
-          '<div class="tunnel-step-vert-label"><span class="tunnel-step-vert-num"' + (etape.silencieuse ? ' style="background:var(--g400)"' : '') + '>' + (etape.silencieuse ? '⏸' : (i + 1)) + '</span>' + (etape.silencieuse ? 'Départ' : (i === 0 ? 'Initial' : 'Relance ' + i)) + '</div>' +
-          '<div class="tunnel-step-vert-time">' + delLabel + '</div>' +
-        '</div>' +
-        '<div class="tunnel-step-vert-dots">'
+    html += '<div class="tunnel-step-box">' +
+      '<div class="tunnel-step-vert-header">' +
+        '<div class="tunnel-step-vert-label"><span class="tunnel-step-vert-num"' + (etape.silencieuse ? ' style="background:var(--g400)"' : '') + '>' + (etape.silencieuse ? '⏸' : (i + 1)) + '</span>' + (etape.silencieuse ? 'Départ' : (i === 0 ? 'Initial' : 'Relance ' + i)) + '</div>' +
+        '<div class="tunnel-step-vert-time">' + delLabel + '</div>' +
+      '</div>' +
+      '<div class="step-dots-split">' +
+        '<div class="step-dots-left">'
     psEtape.forEach(p => {
       html += '<div class="dot actif" data-email="' + escapeHtml(p.email) + '" onclick="voirProspect(\'' + p.id + '\')"></div>'
     })
-    html += '</div></div>'
-
-    // Colonne réponses à droite de cette étape
-    html += '<div class="tunnel-step-vert-replies">' +
-      '<div class="tunnel-step-vert-replies-dots">'
+    html += '</div>' +
+        '<div class="step-dots-right">'
     psRepThisStep.forEach(p => {
       html += '<div class="dot repandu" data-email="' + escapeHtml(p.email) + '" title="A répondu à l\'étape ' + (i+1) + '" onclick="voirProspect(\'' + p.id + '\')"></div>'
     })
-    html += '</div></div></div>'
+    html += '</div></div>' +
+      '<div class="step-counts">' +
+        '<span class="sc-actifs">' + psEtape.length + ' en cours</span>' +
+        '<span class="sc-rep">' + psRepThisStep.length + ' répondu' + (psRepThisStep.length > 1 ? 's' : '') + '</span>' +
+      '</div>' +
+    '</div>'
 
     // Flèche entre étapes
     if (i < tunnel.etapes.length - 1) {
@@ -3762,8 +4247,389 @@ function importerGroupeDansTunnel() {
 }
 
 
+// ═══ NEWSLETTER ═══
+let _nlTab = 'rediger'
+
+function afficherNewsletter() {
+  if (!S.abonnes) S.abonnes = []
+  if (!S.newsletters) S.newsletters = []
+  const el = document.getElementById('contenu-newsletter')
+  if (!el) return
+  const actifs = S.abonnes.filter(a => !a.desinscrit)
+  const sub = document.getElementById('nl-sub')
+  if (sub) sub.textContent = actifs.length + ' abonn\u00e9' + (actifs.length > 1 ? 's' : '') + ' actif' + (actifs.length > 1 ? 's' : '') + ' \u00b7 ' + S.newsletters.length + ' envoi' + (S.newsletters.length > 1 ? 's' : '')
+
+  let html = '<div class="nl-tabs">' +
+    '<button class="nl-tab' + (_nlTab === 'rediger' ? ' active' : '') + '" onclick="switchNlTab(\'rediger\')">\u270d\ufe0f R\u00e9diger</button>' +
+    '<button class="nl-tab' + (_nlTab === 'abonnes' ? ' active' : '') + '" onclick="switchNlTab(\'abonnes\')">\ud83d\udc65 Abonn\u00e9s (' + actifs.length + ')</button>' +
+    '<button class="nl-tab' + (_nlTab === 'historique' ? ' active' : '') + '" onclick="switchNlTab(\'historique\')">\ud83d\udcca Historique</button>' +
+    '</div>'
+
+  if (_nlTab === 'rediger') html += renderNlRediger(actifs)
+  else if (_nlTab === 'abonnes') html += renderNlAbonnes()
+  else html += renderNlHistorique()
+
+  el.innerHTML = html
+}
+
+function switchNlTab(tab) { _nlTab = tab; afficherNewsletter() }
+
+// ─── Onglet Rédiger ───
+function renderNlRediger(actifs) {
+  const enCours = S.newsletters.find(n => n.statut === 'encours' || n.statut === 'pause')
+  let html = ''
+
+  if (enCours) {
+    const pct = enCours.total > 0 ? Math.round(enCours.envoyes.length / enCours.total * 100) : 0
+    html += '<div class="nl-card" style="border-color:var(--accent)">' +
+      '<div class="nl-card-header"><div class="nl-card-title">\u23f3 Envoi en cours : ' + escapeHtml(enCours.sujet) + '</div>' +
+      '<div>' + (enCours.statut === 'pause'
+        ? '<button class="btn btn-primary btn-sm" onclick="reprendreNewsletter(\'' + enCours.id + '\')">\u25b6 Reprendre</button>'
+        : '<button class="btn btn-sm" onclick="pauserNewsletter(\'' + enCours.id + '\')">\u23f8 Pause</button>') +
+      '</div></div>' +
+      '<div class="nl-progress-track"><div class="nl-progress-fill" style="width:' + pct + '%"></div></div>' +
+      '<div class="nl-card-stats"><span><strong>' + enCours.envoyes.length + '</strong>/' + enCours.total + ' envoy\u00e9s</span>' +
+      (enCours.echecs.length ? '<span style="color:var(--red)"><strong>' + enCours.echecs.length + '</strong> \u00e9checs</span>' : '') +
+      '<span>' + (enCours.statut === 'pause' ? 'En pause' : 'Laissez l\u2019onglet ouvert, l\u2019envoi continue') + '</span></div>' +
+      '</div>'
+  }
+
+  html += '<div class="builder-section" style="margin-bottom:0">' +
+    '<div class="form-group"><label class="label">Objet</label>' +
+    '<input class="input" id="nl-sujet" placeholder="L\u2019objet de votre newsletter (les variables {{prenom}} fonctionnent)"></div>' +
+    '<div class="form-group"><label class="label">Contenu</label>' +
+    renderRichEditor('nl-corps', '', -1) +
+    '<div style="font-size:10px;color:var(--g500);margin-top:6px">La mention de d\u00e9sinscription \u00ab R\u00e9pondez STOP \u00bb est ajout\u00e9e automatiquement en bas de chaque envoi.</div></div>' +
+    '<div class="nl-send-bar">' +
+      '<div class="field"><label>D\u00e9bit d\u2019envoi</label><select id="nl-debit">' +
+        '<option value="50">Prudent \u00b7 50/heure</option>' +
+        '<option value="100" selected>Normal \u00b7 100/heure</option>' +
+        '<option value="200">Rapide \u00b7 200/heure</option>' +
+      '</select></div>' +
+      '<div class="field" style="flex:1"><label>Destinataires</label><div style="font-size:13px;font-weight:600;padding:9px 0">' + actifs.length + ' abonn\u00e9' + (actifs.length > 1 ? 's' : '') + ' actif' + (actifs.length > 1 ? 's' : '') + '</div></div>' +
+      '<button class="btn btn-primary btn-lg" onclick="lancerNewsletter()"' + (actifs.length === 0 || enCours ? ' disabled' : '') + '>\ud83d\ude80 Envoyer</button>' +
+    '</div>' +
+    (enCours ? '<div style="font-size:11px;color:var(--amber);margin-top:8px">\u26a0 Un envoi est d\u00e9j\u00e0 en cours, terminez-le ou mettez-le en pause avant d\u2019en lancer un autre.</div>' : '') +
+    '</div>'
+  return html
+}
+
+function lancerNewsletter() {
+  if (!S.accessToken) { alert('Connectez-vous d\u2019abord \u00e0 votre compte email'); return }
+  const sujet = document.getElementById('nl-sujet').value.trim()
+  const corpsEl = document.getElementById('nl-corps')
+  const corps = corpsEl ? corpsEl.innerHTML.trim() : ''
+  if (!sujet) { alert('Donnez un objet \u00e0 votre newsletter'); return }
+  if (!corps || corps === '<br>') { alert('R\u00e9digez le contenu'); return }
+  const actifs = S.abonnes.filter(a => !a.desinscrit)
+  if (!actifs.length) { alert('Aucun abonn\u00e9 actif'); return }
+  if (S.newsletters.some(n => n.statut === 'encours' || n.statut === 'pause')) { alert('Un envoi est d\u00e9j\u00e0 en cours'); return }
+  const debit = parseInt(document.getElementById('nl-debit').value, 10) || 100
+  if (!confirm('Envoyer \u00ab ' + sujet + ' \u00bb \u00e0 ' + actifs.length + ' abonn\u00e9(s) au rythme de ' + debit + '/heure ?')) return
+
+  S.newsletters.unshift({
+    id: uid(), sujet: sujet, corps: corps,
+    destinataires: actifs.map(a => a.email),
+    envoyes: [], echecs: [],
+    total: actifs.length, debit: debit,
+    statut: 'encours', lanceeA: isoMaint(), dernierEnvoiA: null
+  })
+  sauver()
+  ajouterJournal('\ud83d\udcf0 Newsletter \u00ab ' + sujet + ' \u00bb lanc\u00e9e : ' + actifs.length + ' destinataires \u00e0 ' + debit + '/h', 'ok')
+  demarrerFileNewsletter()
+  afficherNewsletter()
+  setTimeout(() => traiterFileNewsletter(), 1000)
+}
+
+function pauserNewsletter(id) {
+  const n = S.newsletters.find(x => x.id === id)
+  if (n) { n.statut = 'pause'; sauver(); afficherNewsletter(); ajouterJournal('\u23f8 Newsletter en pause', 'info') }
+}
+function reprendreNewsletter(id) {
+  const n = S.newsletters.find(x => x.id === id)
+  if (n) { n.statut = 'encours'; sauver(); afficherNewsletter(); ajouterJournal('\u25b6 Newsletter reprise', 'ok'); setTimeout(() => traiterFileNewsletter(), 500) }
+}
+
+// ─── File d'envoi ───
+let intervalNewsletter = null
+function demarrerFileNewsletter() {
+  if (intervalNewsletter) return
+  intervalNewsletter = setInterval(() => { traiterFileNewsletter() }, 20000)
+}
+
+async function traiterFileNewsletter() {
+  if (!S.accessToken) return
+  const n = (S.newsletters || []).find(x => x.statut === 'encours')
+  if (!n) return
+  // Respect du débit : intervalle mini entre 2 envois = 3600/debit secondes, avec jitter
+  const intervalMs = (3600 / n.debit) * 1000
+  const dernier = n.dernierEnvoiA ? new Date(n.dernierEnvoiA).getTime() : 0
+  const jitter = 0.8 + Math.random() * 0.4
+  if (Date.now() - dernier < intervalMs * jitter) return
+
+  const dejaTraites = new Set(n.envoyes.concat(n.echecs))
+  const prochain = n.destinataires.find(e => !dejaTraites.has(e))
+  if (!prochain) {
+    n.statut = 'terminee'; n.termineeA = isoMaint(); sauver()
+    ajouterJournal('\u2705 Newsletter \u00ab ' + n.sujet + ' \u00bb termin\u00e9e : ' + n.envoyes.length + '/' + n.total + ' envoy\u00e9s', 'ok')
+    if (document.getElementById('page-newsletter').classList.contains('active')) afficherNewsletter()
+    return
+  }
+
+  const abonne = S.abonnes.find(a => a.email === prochain) || { email: prochain, prenom: '' }
+  if (abonne.desinscrit) { n.echecs.push(prochain); sauver(); return }
+
+  const footer = '<br><br><hr style="border:none;border-top:1px solid #eee;margin:16px 0"><small style="color:#888">Vous recevez cet email car vous \u00eates abonn\u00e9 \u00e0 cette newsletter. R\u00e9pondez STOP pour ne plus recevoir de messages.</small>'
+  const ok = await envoyerEmail({ email: abonne.email, prenom: abonne.prenom || '', nom: '', societe: '' }, n.sujet, n.corps + footer)
+  n.dernierEnvoiA = isoMaint()
+  if (ok) n.envoyes.push(prochain)
+  else n.echecs.push(prochain)
+  sauver()
+  if (document.getElementById('page-newsletter').classList.contains('active') && _nlTab === 'rediger') afficherNewsletter()
+}
+
+// ─── Onglet Abonnés ───
+function renderNlAbonnes() {
+  const lpUrl = construireLienLP()
+  let html = '<div class="nl-lp-box">' +
+    '<div style="font-size:13px;font-weight:600;margin-bottom:6px">\ud83c\udf10 Votre page d\u2019abonnement publique</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">' +
+      '<input class="input" id="nl-titre" placeholder="Nom de la newsletter" value="' + escapeHtml(S.nlTitre || '') + '" onchange="S.nlTitre=this.value;sauver();afficherNewsletter()">' +
+      '<input class="input" id="nl-desc" placeholder="Une phrase de description" value="' + escapeHtml(S.nlDesc || '') + '" onchange="S.nlDesc=this.value;sauver();afficherNewsletter()">' +
+    '</div>' +
+    '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">' +
+      '<input class="input" id="nl-photo" placeholder="URL de votre photo ou logo (optionnel, ex: https://.../photo.jpg)" value="' + escapeHtml(S.nlPhoto || '') + '" onchange="S.nlPhoto=this.value.trim();sauver();afficherNewsletter()" style="flex:1">' +
+      (S.nlPhoto ? '<img src="' + escapeHtml(S.nlPhoto) + '" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid var(--accent)" onerror="this.style.display=\'none\'">' : '') +
+    '</div>' +
+    (lpUrl
+      ? '<div class="nl-lp-url" id="nl-lp-url">' + escapeHtml(lpUrl) + '</div>' +
+        '<button class="btn btn-primary btn-sm" onclick="copierLienLP()">\ud83d\udccb Copier le lien</button>' +
+        '<span style="font-size:11px;color:var(--g500);margin-left:10px">Partagez-le : les visiteurs s\u2019abonnent en 2 clics, MailSeq les ajoute automatiquement \u00e0 la synchro.</span>'
+      : '<div style="font-size:12px;color:var(--amber)">\u26a0 Connectez-vous \u00e0 votre bo\u00eete email pour g\u00e9n\u00e9rer votre lien d\u2019abonnement.</div>') +
+    '</div>'
+
+  html += '<div class="nl-abonne-add">' +
+    '<input type="email" id="ab-email" placeholder="email@..." onkeypress="if(event.key===\'Enter\')ajouterAbonne()">' +
+    '<input type="text" id="ab-prenom" placeholder="Pr\u00e9nom" onkeypress="if(event.key===\'Enter\')ajouterAbonne()">' +
+    '<button class="tunnel-quick-btn" onclick="ajouterAbonne()">+</button>' +
+    '</div>'
+
+  const abonnes = (S.abonnes || []).slice().sort((a, b) => (b.inscritA || '').localeCompare(a.inscritA || ''))
+  if (!abonnes.length) {
+    html += '<div class="empty"><div class="empty-icon">\ud83d\udce8</div><div class="empty-title">Aucun abonn\u00e9</div><p>Ajoutez vos premiers abonn\u00e9s ci-dessus ou partagez votre page d\u2019abonnement</p></div>'
+  } else {
+    html += '<div class="prospects-list"><table class="prospects-table">' +
+      '<thead><tr><th>Email</th><th>Pr\u00e9nom</th><th>Source</th><th>Inscrit le</th><th>Statut</th><th></th></tr></thead><tbody>'
+    for (const a of abonnes) {
+      const src = a.source === 'lp' ? '\ud83c\udf10 page' : a.source === 'import' ? '\ud83d\udce5 import' : '\u270d\ufe0f manuel'
+      html += '<tr style="' + (a.desinscrit ? 'opacity:.45' : '') + '">' +
+        '<td style="font-family:monospace;font-size:11.5px">' + escapeHtml(a.email) + '</td>' +
+        '<td>' + escapeHtml(a.prenom || '\u2014') + '</td>' +
+        '<td style="font-size:11px">' + src + '</td>' +
+        '<td style="font-size:11px">' + (a.inscritA ? new Date(a.inscritA).toLocaleDateString('fr-FR') : '\u2014') + '</td>' +
+        '<td>' + (a.desinscrit ? '<span class="badge b-red">d\u00e9sinscrit</span>' : '<span class="badge b-green">actif</span>') + '</td>' +
+        '<td>' + (a.desinscrit
+          ? '<button class="btn btn-ghost btn-sm" onclick="reinscrireAbonne(\'' + a.id + '\')">\u21ba r\u00e9inscrire</button>'
+          : '<button class="btn btn-ghost btn-sm" onclick="desinscrireAbonne(\'' + a.id + '\')" style="color:var(--red)">d\u00e9sinscrire</button>') +
+        ' <button class="btn btn-ghost btn-sm" onclick="supprimerAbonne(\'' + a.id + '\')" style="color:var(--red)">\u2715</button></td>' +
+        '</tr>'
+    }
+    html += '</tbody></table></div>'
+  }
+  return html
+}
+
+function ajouterAbonne() {
+  const email = document.getElementById('ab-email').value.trim()
+  const prenom = document.getElementById('ab-prenom').value.trim()
+  if (!email || !/.+@.+\..+/.test(email)) { alert('Email invalide'); return }
+  if (S.abonnes.some(a => a.email.toLowerCase() === email.toLowerCase())) { alert('D\u00e9j\u00e0 abonn\u00e9'); return }
+  S.abonnes.push({ id: uid(), email: email, prenom: prenom, source: 'manuel', inscritA: isoMaint(), desinscrit: false })
+  sauver()
+  ajouterJournal('\ud83d\udce8 ' + email + ' ajout\u00e9 aux abonn\u00e9s', 'ok')
+  afficherNewsletter()
+}
+
+function desinscrireAbonne(id) {
+  const a = S.abonnes.find(x => x.id === id)
+  if (a) { a.desinscrit = true; a.desinscritA = isoMaint(); sauver(); afficherNewsletter() }
+}
+function reinscrireAbonne(id) {
+  const a = S.abonnes.find(x => x.id === id)
+  if (a) { a.desinscrit = false; delete a.desinscritA; sauver(); afficherNewsletter() }
+}
+function supprimerAbonne(id) {
+  if (!confirm('Supprimer d\u00e9finitivement cet abonn\u00e9 ?')) return
+  S.abonnes = S.abonnes.filter(x => x.id !== id)
+  sauver(); afficherNewsletter()
+}
+
+// ─── Onglet Historique ───
+function renderNlHistorique() {
+  const lst = S.newsletters || []
+  if (!lst.length) return '<div class="empty"><div class="empty-icon">\ud83d\udcca</div><div class="empty-title">Aucune newsletter envoy\u00e9e</div><p>Vos envois appara\u00eetront ici avec leur progression</p></div>'
+  let html = ''
+  for (const n of lst) {
+    const pct = n.total > 0 ? Math.round(n.envoyes.length / n.total * 100) : 0
+    const badge = n.statut === 'terminee' ? '<span class="badge b-green">termin\u00e9e</span>' :
+      n.statut === 'pause' ? '<span class="badge b-amber">en pause</span>' :
+      n.statut === 'encours' ? '<span class="badge b-blue">en cours</span>' : '<span class="badge">brouillon</span>'
+    html += '<div class="nl-card">' +
+      '<div class="nl-card-header">' +
+      '<div class="nl-card-title">' + escapeHtml(n.sujet) + ' ' + badge + '</div>' +
+      '<div style="display:flex;gap:6px">' +
+      (n.statut === 'encours' ? '<button class="btn btn-sm" onclick="pauserNewsletter(\'' + n.id + '\')">\u23f8</button>' : '') +
+      (n.statut === 'pause' ? '<button class="btn btn-primary btn-sm" onclick="reprendreNewsletter(\'' + n.id + '\')">\u25b6</button>' : '') +
+      '<button class="btn btn-ghost btn-sm" onclick="dupliquerNewsletter(\'' + n.id + '\')">\u29c9 dupliquer</button>' +
+      '</div></div>' +
+      '<div class="nl-progress-track"><div class="nl-progress-fill" style="width:' + pct + '%"></div></div>' +
+      '<div class="nl-card-stats">' +
+      '<span><strong>' + n.envoyes.length + '</strong>/' + n.total + ' envoy\u00e9s</span>' +
+      (n.echecs.length ? '<span style="color:var(--red)"><strong>' + n.echecs.length + '</strong> \u00e9checs</span>' : '') +
+      '<span>lanc\u00e9e le ' + (n.lanceeA ? new Date(n.lanceeA).toLocaleDateString('fr-FR') : '\u2014') + '</span>' +
+      '</div></div>'
+  }
+  return html
+}
+
+function dupliquerNewsletter(id) {
+  const n = S.newsletters.find(x => x.id === id)
+  if (!n) return
+  _nlTab = 'rediger'
+  afficherNewsletter()
+  setTimeout(() => {
+    const s = document.getElementById('nl-sujet'); if (s) s.value = n.sujet
+    const c = document.getElementById('nl-corps'); if (c) c.innerHTML = n.corps
+  }, 100)
+}
+
+// ─── Landing page : lien + détections ───
+function construireLienLP() {
+  if (!S.userEmail) return null
+  const payload = { e: S.userEmail, t: S.nlTitre || 'Ma newsletter', d: S.nlDesc || '' }
+  if (S.nlPhoto) payload.p = S.nlPhoto
+  try {
+    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
+    return window.location.href.split('?')[0].split('#')[0] + '?nl=' + b64
+  } catch (e) { return null }
+}
+
+function copierLienLP() {
+  const url = construireLienLP()
+  if (!url) return
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(() => ajouterJournal('\ud83d\udccb Lien de la page d\u2019abonnement copi\u00e9', 'ok'))
+  } else {
+    prompt('Copiez ce lien :', url)
+  }
+}
+
+// Mode landing page : détecté au chargement si ?nl= présent
+function detecterModeLP() {
+  try {
+    const params = new URLSearchParams(window.location.search)
+    const nl = params.get('nl')
+    if (!nl) return false
+    const payload = JSON.parse(decodeURIComponent(escape(atob(nl))))
+    if (!payload.e) return false
+    renderLandingPage(payload)
+    return true
+  } catch (e) { return false }
+}
+
+function renderLandingPage(p) {
+  const mailto = 'mailto:' + p.e + '?subject=' + encodeURIComponent('ABONNEMENT NEWSLETTER') + '&body=' + encodeURIComponent('Bonjour,\\n\\nJe souhaite m\\u2019abonner \\u00e0 votre newsletter.\\n\\nMon pr\\u00e9nom : \\n\\n(Envoyez ce message tel quel, votre inscription est automatique.)')
+  document.body.innerHTML =
+    '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0a0a14 0%,#1a1a3e 50%,#0a1f3a 100%);padding:20px;font-family:Inter,sans-serif">' +
+    '<div style="max-width:440px;width:100%;background:#fff;border-radius:20px;padding:40px;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.4)">' +
+    (p.p
+      ? '<img src="' + escapeHtml(p.p) + '" style="width:84px;height:84px;border-radius:50%;object-fit:cover;margin-bottom:20px;border:3px solid #eef2ff;box-shadow:0 8px 24px rgba(99,102,241,.25)" onerror="this.outerHTML=\'<div style=&quot;width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#6366f1,#4f46e5);display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px&quot;><span style=&quot;font-size:26px&quot;>\ud83d\udcf0</span></div>\'">'
+      : '<div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#6366f1,#4f46e5);display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px"><span style="font-size:26px">\ud83d\udcf0</span></div>') +
+    '<h1 style="font-size:24px;font-weight:700;color:#111827;margin-bottom:10px">' + escapeHtml(p.t || 'Newsletter') + '</h1>' +
+    (p.d ? '<p style="font-size:14px;color:#6b7280;line-height:1.6;margin-bottom:26px">' + escapeHtml(p.d) + '</p>' : '<div style="margin-bottom:26px"></div>') +
+    '<a href="' + mailto + '" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;font-weight:600;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;box-shadow:0 8px 24px rgba(99,102,241,.35)">S\u2019abonner gratuitement</a>' +
+    '<p style="font-size:11px;color:#9ca3af;margin-top:18px;line-height:1.5">Un email pr\u00e9-rempli va s\u2019ouvrir, envoyez-le tel quel.<br>D\u00e9sinscription \u00e0 tout moment en r\u00e9pondant STOP.</p>' +
+    '</div></div>'
+  document.title = p.t || 'Newsletter'
+}
+
+// Détection des abonnements + désinscriptions dans la boîte mail (appelée à la synchro)
+async function verifierNewsletterInbox() {
+  if (!S.accessToken) return
+  try {
+    let messages = []
+    if (S.provider === 'google') {
+      const r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?q=in:inbox&maxResults=40', { headers: { Authorization: 'Bearer ' + S.accessToken } })
+      if (!r.ok) return
+      const data = await r.json()
+      const ids = (data.messages || []).slice(0, 30)
+      for (const m of ids) {
+        const mr = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/' + m.id + '?format=metadata&metadataHeaders=From&metadataHeaders=Subject', { headers: { Authorization: 'Bearer ' + S.accessToken } })
+        if (!mr.ok) continue
+        const md = await mr.json()
+        const fromH = md.payload && md.payload.headers ? md.payload.headers.find(h => h.name === 'From') : null
+        const subjH = md.payload && md.payload.headers ? md.payload.headers.find(h => h.name === 'Subject') : null
+        if (fromH) messages.push({
+          from: fromH.value.replace(/.*<(.+)>.*/, '$1').trim().toLowerCase(),
+          fromName: (fromH.value.match(/^([^<]+)</) || [])[1] ? (fromH.value.match(/^([^<]+)</) || [])[1].trim().replace(/"/g, '') : '',
+          subject: subjH ? subjH.value : '',
+          snippet: md.snippet || ''
+        })
+      }
+    } else {
+      const r = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages?$select=from,subject,bodyPreview&$top=40&$orderby=receivedDateTime desc', { headers: { Authorization: 'Bearer ' + S.accessToken } })
+      if (!r.ok) return
+      const data = await r.json()
+      messages = (data.value || []).map(m => ({
+        from: (m.from && m.from.emailAddress ? m.from.emailAddress.address : '').toLowerCase(),
+        fromName: m.from && m.from.emailAddress ? (m.from.emailAddress.name || '') : '',
+        subject: m.subject || '',
+        snippet: m.bodyPreview || ''
+      }))
+    }
+
+    let changements = 0
+    for (const msg of messages) {
+      if (!msg.from) continue
+
+      // 1. Abonnement via landing page
+      if (/ABONNEMENT NEWSLETTER/i.test(msg.subject)) {
+        if (!S.abonnes.some(a => a.email.toLowerCase() === msg.from)) {
+          // Tenter d'extraire le prénom du corps ("Mon prénom : X") ou du nom d'affichage
+          let prenom = ''
+          const mPrenom = (msg.snippet || '').match(/pr\u00e9nom\s*:\s*([A-Za-z\u00c0-\u00ff\-']{2,20})/i)
+          if (mPrenom) prenom = mPrenom[1].trim()
+          else if (msg.fromName) prenom = msg.fromName.split(' ')[0]
+          S.abonnes.push({ id: uid(), email: msg.from, prenom: prenom, source: 'lp', inscritA: isoMaint(), desinscrit: false })
+          ajouterJournal('\ud83c\udf10 Nouvel abonn\u00e9 via la page : ' + msg.from, 'ok')
+          changements++
+        }
+        continue
+      }
+
+      // 2. Désinscription par STOP (abonné actif uniquement)
+      const abonne = S.abonnes.find(a => a.email.toLowerCase() === msg.from && !a.desinscrit)
+      if (abonne && /\bSTOP\b/i.test((msg.snippet || '') + ' ' + (msg.subject || ''))) {
+        abonne.desinscrit = true
+        abonne.desinscritA = isoMaint()
+        ajouterJournal('\ud83d\uded1 ' + msg.from + ' d\u00e9sinscrit de la newsletter (STOP)', 'warn')
+        changements++
+      }
+    }
+    if (changements > 0) {
+      sauver()
+      if (document.getElementById('page-newsletter') && document.getElementById('page-newsletter').classList.contains('active')) afficherNewsletter()
+    }
+  } catch (e) {
+    // silencieux : la vérification newsletter ne doit jamais casser la synchro principale
+  }
+}
+
 // ═══ INITIALISATION ═══
 (function init() {
+  // Mode landing page publique : si l'URL contient ?nl=..., on affiche uniquement la page d'abonnement
+  if (detecterModeLP()) return
+
   // Migration: ancien data model "msp_v3" → nouveau "mailseq_v2"
   try {
     const old = localStorage.getItem('msp_v3')
@@ -3798,6 +4664,10 @@ function importerGroupeDansTunnel() {
   if (S.accessToken) {
     demarrerSynchroAuto()
     setTimeout(() => synchroniser(), 2000)
+  }
+  // Reprendre la file newsletter si un envoi était en cours
+  if ((S.newsletters || []).some(n => n.statut === 'encours')) {
+    demarrerFileNewsletter()
   }
 
   // Badges
