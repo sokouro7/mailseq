@@ -4804,7 +4804,7 @@ function parseInscription(texte) {
 
   const labelsConnus = [
     'Pr\u00e9nom', 'Prenom',
-    'Nom de votre Entreprise', "Nom de l'entreprise", 'Entreprise', 'Soci\u00e9t\u00e9', 'Company',
+    'Nom de votre Entreprise', "Nom de l'entreprise", 'Votre entreprise', 'Entreprise', 'Soci\u00e9t\u00e9', 'Company',
     "Votre secteur d'activit\u00e9", "Secteur d'activit\u00e9", 'Secteur',
     'Nom complet', 'Nom', 'Name',
     'Adresse email', 'Adresse e-mail', 'E-mail', 'Email', 'Mail',
@@ -4838,7 +4838,7 @@ function parseInscription(texte) {
     email: email,
     prenom: champ(['Pr\u00e9nom', 'Prenom']),
     nom: champ(['Nom complet', 'Name']) || champNom(),
-    societe: champ(['Nom de votre Entreprise', "Nom de l'entreprise", 'Entreprise', 'Soci\u00e9t\u00e9', 'Company']),
+    societe: champ(['Nom de votre Entreprise', "Nom de l'entreprise", 'Votre entreprise', 'Entreprise', 'Soci\u00e9t\u00e9', 'Company']),
     secteur: champ(["Votre secteur d'activit\u00e9", "Secteur d'activit\u00e9", 'Secteur'])
   }
 }
