@@ -4546,12 +4546,13 @@ function renderNlAbonnes() {
     html += '<div class="empty"><div class="empty-icon">\ud83d\udce8</div><div class="empty-title">Aucun abonn\u00e9</div><p>Ajoutez vos premiers abonn\u00e9s ci-dessus ou partagez votre page d\u2019abonnement</p></div>'
   } else {
     html += '<div class="prospects-list"><table class="prospects-table">' +
-      '<thead><tr><th>Email</th><th>Pr\u00e9nom</th><th>Entreprise</th><th>Source</th><th>Inscrit le</th><th>Statut</th><th></th></tr></thead><tbody>'
+      '<thead><tr><th>Email</th><th>Pr\u00e9nom</th><th>Nom</th><th>Entreprise</th><th>Source</th><th>Inscrit le</th><th>Statut</th><th></th></tr></thead><tbody>'
     for (const a of abonnes) {
       const src = a.source === 'lp' ? '\ud83c\udf10 page' : a.source === 'import' ? '\ud83d\udce5 import' : '\u270d\ufe0f manuel'
       html += '<tr style="' + (a.desinscrit ? 'opacity:.45' : '') + '">' +
         '<td style="font-family:monospace;font-size:11.5px">' + escapeHtml(a.email) + '</td>' +
         '<td>' + escapeHtml(a.prenom || '\u2014') + '</td>' +
+        '<td>' + escapeHtml(a.nom || '\u2014') + '</td>' +
         '<td>' + (a.societe ? escapeHtml(a.societe) + (a.secteur ? '<div style="font-size:10px;color:var(--g500)">' + escapeHtml(a.secteur) + '</div>' : '') : (a.secteur ? escapeHtml(a.secteur) : '\u2014')) + '</td>' +
         '<td style="font-size:11px">' + src + '</td>' +
         '<td style="font-size:11px">' + (a.inscritA ? new Date(a.inscritA).toLocaleDateString('fr-FR') : '\u2014') + '</td>' +
