@@ -1258,12 +1258,13 @@ body.dark .rich-toolbar { background:var(--g50); }
 .tunnel-quick-add {
   display:flex; flex-direction:column;
   gap:6px;
+  width:100%; min-width:0; box-sizing:border-box;
 }
 .tunnel-quick-add .tqa-row1 {
-  display:grid; grid-template-columns:1fr auto; gap:6px;
+  display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px;
 }
 .tunnel-quick-add .tqa-row2 {
-  display:grid; grid-template-columns:1fr 1fr 1.2fr; gap:6px;
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:6px;
 }
 .tunnel-quick-add input {
   height:38px; padding:0 10px;
@@ -1273,6 +1274,7 @@ body.dark .rich-toolbar { background:var(--g50); }
   background:var(--accent-l); color:var(--g900);
   outline:none;
   transition:all .15s;
+  width:100%; min-width:0; box-sizing:border-box;
 }
 .tunnel-quick-add input:focus {
   border-style:solid;
