@@ -1790,6 +1790,9 @@ const S = (() => {
     nlDesc: '',
     nlPhoto: '',
     nlFond: '',
+    nlBienvenueActif: false,
+    nlBienvenueSujet: '',
+    nlBienvenueCorps: '',
     blacklist: [],
     journaux: [],
     templates: [],
@@ -4310,11 +4313,13 @@ function afficherNewsletter() {
   html += '<div class="nl-tabs">' +
     '<button class="nl-tab' + (_nlTab === 'rediger' ? ' active' : '') + '" onclick="switchNlTab(\'rediger\')">\u270d\ufe0f R\u00e9diger</button>' +
     '<button class="nl-tab' + (_nlTab === 'abonnes' ? ' active' : '') + '" onclick="switchNlTab(\'abonnes\')">\ud83d\udc65 Abonn\u00e9s (' + actifs.length + ')</button>' +
+    '<button class="nl-tab' + (_nlTab === 'automatisations' ? ' active' : '') + '" onclick="switchNlTab(\'automatisations\')">\u26a1 Automatisations</button>' +
     '<button class="nl-tab' + (_nlTab === 'historique' ? ' active' : '') + '" onclick="switchNlTab(\'historique\')">\ud83d\udcca Historique</button>' +
     '</div>'
 
   if (_nlTab === 'rediger') html += renderNlRediger(actifs)
   else if (_nlTab === 'abonnes') html += renderNlAbonnes()
+  else if (_nlTab === 'automatisations') html += renderNlAutomatisations()
   else html += renderNlHistorique()
 
   el.innerHTML = html
@@ -4354,12 +4359,28 @@ function renderNlRediger(actifs) {
         '<option value="100" selected>Normal \u00b7 100/heure</option>' +
         '<option value="200">Rapide \u00b7 200/heure</option>' +
       '</select></div>' +
+      '<div class="field"><label>Quand ?</label><select id="nl-quand" onchange="toggleNlProg()">' +
+        '<option value="now" selected>Envoyer maintenant</option>' +
+        '<option value="prog">Programmer</option>' +
+      '</select></div>' +
+      '<div class="field" id="nl-prog-datetime" style="display:none"><label>Date et heure</label><input type="datetime-local" id="nl-datetime" style="height:38px;padding:0 10px;border:1px solid var(--g200);border-radius:var(--r);font-family:inherit;font-size:12px;background:var(--w)"></div>' +
       '<div class="field" style="flex:1"><label>Destinataires</label><div style="font-size:13px;font-weight:600;padding:9px 0">' + actifs.length + ' abonn\u00e9' + (actifs.length > 1 ? 's' : '') + ' actif' + (actifs.length > 1 ? 's' : '') + '</div></div>' +
-      '<button class="btn btn-primary btn-lg" onclick="lancerNewsletter()"' + (actifs.length === 0 || enCours ? ' disabled' : '') + '>\ud83d\ude80 Envoyer</button>' +
+      '<button class="btn btn-primary btn-lg" id="nl-send-btn" onclick="lancerNewsletter()"' + (actifs.length === 0 || enCours ? ' disabled' : '') + '>\ud83d\ude80 Envoyer</button>' +
     '</div>' +
     (enCours ? '<div style="font-size:11px;color:var(--amber);margin-top:8px">\u26a0 Un envoi est d\u00e9j\u00e0 en cours, terminez-le ou mettez-le en pause avant d\u2019en lancer un autre.</div>' : '') +
     '</div>'
   return html
+}
+
+
+function toggleNlProg() {
+  const sel = document.getElementById('nl-quand')
+  const dt = document.getElementById('nl-prog-datetime')
+  const btn = document.getElementById('nl-send-btn')
+  if (!sel) return
+  const prog = sel.value === 'prog'
+  if (dt) dt.style.display = prog ? 'flex' : 'none'
+  if (btn) btn.innerHTML = prog ? '\ud83d\udcc5 Programmer l\u2019envoi' : '\ud83d\ude80 Envoyer'
 }
 
 function lancerNewsletter() {
@@ -4373,20 +4394,41 @@ function lancerNewsletter() {
   if (!actifs.length) { alert('Aucun abonn\u00e9 actif'); return }
   if (S.newsletters.some(n => n.statut === 'encours' || n.statut === 'pause')) { alert('Un envoi est d\u00e9j\u00e0 en cours'); return }
   const debit = parseInt(document.getElementById('nl-debit').value, 10) || 100
-  if (!confirm('Envoyer \u00ab ' + sujet + ' \u00bb \u00e0 ' + actifs.length + ' abonn\u00e9(s) au rythme de ' + debit + '/heure ?')) return
+
+  // Mode programmé ?
+  const quandSel = document.getElementById('nl-quand')
+  const estProgramme = quandSel && quandSel.value === 'prog'
+  let programmeePour = null
+  if (estProgramme) {
+    const dtInput = document.getElementById('nl-datetime')
+    if (!dtInput || !dtInput.value) { alert('Choisissez une date et une heure d\'envoi'); return }
+    programmeePour = new Date(dtInput.value).toISOString()
+    if (new Date(programmeePour) <= new Date()) { alert('La date programm\u00e9e doit \u00eatre dans le futur'); return }
+  }
+
+  const quandTxt = estProgramme
+    ? 'le ' + new Date(programmeePour).toLocaleString('fr-FR')
+    : 'maintenant'
+  if (!confirm('Envoyer \u00ab ' + sujet + ' \u00bb \u00e0 ' + actifs.length + ' abonn\u00e9(s) ' + quandTxt + ' (rythme ' + debit + '/heure) ?')) return
 
   S.newsletters.unshift({
     id: uid(), sujet: sujet, corps: corps,
     destinataires: actifs.map(a => a.email),
     envoyes: [], echecs: [],
     total: actifs.length, debit: debit,
-    statut: 'encours', lanceeA: isoMaint(), dernierEnvoiA: null
+    statut: estProgramme ? 'programmee' : 'encours',
+    programmeePour: programmeePour,
+    lanceeA: isoMaint(), dernierEnvoiA: null
   })
   sauver()
-  ajouterJournal('\ud83d\udcf0 Newsletter \u00ab ' + sujet + ' \u00bb lanc\u00e9e : ' + actifs.length + ' destinataires \u00e0 ' + debit + '/h', 'ok')
-  demarrerFileNewsletter()
+  if (estProgramme) {
+    ajouterJournal('\ud83d\udcc5 Newsletter \u00ab ' + sujet + ' \u00bb programm\u00e9e pour ' + new Date(programmeePour).toLocaleString('fr-FR'), 'ok')
+  } else {
+    ajouterJournal('\ud83d\udcf0 Newsletter \u00ab ' + sujet + ' \u00bb lanc\u00e9e : ' + actifs.length + ' destinataires \u00e0 ' + debit + '/h', 'ok')
+    demarrerFileNewsletter()
+    setTimeout(() => traiterFileNewsletter(), 1000)
+  }
   afficherNewsletter()
-  setTimeout(() => traiterFileNewsletter(), 1000)
 }
 
 function pauserNewsletter(id) {
@@ -4404,9 +4446,27 @@ function demarrerFileNewsletter() {
   if (intervalNewsletter) return
   intervalNewsletter = setInterval(() => { traiterFileNewsletter() }, 20000)
 }
+// Vérifie régulièrement les newsletters programmées (indépendant de la connexion)
+let intervalProgNewsletter = null
+function demarrerVeilleProgrammations() {
+  if (intervalProgNewsletter) return
+  intervalProgNewsletter = setInterval(() => {
+    const arrivee = (S.newsletters || []).some(n => n.statut === 'programmee' && n.programmeePour && new Date(n.programmeePour) <= new Date())
+    if (arrivee) { demarrerFileNewsletter(); traiterFileNewsletter() }
+  }, 30000)
+}
 
 async function traiterFileNewsletter() {
   if (!S.accessToken) return
+  // Déclencher les newsletters programmées dont l'heure est arrivée
+  const maintProg = new Date()
+  ;(S.newsletters || []).forEach(nl => {
+    if (nl.statut === 'programmee' && nl.programmeePour && new Date(nl.programmeePour) <= maintProg) {
+      nl.statut = 'encours'
+      ajouterJournal('\ud83d\ude80 Newsletter programm\u00e9e \u00ab ' + nl.sujet + ' \u00bb : l\'heure est arriv\u00e9e, envoi lanc\u00e9', 'ok')
+      sauver()
+    }
+  })
   const n = (S.newsletters || []).find(x => x.statut === 'encours')
   if (!n) return
   // Respect du débit : intervalle mini entre 2 envois = 3600/debit secondes, avec jitter
@@ -4526,7 +4586,8 @@ function renderNlHistorique() {
     const pct = n.total > 0 ? Math.round(n.envoyes.length / n.total * 100) : 0
     const badge = n.statut === 'terminee' ? '<span class="badge b-green">termin\u00e9e</span>' :
       n.statut === 'pause' ? '<span class="badge b-amber">en pause</span>' :
-      n.statut === 'encours' ? '<span class="badge b-blue">en cours</span>' : '<span class="badge">brouillon</span>'
+      n.statut === 'encours' ? '<span class="badge b-blue">en cours</span>' :
+      n.statut === 'programmee' ? '<span class="badge b-blue">\ud83d\udcc5 programm\u00e9e</span>' : '<span class="badge">brouillon</span>'
     html += '<div class="nl-card">' +
       '<div class="nl-card-header">' +
       '<div class="nl-card-title">' + escapeHtml(n.sujet) + ' ' + badge + '</div>' +
@@ -4539,10 +4600,23 @@ function renderNlHistorique() {
       '<div class="nl-card-stats">' +
       '<span><strong>' + n.envoyes.length + '</strong>/' + n.total + ' envoy\u00e9s</span>' +
       (n.echecs.length ? '<span style="color:var(--red)"><strong>' + n.echecs.length + '</strong> \u00e9checs</span>' : '') +
-      '<span>lanc\u00e9e le ' + (n.lanceeA ? new Date(n.lanceeA).toLocaleDateString('fr-FR') : '\u2014') + '</span>' +
-      '</div></div>'
+      (n.statut === 'programmee' && n.programmeePour ? '<span style="color:var(--accent-d)">\ud83d\udcc5 pr\u00e9vue le ' + new Date(n.programmeePour).toLocaleString('fr-FR') + '</span>' : '<span>lanc\u00e9e le ' + (n.lanceeA ? new Date(n.lanceeA).toLocaleDateString('fr-FR') : '\u2014') + '</span>') +
+      '</div>' +
+      (n.statut === 'programmee' ? '<div style="margin-top:8px"><button class="btn btn-sm btn-danger" onclick="annulerProgrammation(\'' + n.id + '\')">Annuler la programmation</button></div>' : '') +
+      '</div>'
   }
   return html
+}
+
+
+function annulerProgrammation(id) {
+  const n = S.newsletters.find(x => x.id === id)
+  if (!n || n.statut !== 'programmee') return
+  if (!confirm('Annuler l\'envoi programm\u00e9 de \u00ab ' + n.sujet + ' \u00bb ?')) return
+  S.newsletters = S.newsletters.filter(x => x.id !== id)
+  sauver()
+  ajouterJournal('\ud83d\udcc5 Programmation annul\u00e9e : ' + n.sujet, 'warn')
+  afficherNewsletter()
 }
 
 function dupliquerNewsletter(id) {
@@ -4554,6 +4628,62 @@ function dupliquerNewsletter(id) {
     const s = document.getElementById('nl-sujet'); if (s) s.value = n.sujet
     const c = document.getElementById('nl-corps'); if (c) c.innerHTML = n.corps
   }, 100)
+}
+
+
+// ─── Onglet Automatisations ───
+function renderNlAutomatisations() {
+  const actif = S.nlBienvenueActif === true
+  let html = '<div class="builder-section" style="margin-bottom:16px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">' +
+      '<div>' +
+        '<div style="font-size:14px;font-weight:600;color:var(--g900)">\ud83d\udc4b Email de bienvenue automatique</div>' +
+        '<div style="font-size:12px;color:var(--g500);margin-top:2px">Envoy\u00e9 automatiquement \u00e0 chaque nouvel abonn\u00e9 d\u00e9tect\u00e9 via votre page.</div>' +
+      '</div>' +
+      '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;white-space:nowrap">' +
+        '<input type="checkbox"' + (actif ? ' checked' : '') + ' onchange="S.nlBienvenueActif=this.checked;sauver();afficherNewsletter()" style="width:18px;height:18px">' +
+        '<span style="font-size:12px;font-weight:600;color:' + (actif ? 'var(--green)' : 'var(--g500)') + '">' + (actif ? 'Activ\u00e9' : 'D\u00e9sactiv\u00e9') + '</span>' +
+      '</label>' +
+    '</div>'
+
+  if (actif) {
+    html += '<div style="margin-top:14px">' +
+      '<div class="form-group"><label class="label">Objet du mail de bienvenue</label>' +
+      '<input class="input" id="nl-bv-sujet" placeholder="Bienvenue \u00e0 bord {{prenom}} !" value="' + escapeHtml(S.nlBienvenueSujet || '') + '" onchange="S.nlBienvenueSujet=this.value;sauver()"></div>' +
+      '<div class="form-group"><label class="label">Message</label>' +
+      renderRichEditor('nl-bv-corps', S.nlBienvenueCorps || '', -2) +
+      '<div style="font-size:10px;color:var(--g500);margin-top:6px">Variables : {{prenom}} \u00b7 {{societe}}. La mention STOP est ajout\u00e9e automatiquement.</div></div>' +
+      '<button class="btn btn-primary btn-sm" onclick="sauverBienvenue()">\ud83d\udcbe Enregistrer le message</button>' +
+      '</div>'
+  }
+  html += '</div>'
+
+  // Info sur l'envoi programmé (rappel)
+  html += '<div class="builder-section" style="margin-bottom:0">' +
+    '<div style="font-size:14px;font-weight:600;color:var(--g900);margin-bottom:6px">\ud83d\udcc5 Envoi programm\u00e9</div>' +
+    '<div style="font-size:12px;color:var(--g500);line-height:1.6">Pour programmer une newsletter \u00e0 une date pr\u00e9cise, allez dans l\u2019onglet <strong>R\u00e9diger</strong>, r\u00e9digez votre message, puis choisissez <strong>\u00ab Programmer \u00bb</strong> dans le s\u00e9lecteur \u00ab Quand ? \u00bb avant d\u2019envoyer.<br><br>\u26a0 L\u2019envoi se d\u00e9clenche \u00e0 l\u2019heure pr\u00e9vue uniquement si MailSeq est ouvert dans votre navigateur \u00e0 ce moment. S\u2019il est ferm\u00e9, l\u2019envoi partira \u00e0 la prochaine ouverture.</div>' +
+    '</div>'
+
+  return html
+}
+
+function sauverBienvenue() {
+  const s = document.getElementById('nl-bv-sujet')
+  const c = document.getElementById('nl-bv-corps')
+  if (s) S.nlBienvenueSujet = s.value
+  if (c) S.nlBienvenueCorps = c.innerHTML
+  sauver()
+  ajouterJournal('\ud83d\udc4b Message de bienvenue enregistr\u00e9', 'ok')
+  alert('\u2713 Message de bienvenue enregistr\u00e9')
+}
+
+async function envoyerBienvenue(abonne) {
+  if (!S.nlBienvenueActif || !S.accessToken) return
+  const sujet = S.nlBienvenueSujet || 'Bienvenue !'
+  const corps = S.nlBienvenueCorps || 'Bonjour {{prenom}},<br><br>Merci de vous \u00eatre abonn\u00e9. \u00c0 tr\u00e8s vite !'
+  const footer = '<br><br><hr style="border:none;border-top:1px solid #eee;margin:16px 0"><small style="color:#888">R\u00e9pondez STOP pour ne plus recevoir de messages.</small>'
+  const ok = await envoyerEmail({ email: abonne.email, prenom: abonne.prenom || '', nom: '', societe: abonne.societe || '' }, sujet, corps + footer)
+  if (ok) ajouterJournal('\ud83d\udc4b Email de bienvenue envoy\u00e9 \u00e0 ' + abonne.email, 'ok')
 }
 
 // ─── Landing page : lien + détections ───
@@ -4601,7 +4731,7 @@ function renderLandingPage(p) {
     '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;' + fondStyle + ';padding:24px;font-family:Inter,-apple-system,sans-serif;overflow:auto">' +
     '<div style="max-width:560px;width:100%;background:#fff;border-radius:24px;padding:56px 48px;text-align:center;box-shadow:0 32px 100px rgba(0,0,0,.5)">' +
     (p.p
-      ? '<img src="' + escapeHtml(p.p) + '" style="width:104px;height:104px;border-radius:50%;object-fit:cover;margin-bottom:24px;border:4px solid #eef2ff;box-shadow:0 10px 30px rgba(99,102,241,.3)" onerror="this.style.display=\'none\'">'
+      ? '<div style="width:104px;height:104px;border-radius:50%;margin:0 auto 24px;border:4px solid #eef2ff;box-shadow:0 10px 30px rgba(99,102,241,.3);background:#eef2ff url(\'' + p.p.replace(/'/g, "%27") + '\') center/cover no-repeat"></div>'
       : '<div style="width:72px;height:72px;border-radius:18px;background:linear-gradient(135deg,#6366f1,#4f46e5);display:inline-flex;align-items:center;justify-content:center;margin-bottom:24px"><span style="font-size:34px">\ud83d\udcf0</span></div>') +
     '<h1 style="font-size:34px;font-weight:700;color:#111827;margin:0 0 12px;line-height:1.2">' + escapeHtml(p.t || 'Newsletter') + '</h1>' +
     (p.d ? '<p style="font-size:16px;color:#6b7280;line-height:1.65;margin:0 0 34px">' + escapeHtml(p.d) + '</p>' : '<div style="margin-bottom:34px"></div>') +
@@ -4702,9 +4832,12 @@ async function verifierNewsletterInbox() {
           if (!prenom && msg.fromName) prenom = msg.fromName.split(' ')[0]
           const societe = extraire('Entreprise')
           const secteur = extraire('Secteur')
-          S.abonnes.push({ id: uid(), email: msg.from, prenom: prenom, societe: societe, secteur: secteur, source: 'lp', inscritA: isoMaint(), desinscrit: false })
+          const nouvelAbonne = { id: uid(), email: msg.from, prenom: prenom, societe: societe, secteur: secteur, source: 'lp', inscritA: isoMaint(), desinscrit: false }
+          S.abonnes.push(nouvelAbonne)
           ajouterJournal('\ud83c\udf10 Nouvel abonn\u00e9 via la page : ' + msg.from + (societe ? ' (' + societe + ')' : ''), 'ok')
           changements++
+          // Email de bienvenue automatique
+          if (S.nlBienvenueActif) { envoyerBienvenue(nouvelAbonne) }
         }
         continue
       }
@@ -4767,10 +4900,11 @@ async function verifierNewsletterInbox() {
     demarrerSynchroAuto()
     setTimeout(() => synchroniser(), 2000)
   }
-  // Reprendre la file newsletter si un envoi était en cours
-  if ((S.newsletters || []).some(n => n.statut === 'encours')) {
+  // Reprendre la file newsletter si un envoi était en cours ou programmé
+  if ((S.newsletters || []).some(n => n.statut === 'encours' || n.statut === 'programmee')) {
     demarrerFileNewsletter()
   }
+  demarrerVeilleProgrammations()
 
   // Badges
   mettreAJourBadges()
