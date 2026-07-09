@@ -3184,6 +3184,31 @@ const MODELES_TUNNELS = {
     ]
   },
 
+  ecole_formation_continue: {
+    nom: '\u00c9coles : formation continue',
+    categorie: 'cold',
+    emoji: '\ud83c\udf93',
+    description: "S\u00e9quence pour proposer les solutions data et marketing La Poste aux \u00e9coles qui d\u00e9veloppent leur formation continue. Angle opportunit\u00e9 et compl\u00e9ment, jamais de critique.",
+    detail: '3 emails · J+0, J+4, J+9',
+    etapes: [
+      {
+        delaiVal: 0, delaiUnite: 'jours', heureEnvoi: '', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Votre formation continue chez {{societe}}',
+        corps: "Bonjour {{prenom}},<br><br>De plus en plus d'\u00e9coles d\u00e9veloppent leur offre de formation continue, et c'est un vrai relais de croissance : du chiffre r\u00e9current, moins d\u00e9pendant des cycles d'admission classiques.<br><br>L\u00e0 o\u00f9 on intervient chez La Poste, c'est pour \u00e9largir la cible touch\u00e9e : les entreprises d'un bassin (par secteur, taille, fonction RH) et les actifs en reconversion, gr\u00e2ce \u00e0 un ciblage sur donn\u00e9es qualifi\u00e9es, en compl\u00e9ment de ce que vous faites d\u00e9j\u00e0.<br><br>Le d\u00e9veloppement de votre formation continue est un sujet chez {{societe}} en ce moment ?<br><br>Bonne journ\u00e9e,"
+      },
+      {
+        delaiVal: 4, delaiUnite: 'jours', heureEnvoi: '09:30', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Re: Votre formation continue chez {{societe}}',
+        corps: "Bonjour {{prenom}},<br><br>Pour \u00eatre concret, deux exemples de ce qu'on peut cibler :<br><br>Les DRH et responsables formation des entreprises de votre r\u00e9gion, pour vos programmes en intra ou en alternance.<br><br>Les actifs d'une zone et d'une tranche d'\u00e2ge pr\u00e9cises, pour vos formations certifiantes finan\u00e7ables par le CPF.<br><br>L'id\u00e9e est d'aller toucher les entreprises et les actifs de votre r\u00e9gion, en compl\u00e9ment de vos actions existantes. 15 minutes pour en parler ?<br><br>Bonne journ\u00e9e,"
+      },
+      {
+        delaiVal: 5, delaiUnite: 'jours', heureEnvoi: '09:30', silencieuse: false, condition: 'pas_de_reponse',
+        sujet: 'Re: Votre formation continue chez {{societe}}',
+        corps: "Bonjour {{prenom}},<br><br>Je clos le sujet de mon c\u00f4t\u00e9 pour ne pas encombrer votre bo\u00eete.<br><br>Si le d\u00e9veloppement de votre formation continue devient une priorit\u00e9, ma porte reste ouverte. Et si c'est une autre personne qui pilote ce sujet chez {{societe}}, un nom me suffit pour m'orienter.<br><br>Bonne continuation,"
+      }
+    ]
+  },
+
   vierge: {
     nom: 'Partir de z\u00e9ro',
     categorie: 'vierge',
@@ -4556,7 +4581,7 @@ function renderNlAbonnes() {
         '<td>' + (a.societe ? escapeHtml(a.societe) + (a.secteur ? '<div style="font-size:10px;color:var(--g500)">' + escapeHtml(a.secteur) + '</div>' : '') : (a.secteur ? escapeHtml(a.secteur) : '\u2014')) + '</td>' +
         '<td style="font-size:11px">' + src + '</td>' +
         '<td style="font-size:11px">' + (a.inscritA ? new Date(a.inscritA).toLocaleDateString('fr-FR') : '\u2014') + '</td>' +
-        '<td>' + (a.desinscrit ? '<span class="badge b-red">d\u00e9sinscrit</span>' : '<span class="badge b-green">actif</span>') + '</td>' +
+        '<td>' + (a.emailInvalide ? '<span class="badge b-red">\u26a0 invalide</span>' : a.desinscrit ? '<span class="badge b-red">d\u00e9sinscrit</span>' : '<span class="badge b-green">actif</span>') + '</td>' +
         '<td>' + (a.desinscrit
           ? '<button class="btn btn-ghost btn-sm" onclick="reinscrireAbonne(\'' + a.id + '\')">\u21ba r\u00e9inscrire</button>'
           : '<button class="btn btn-ghost btn-sm" onclick="desinscrireAbonne(\'' + a.id + '\')" style="color:var(--red)">d\u00e9sinscrire</button>') +
@@ -4797,6 +4822,45 @@ function lpSubscribe() {
 }
 
 
+
+// Extrait l'adresse en échec d'un email de non-délivrance (bounce)
+function extraireBounce(corps) {
+  corps = corps || ''
+  let m = corps.match(/message to\s*<?([\w.\-+]+@[\w.\-]+\.[a-z]{2,})>?\s*was undeliverable/i)
+  if (m) return m[1].toLowerCase()
+  m = corps.match(/wasn'?t delivered to\s*<?([\w.\-+]+@[\w.\-]+\.[a-z]{2,})>?/i)
+  if (m) return m[1].toLowerCase()
+  m = corps.match(/<?([\w.\-+]+@[\w.\-]+\.[a-z]{2,})>?\s*:?\s*Recipient address rejected/i)
+  if (m) return m[1].toLowerCase()
+  m = corps.match(/(?:remise? \u00e0|delivered to|to)\s*<([\w.\-+]+@[\w.\-]+\.[a-z]{2,})>/i)
+  if (m) return m[1].toLowerCase()
+  return ''
+}
+
+// Marque un prospect et/ou un abonné comme email invalide
+function marquerEmailInvalide(email) {
+  email = (email || '').toLowerCase().trim()
+  if (!email) return false
+  let touche = false
+  ;(S.prospects || []).forEach(p => {
+    if (p.email && p.email.toLowerCase().trim() === email && !p.emailInvalide) {
+      p.emailInvalide = true
+      p.termine = true // stoppe les relances
+      touche = true
+    }
+  })
+  ;(S.abonnes || []).forEach(a => {
+    if (a.email && a.email.toLowerCase().trim() === email && !a.desinscrit) {
+      a.desinscrit = true
+      a.desinscritA = isoMaint()
+      a.emailInvalide = true
+      touche = true
+    }
+  })
+  if (touche) ajouterJournal('\u26a0 Email invalide d\u00e9tect\u00e9 (non d\u00e9livrable) : ' + email + ' \u2014 relances stopp\u00e9es', 'warn')
+  return touche
+}
+
 // Parse un email d'inscription (Tally ou landing page) et en extrait les champs
 function parseInscription(texte) {
   texte = (texte || '').replace(/\s+/g, ' ').trim()
@@ -4861,6 +4925,7 @@ async function verifierNewsletterInbox() {
         const fromH = md.payload && md.payload.headers ? md.payload.headers.find(h => h.name === 'From') : null
         const subjH = md.payload && md.payload.headers ? md.payload.headers.find(h => h.name === 'Subject') : null
         if (fromH) messages.push({
+          id: m.id,
           from: fromH.value.replace(/.*<(.+)>.*/, '$1').trim().toLowerCase(),
           fromName: (fromH.value.match(/^([^<]+)</) || [])[1] ? (fromH.value.match(/^([^<]+)</) || [])[1].trim().replace(/"/g, '') : '',
           subject: subjH ? subjH.value : '',
@@ -4868,10 +4933,11 @@ async function verifierNewsletterInbox() {
         })
       }
     } else {
-      const r = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages?$select=from,subject,bodyPreview&$top=40&$orderby=receivedDateTime desc', { headers: { Authorization: 'Bearer ' + S.accessToken } })
+      const r = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages?$select=id,from,subject,bodyPreview&$top=40&$orderby=receivedDateTime desc', { headers: { Authorization: 'Bearer ' + S.accessToken } })
       if (!r.ok) return
       const data = await r.json()
       messages = (data.value || []).map(m => ({
+        id: m.id,
         from: (m.from && m.from.emailAddress ? m.from.emailAddress.address : '').toLowerCase(),
         fromName: m.from && m.from.emailAddress ? (m.from.emailAddress.name || '') : '',
         subject: m.subject || '',
@@ -4882,6 +4948,42 @@ async function verifierNewsletterInbox() {
     let changements = 0
     for (const msg of messages) {
       if (!msg.from) continue
+
+      // 0. Bounce / email non délivrable (postmaster, mailer-daemon, mail delivery)
+      const estBounce = /postmaster|mailer-daemon|mail delivery|delivery system|delivery status/i.test(msg.from) ||
+        /undeliverable|non.?delivr|delivery has failed|delivery status|address not found|wasn'?t delivered|\u00e9chec de la remise/i.test(msg.subject || '')
+      if (estBounce) {
+        let corpsBounce = msg.snippet || ''
+        let emailEchec = extraireBounce(corpsBounce)
+        // Si l'aperçu ne suffit pas, récupérer le corps complet du message
+        if (!emailEchec && msg.id) {
+          try {
+            if (S.provider === 'google') {
+              const fr = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/' + msg.id + '?format=full', { headers: { Authorization: 'Bearer ' + S.accessToken } })
+              if (fr.ok) {
+                const fd = await fr.json()
+                const decode = (data) => { try { return atob(data.replace(/-/g, '+').replace(/_/g, '/')) } catch (e) { return '' } }
+                let body = ''
+                const walk = (part) => {
+                  if (!part) return
+                  if (part.body && part.body.data) body += decode(part.body.data)
+                  if (part.parts) part.parts.forEach(walk)
+                }
+                walk(fd.payload)
+                emailEchec = extraireBounce(body)
+              }
+            } else {
+              const fr = await fetch('https://graph.microsoft.com/v1.0/me/messages/' + msg.id + '?$select=body', { headers: { Authorization: 'Bearer ' + S.accessToken } })
+              if (fr.ok) {
+                const fd = await fr.json()
+                emailEchec = extraireBounce(fd.body ? fd.body.content : '')
+              }
+            }
+          } catch (e) { /* silencieux */ }
+        }
+        if (emailEchec && marquerEmailInvalide(emailEchec)) changements++
+        continue
+      }
 
       // 1. Abonnement via landing page (mailto direct) OU notification Tally
       const estTally = /tally/i.test(msg.from) || /tally form submission|nouvelle r\u00e9ponse|new submission|new response/i.test(msg.subject)
