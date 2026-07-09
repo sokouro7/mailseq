@@ -1481,6 +1481,7 @@ body.dark .nl-lp-box { background:linear-gradient(135deg, #1a0f2e, #1a1a3e); }
         <div class="topbar-sub" id="tunnel-sub"></div>
       </div>
       <div style="display:flex;gap:8px">
+        <button class="btn btn-sm" id="btn-pause-tunnel" onclick="toggledPauseTunnel()">⏸ mettre en pause</button>
         <button class="btn btn-sm" onclick="synchroniser()">↻ synchroniser</button>
         <button class="btn btn-sm" onclick="ouvrirConfigTunnel()">⚙️ configurer</button>
         <button class="btn btn-sm btn-danger" onclick="supprimerTunnelActif()">🗑 supprimer</button>
@@ -2208,6 +2209,46 @@ function tunnelDemandeDateRdv(tunnel) {
   return e0 && e0.silencieuse === true && e0.departMode === 'date'
 }
 
+// ═══ PAUSE / REPRISE D'UN TUNNEL ═══
+function toggledPauseTunnel() {
+  const tunnel = S.tunnels.find(t => t.id === tunnelActifId)
+  if (!tunnel) return
+  if (tunnel.enPause) reprendreTunnel(tunnel)
+  else pauserTunnel(tunnel)
+}
+
+function pauserTunnel(tunnel) {
+  tunnel.enPause = true
+  tunnel.pauseDepuis = isoMaint()
+  sauver()
+  ajouterJournal('⏸ Tunnel « ' + tunnel.nom + ' » mis en pause. Les envois sont gelés.', 'warn')
+  afficherTunnel(tunnel.id)
+  rafraichirSidebarTunnels()
+}
+
+function reprendreTunnel(tunnel) {
+  // Décaler toutes les dates d'envoi en attente de la durée de la pause
+  if (tunnel.pauseDepuis) {
+    const dureePauseMs = Date.now() - new Date(tunnel.pauseDepuis).getTime()
+    let nDecales = 0
+    S.prospects.forEach(p => {
+      if (p.tunnelId === tunnel.id && !p.termine && !p.repandu && p.prochainEnvoi) {
+        p.prochainEnvoi = new Date(new Date(p.prochainEnvoi).getTime() + dureePauseMs).toISOString()
+        nDecales++
+      }
+    })
+    const jours = Math.round(dureePauseMs / (24 * 3600 * 1000) * 10) / 10
+    ajouterJournal('▶ Tunnel « ' + tunnel.nom + ' » repris. ' + nDecales + ' envoi(s) décalé(s) de ' + jours + ' jour(s).', 'ok')
+  } else {
+    ajouterJournal('▶ Tunnel « ' + tunnel.nom + ' » repris.', 'ok')
+  }
+  tunnel.enPause = false
+  delete tunnel.pauseDepuis
+  sauver()
+  afficherTunnel(tunnel.id)
+  rafraichirSidebarTunnels()
+}
+
 async function lancerEnvois() {
   if (!S.accessToken) return
   const maint = new Date()
@@ -2221,6 +2262,7 @@ async function lancerEnvois() {
 
     const tunnel = S.tunnels.find(t => t.id === p.tunnelId)
     if (!tunnel) { p.termine = true; continue }
+    if (tunnel.enPause) continue
 
     const etape = tunnel.etapes[p.etapeCourante]
     if (!etape) { p.termine = true; continue }
@@ -2394,6 +2436,17 @@ function afficherTunnel(tid) {
   tunnelActifId = tid
 
   document.getElementById('tunnel-titre').textContent = tunnel.nom
+  // Bouton pause selon l'état
+  const btnPause = document.getElementById('btn-pause-tunnel')
+  if (btnPause) {
+    if (tunnel.enPause) {
+      btnPause.innerHTML = '▶ reprendre'
+      btnPause.classList.add('btn-primary')
+    } else {
+      btnPause.innerHTML = '⏸ mettre en pause'
+      btnPause.classList.remove('btn-primary')
+    }
+  }
   const ps = S.prospects.filter(p => p.tunnelId === tid)
   const actifs = ps.filter(p => !p.termine && !p.repandu).length
   const rep = ps.filter(p => p.repandu).length
@@ -2401,6 +2454,17 @@ function afficherTunnel(tid) {
 
   const el = document.getElementById('contenu-tunnel')
   let html = ''
+
+  // BANDEAU PAUSE
+  if (tunnel.enPause) {
+    const depuis = tunnel.pauseDepuis ? new Date(tunnel.pauseDepuis).toLocaleString('fr-FR') : ''
+    html += '<div style="background:var(--amber-l,#fef3c7);border:1.5px solid var(--amber,#f59e0b);border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px">' +
+      '<span style="font-size:20px">⏸</span>' +
+      '<div style="flex:1"><div style="font-weight:600;font-size:13px;color:#92400e">Tunnel en pause depuis le ' + depuis + '</div>' +
+      '<div style="font-size:11px;color:#b45309">Aucun envoi ne part. À la reprise, les délais restants repartiront à partir de ce moment (un J+4 en attente deviendra J+4 après la reprise).</div></div>' +
+      '<button class="btn btn-primary btn-sm" onclick="toggledPauseTunnel()">▶ reprendre</button>' +
+      '</div>'
+  }
 
   // QUICK ADD FORM
   html += renderQuickAddForm(tid)
@@ -3904,7 +3968,7 @@ function rafraichirSidebarTunnels() {
     const isChecked = _selectedTunnels.includes(t.id)
     return '<div class="sb-item sb-tunnel-item" data-tid="' + t.id + '">' +
       '<span class="sb-tunnel-check' + (isChecked ? ' checked' : '') + '" onclick="event.stopPropagation();toggleTunnelVisibility(\'' + t.id + '\')"></span>' +
-      '<span class="sb-item-icon" onclick="afficherTunnelActif(\'' + t.id + '\')">🎯</span>' +
+      '<span class="sb-item-icon" onclick="afficherTunnelActif(\'' + t.id + '\')">' + (t.enPause ? '⏸' : '🎯') + '</span>' +
       '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="afficherTunnelActif(\'' + t.id + '\')">' + escapeHtml(t.nom) + '</span>' +
       '<span class="sb-item-badge sb-tunnel-badge" data-tid="' + t.id + '">' + count + '</span>' +
       '</div>'
