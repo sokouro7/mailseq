@@ -1877,12 +1877,13 @@ function interp(tpl, prospect) {
       .replace(/[ôö]/g, 'o')
       .replace(/[ùûü]/g, 'u')
       .replace(/ç/g, 'c')
+    if (clean === 'civilite' || clean === 'madame/monsieur' || clean === 'monsieur/madame') return prospect.civilite || ''
     if (clean === 'prenom') return prospect.prenom || ''
     if (clean === 'nom') return prospect.nom || ''
     if (clean === 'societe' || clean === 'entreprise' || clean === 'company') return prospect.societe || ''
     if (clean === 'email' || clean === 'mail') return prospect.email || ''
     return match  // Laisser tel quel si variable inconnue
-  })
+  }).replace(/ +/g, ' ') // Normaliser les doubles espaces (utile si civilité vide)
 }
 
 function mettreAJourBadges() {
@@ -2767,6 +2768,7 @@ function rafraichirManuelRows() {
   _manuelRows.forEach((r, i) => {
     html += '<div class="manual-row">' +
       '<input type="email" placeholder="email@..." value="' + escapeHtml(r.email) + '" oninput="majManuelRow(' + i + ',\'email\',this.value)">' +
+      '<select onchange="majManuelRow(' + i + ',\'civilite\',this.value)" style="width:70px"><option value=""' + (!r.civilite ? ' selected' : '') + '>Civ.</option><option value="Monsieur"' + (r.civilite === 'Monsieur' ? ' selected' : '') + '>M.</option><option value="Madame"' + (r.civilite === 'Madame' ? ' selected' : '') + '>Mme</option></select>' +
       '<input type="text" placeholder="Prénom" value="' + escapeHtml(r.prenom) + '" oninput="majManuelRow(' + i + ',\'prenom\',this.value)">' +
       '<input type="text" placeholder="Nom" value="' + escapeHtml(r.nom) + '" oninput="majManuelRow(' + i + ',\'nom\',this.value)">' +
       '<input type="text" placeholder="Société" value="' + escapeHtml(r.societe) + '" oninput="majManuelRow(' + i + ',\'societe\',this.value)">' +
@@ -2835,10 +2837,15 @@ function chargerFichierExcel(input) {
       // Détecter les colonnes (insensible casse + accents)
       const norm = s => String(s||'').toLowerCase().replace(/[éèê]/g,'e').replace(/[^a-z0-9]/g,'')
       _excelData = json.map(row => {
-        const out = {email:'', prenom:'', nom:'', societe:'', groupe:''}
+        const out = {email:'', civilite:'', prenom:'', nom:'', societe:'', groupe:''}
         for (const k of Object.keys(row)) {
           const n = norm(k)
           if (n === 'email' || n === 'mail' || n === 'adresseemail') out.email = String(row[k]).trim()
+          else if (n === 'civilite' || n === 'genre' || n === 'titre' || n === 'title' || n === 'gender') {
+            const v = String(row[k]).trim().toLowerCase()
+            if (v === 'm' || v === 'm.' || v === 'mr' || v === 'monsieur' || v === 'homme' || v === 'male' || v === 'h') out.civilite = 'Monsieur'
+            else if (v === 'mme' || v === 'madame' || v === 'mrs' || v === 'ms' || v === 'femme' || v === 'female' || v === 'f') out.civilite = 'Madame'
+          }
           else if (n === 'prenom') out.prenom = String(row[k]).trim()
           else if (n === 'nom' || n === 'lastname') out.nom = String(row[k]).trim()
           else if (n === 'societe' || n === 'entreprise' || n === 'company') out.societe = String(row[k]).trim()
@@ -2851,11 +2858,12 @@ function chargerFichierExcel(input) {
 
       // Aperçu
       const prev = document.getElementById('excelPreview')
-      let html = '<table><thead><tr><th>Email</th><th>Prénom</th><th>Nom</th><th>Société</th><th>Groupe</th></tr></thead><tbody>'
+      let html = '<table><thead><tr><th>Email</th><th>Civ.</th><th>Prénom</th><th>Nom</th><th>Société</th><th>Groupe</th></tr></thead><tbody>'
       _excelData.slice(0,20).forEach(r => {
-        html += '<tr><td>' + escapeHtml(r.email) + '</td><td>' + escapeHtml(r.prenom) + '</td><td>' + escapeHtml(r.nom) + '</td><td>' + escapeHtml(r.societe) + '</td><td>' + escapeHtml(r.groupe) + '</td></tr>'
+        const civAff = r.civilite === 'Monsieur' ? 'M.' : (r.civilite === 'Madame' ? 'Mme' : '')
+        html += '<tr><td>' + escapeHtml(r.email) + '</td><td>' + civAff + '</td><td>' + escapeHtml(r.prenom) + '</td><td>' + escapeHtml(r.nom) + '</td><td>' + escapeHtml(r.societe) + '</td><td>' + escapeHtml(r.groupe) + '</td></tr>'
       })
-      if (_excelData.length > 20) html += '<tr><td colspan="5" style="text-align:center;color:var(--g500)">... et ' + (_excelData.length-20) + ' autre(s)</td></tr>'
+      if (_excelData.length > 20) html += '<tr><td colspan="6" style="text-align:center;color:var(--g500)">... et ' + (_excelData.length-20) + ' autre(s)</td></tr>'
       html += '</tbody></table>'
       prev.innerHTML = html
       prev.style.display = 'block'
@@ -2882,11 +2890,11 @@ function envoyerMassDansTunnel() {
   if (onglet === 'manuel') {
     aTraiter = _manuelRows
       .filter(r => r.email && /.+@.+\..+/.test(r.email))
-      .map(r => ({email:r.email, prenom:r.prenom, nom:r.nom, societe:r.societe, groupe:groupeDefaut}))
+      .map(r => ({email:r.email, civilite:r.civilite||'', prenom:r.prenom, nom:r.nom, societe:r.societe, groupe:groupeDefaut}))
   } else if (onglet === 'excel') {
     if (!_excelData || !_excelData.length) { alert('Importez d\'abord un fichier'); return }
     aTraiter = _excelData.map(r => ({
-      email:r.email, prenom:r.prenom, nom:r.nom, societe:r.societe,
+      email:r.email, civilite:r.civilite||'', prenom:r.prenom, nom:r.nom, societe:r.societe,
       groupe: r.groupe || groupeDefaut  // Excel groupe prioritaire, sinon défaut
     }))
   }
@@ -2903,6 +2911,7 @@ function envoyerMassDansTunnel() {
     S.prospects.push({
       id: uid(),
       email: r.email,
+      civilite: r.civilite || '',
       prenom: r.prenom || '',
       nom: r.nom || '',
       societe: r.societe || '',
@@ -3833,8 +3842,13 @@ function fermerInlineForm(tid) {
 function soumettreInlineForm(tid) {
   const form = document.getElementById('inline-form-' + tid)
   if (!form) return
-  const getV = n => { const el = form.querySelector('input[name="' + n + '"]'); return el ? el.value.trim() : '' }
+  const getV = n => {
+    let el = form.querySelector('input[name="' + n + '"]')
+    if (!el) el = form.querySelector('select[name="' + n + '"]')
+    return el ? el.value.trim() : ''
+  }
   const email = getV('email')
+  const civilite = getV('civilite')
   const prenom = getV('prenom')
   const nom = getV('nom')
   const societe = getV('societe')
@@ -3861,7 +3875,7 @@ function soumettreInlineForm(tid) {
   const depart = calculerDepartProspect(tunnel, dateRdv)
   S.prospects.push({
     id: uid(),
-    email: email, prenom: prenom, nom: nom, societe: societe,
+    email: email, civilite: civilite, prenom: prenom, nom: nom, societe: societe,
     groupe: groupeDefault,
     tunnelId: tid, etapeCourante: 0,
     prochainEnvoi: depart.prochainEnvoi,
@@ -3873,8 +3887,12 @@ function soumettreInlineForm(tid) {
   ajouterJournal('✓ ' + email + ' ajouté à "' + tunnel.nom + '"', 'ok')
 
   // Vider les champs et re-focus sur l'email pour enchaîner
-  const setV = n => { const el = form.querySelector('input[name="' + n + '"]'); if (el) el.value = '' }
-  setV('email'); setV('prenom'); setV('nom'); setV('societe')
+  const setV = n => {
+    let el = form.querySelector('input[name="' + n + '"]')
+    if (!el) el = form.querySelector('select[name="' + n + '"]')
+    if (el) el.value = ''
+  }
+  setV('email'); setV('civilite'); setV('prenom'); setV('nom'); setV('societe')
   const emailEl = form.querySelector('input[name="email"]')
   if (emailEl) emailEl.focus()
 
@@ -3911,6 +3929,7 @@ function renderTunnelColumn(tunnel) {
     '<button class="tunnel-quick-btn" onclick="soumettreInlineForm(\'' + tunnel.id + '\')" title="Ajouter au tunnel">+</button>' +
     '</div>' +
     '<div class="tqa-row2">' +
+    '<select name="civilite" class="tqa-civilite"><option value="">Civ.</option><option value="Monsieur">M.</option><option value="Madame">Mme</option></select>' +
     '<input type="text" name="prenom" placeholder="Prénom" onkeypress="if(event.key===\'Enter\')soumettreInlineForm(\'' + tunnel.id + '\')">' +
     '<input type="text" name="nom" placeholder="Nom" onkeypress="if(event.key===\'Enter\')soumettreInlineForm(\'' + tunnel.id + '\')">' +
     '<input type="text" name="societe" placeholder="Société" onkeypress="if(event.key===\'Enter\')soumettreInlineForm(\'' + tunnel.id + '\')">' +
@@ -4065,6 +4084,8 @@ function renderRichEditor(editorId, initialContent, etapeIdx) {
       '<div class="var-insert">' +
         '<button class="rich-btn" type="button" onclick="toggleVarMenu(\'' + editorId + '\')" title="Insérer une variable">{ }</button>' +
         '<div class="var-insert-menu" id="varmenu-' + editorId + '">' +
+          '<button onclick="editorInsertVar(\'' + editorId + '\',\'{{civilite}}\')">{{civilite}}</button>' +
+          '<button onclick="editorInsertVar(\'' + editorId + '\',\'{{civilite}}\')">{{civilite}}</button>' +
           '<button onclick="editorInsertVar(\'' + editorId + '\',\'{{prenom}}\')">{{prenom}}</button>' +
           '<button onclick="editorInsertVar(\'' + editorId + '\',\'{{nom}}\')">{{nom}}</button>' +
           '<button onclick="editorInsertVar(\'' + editorId + '\',\'{{societe}}\')">{{societe}}</button>' +
