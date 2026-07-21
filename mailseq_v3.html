@@ -2805,13 +2805,13 @@ function supprimerLigneManuel(i) {
 function telechargerTemplateExcel() {
   if (typeof XLSX === 'undefined') { alert('Bibliothèque Excel non chargée'); return }
   const data = [
-    ['Email', 'Prénom', 'Nom', 'Société', 'Groupe'],
-    ['marie.dupont@acme.com', 'Marie', 'Dupont', 'Acme Corp', 'BTP 2026'],
-    ['jean.martin@bigcorp.fr', 'Jean', 'Martin', 'BigCorp', 'BTP 2026'],
-    ['', '', '', '', '']
+    ['Email', 'Civilite', 'Prénom', 'Nom', 'Société', 'Groupe'],
+    ['marie.dupont@acme.com', 'Madame', 'Marie', 'Dupont', 'Acme Corp', 'BTP 2026'],
+    ['jean.martin@bigcorp.fr', 'Monsieur', 'Jean', 'Martin', 'BigCorp', 'BTP 2026'],
+    ['', '', '', '', '', '']
   ]
   const ws = XLSX.utils.aoa_to_sheet(data)
-  ws['!cols'] = [{wch:30},{wch:15},{wch:15},{wch:20},{wch:18}]
+  ws['!cols'] = [{wch:30},{wch:12},{wch:15},{wch:15},{wch:20},{wch:18}]
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Prospects')
   XLSX.writeFile(wb, 'MailSeq_template.xlsx')
