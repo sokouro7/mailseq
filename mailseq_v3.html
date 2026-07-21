@@ -1818,6 +1818,7 @@ let tunnelActifId = null
 let _connProvider = 'microsoft'
 let intervalSynchro = null
 let synchroEnCours = false
+let envoiEnCours = false
 
 function sauver() {
   try { localStorage.setItem('mailseq_v2', JSON.stringify(S)) } catch (e) {}
@@ -2251,10 +2252,13 @@ function reprendreTunnel(tunnel) {
 
 async function lancerEnvois() {
   if (!S.accessToken) return
+  if (envoiEnCours) return // évite qu'une synchro se chevauche avec une autre déjà en cours (double envoi)
+  envoiEnCours = true
   const maint = new Date()
   let nEnvoyes = 0
   let changement = false
 
+  try {
   for (const p of S.prospects) {
     if (p.termine || p.repandu) continue
     if (!p.prochainEnvoi) continue
@@ -2315,6 +2319,9 @@ async function lancerEnvois() {
     if (tunnelActifId) afficherTunnel(tunnelActifId)
     else if (document.getElementById('page-vue-ensemble').classList.contains('active')) afficherVueEnsemble()
   }
+  } finally {
+    envoiEnCours = false
+  }
 }
 
 // Vérifie les réponses
@@ -2336,32 +2343,75 @@ async function verifierReponses() {
     }
     ajouterJournal('Synchronisation : ' + Object.keys(prospectsActifs).length + ' prospect(s) surveillé(s)', 'info')
 
+    // Recherche ciblée sur les adresses surveillées (par lots), plus fiable qu'une simple
+    // fenêtre des derniers messages : une réponse ancienne ne peut plus être "noyée"
+    // si la boîte a reçu beaucoup d'autres emails entre deux synchros.
+    const emailsATracker = Object.keys(prospectsActifs)
+    const CHUNK = 20
+    const lots = []
+    for (let i = 0; i < emailsATracker.length; i += CHUNK) lots.push(emailsATracker.slice(i, i + CHUNK))
+
     let messages = []
+    let erreurRequete = false
     if (S.provider === 'google') {
-      const r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?q=in:inbox&maxResults=50', { headers: { Authorization: 'Bearer ' + S.accessToken } })
-      if (r.status === 401) { S.accessToken = null; sauver(); afficherStatutConnexion(); return }
-      const data = await r.json()
-      const ids = (data.messages || []).slice(0, 30)
-      for (const m of ids) {
-        const mr = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/' + m.id + '?format=metadata&metadataHeaders=From&metadataHeaders=Date&metadataHeaders=Subject', { headers: { Authorization: 'Bearer ' + S.accessToken } })
-        if (!mr.ok) continue
-        const md = await mr.json()
-        const fromH = md.payload?.headers?.find(h => h.name === 'From')
-        const dateH = md.payload?.headers?.find(h => h.name === 'Date')
-        const subjH = md.payload?.headers?.find(h => h.name === 'Subject')
-        if (fromH) {
-          messages.push({
-            from: { emailAddress: { address: fromH.value.replace(/.*<(.+)>.*/, '$1').trim() } },
-            receivedDateTime: dateH ? new Date(dateH.value).toISOString() : new Date().toISOString(),
-            subject: subjH ? subjH.value : ''
-          })
+      for (const lot of lots) {
+        const q = 'in:inbox (' + lot.map(e => 'from:' + e).join(' OR ') + ')'
+        const r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?q=' + encodeURIComponent(q) + '&maxResults=50', { headers: { Authorization: 'Bearer ' + S.accessToken } })
+        if (r.status === 401) { S.accessToken = null; sauver(); afficherStatutConnexion(); return }
+        if (!r.ok) { erreurRequete = true; continue }
+        const data = await r.json()
+        const ids = data.messages || []
+        for (const m of ids) {
+          const mr = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/' + m.id + '?format=metadata&metadataHeaders=From&metadataHeaders=Date&metadataHeaders=Subject', { headers: { Authorization: 'Bearer ' + S.accessToken } })
+          if (!mr.ok) continue
+          const md = await mr.json()
+          const fromH = md.payload?.headers?.find(h => h.name === 'From')
+          const dateH = md.payload?.headers?.find(h => h.name === 'Date')
+          const subjH = md.payload?.headers?.find(h => h.name === 'Subject')
+          if (fromH) {
+            messages.push({
+              from: { emailAddress: { address: fromH.value.replace(/.*<(.+)>.*/, '$1').trim() } },
+              receivedDateTime: dateH ? new Date(dateH.value).toISOString() : new Date().toISOString(),
+              subject: subjH ? subjH.value : ''
+            })
+          }
+        }
+      }
+      // Filet de sécurité : si une requête ciblée a échoué, on complète avec la fenêtre large habituelle
+      if (erreurRequete) {
+        const r2 = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?q=in:inbox&maxResults=50', { headers: { Authorization: 'Bearer ' + S.accessToken } })
+        if (r2.ok) {
+          const data2 = await r2.json()
+          const ids2 = (data2.messages || []).slice(0, 30)
+          for (const m of ids2) {
+            const mr = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/' + m.id + '?format=metadata&metadataHeaders=From&metadataHeaders=Date&metadataHeaders=Subject', { headers: { Authorization: 'Bearer ' + S.accessToken } })
+            if (!mr.ok) continue
+            const md = await mr.json()
+            const fromH = md.payload?.headers?.find(h => h.name === 'From')
+            const dateH = md.payload?.headers?.find(h => h.name === 'Date')
+            const subjH = md.payload?.headers?.find(h => h.name === 'Subject')
+            if (fromH) messages.push({ from: { emailAddress: { address: fromH.value.replace(/.*<(.+)>.*/, '$1').trim() } }, receivedDateTime: dateH ? new Date(dateH.value).toISOString() : new Date().toISOString(), subject: subjH ? subjH.value : '' })
+          }
         }
       }
     } else {
-      const r = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages?$select=from,receivedDateTime,subject&$top=200&$orderby=receivedDateTime desc', { headers: { Authorization: 'Bearer ' + S.accessToken } })
-      if (r.status === 401) { S.accessToken = null; sauver(); afficherStatutConnexion(); return }
-      const data = await r.json()
-      messages = data.value || []
+      for (const lot of lots) {
+        const filtre = lot.map(e => "from/emailAddress/address eq '" + e.replace(/'/g, "''") + "'").join(' or ')
+        const url = 'https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages?$filter=' + encodeURIComponent(filtre) + '&$select=from,receivedDateTime,subject&$top=100&$orderby=receivedDateTime desc'
+        const r = await fetch(url, { headers: { Authorization: 'Bearer ' + S.accessToken, Prefer: 'outlook.body-content-type="text"' } })
+        if (r.status === 401) { S.accessToken = null; sauver(); afficherStatutConnexion(); return }
+        if (!r.ok) { erreurRequete = true; continue }
+        const data = await r.json()
+        messages = messages.concat(data.value || [])
+      }
+      // Filet de sécurité : si le filtre a échoué (limite d'API), on complète avec la fenêtre large habituelle
+      if (erreurRequete) {
+        const r2 = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders/Inbox/messages?$select=from,receivedDateTime,subject&$top=200&$orderby=receivedDateTime desc', { headers: { Authorization: 'Bearer ' + S.accessToken } })
+        if (r2.ok) {
+          const data2 = await r2.json()
+          messages = messages.concat(data2.value || [])
+        }
+      }
     }
 
     let nRep = 0
@@ -3516,12 +3566,23 @@ function sauverTunnel() {
   if (!_editingEtapes.length) { alert('Au moins une étape requise'); return }
   const groupeDefault = document.getElementById('tunnelGroupeNom').value.trim() || null
 
+  let nProspectsAjustes = 0
   if (_editingTunnelId) {
     const t = S.tunnels.find(x => x.id === _editingTunnelId)
     if (t) {
       t.nom = nom
       t.etapes = JSON.parse(JSON.stringify(_editingEtapes))
       t.groupeDefault = groupeDefault
+      // Réconciliation : si des prospects étaient à une étape qui n'existe plus
+      // après la modification (étapes retirées), on les marque terminés proprement
+      // au lieu de les laisser affichés sur une étape fantôme.
+      S.prospects.forEach(p => {
+        if (p.tunnelId === t.id && !p.termine && !p.repandu && p.etapeCourante >= t.etapes.length) {
+          p.termine = true
+          p.prochainEnvoi = null
+          nProspectsAjustes++
+        }
+      })
     }
   } else {
     const newT = { id: uid(), nom: nom, etapes: JSON.parse(JSON.stringify(_editingEtapes)), creee: isoMaint(), groupeDefault: groupeDefault }
@@ -3538,6 +3599,9 @@ function sauverTunnel() {
   }
   sauver()
   ajouterJournal('Tunnel "' + nom + '" sauvegardé', 'ok')
+  if (nProspectsAjustes > 0) {
+    ajouterJournal('⚠ ' + nProspectsAjustes + ' prospect(s) étaient sur une étape retirée du tunnel : marqués comme terminés (plus aucun email ne leur sera envoyé).', 'warn')
+  }
   rafraichirSidebarTunnels()
   afficherTunnelActif(_editingTunnelId)
 }
