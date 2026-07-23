@@ -5366,6 +5366,26 @@ body.dark .flo-pc.person{background:#0e3b32;color:#5fe0c0}
 .flo-modal{background:var(--w);border-radius:16px;padding:22px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.25);max-height:82vh;overflow-y:auto}
 .flo-modal h3{font-size:17px;margin:0 0 4px}
 .flo-modal p.h{font-size:13px;color:var(--g500);margin:0 0 16px;line-height:1.5}
+.flo-rf{position:relative;margin-bottom:11px;border:1px solid var(--g200);background:var(--g50);border-radius:10px;padding:7px 10px;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.flo-rf-lb{font-size:12px;font-weight:700;color:var(--g500);flex:0 0 auto}
+.flo-rf-box{display:contents}
+.flo-rf-in{flex:1;min-width:120px;border:none;background:none;outline:none;font-size:14px;padding:4px 2px;color:inherit;font-family:inherit}
+.flo-rc{display:inline-flex;align-items:center;gap:6px;background:var(--accent-l);color:var(--accent-d);border-radius:8px;padding:4px 8px;font-size:12.5px;font-weight:600;max-width:100%}
+.flo-rc.bad{background:#fdecec;color:#b3001b}
+body.dark .flo-rc.bad{background:#3a1414;color:#ff8a8a}
+.flo-rc>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flo-rc .x{cursor:pointer;opacity:.65;flex:0 0 auto}
+.flo-sug{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--w);border:1px solid var(--g200);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);z-index:1300;max-height:220px;overflow-y:auto;display:none}
+.flo-sug.show{display:block}
+.flo-sg{display:flex;align-items:center;gap:9px;padding:8px 10px;cursor:pointer}
+.flo-sg:hover,.flo-sg.sel{background:var(--accent-l)}
+.flo-sg .nm{flex:1;min-width:0}
+.flo-sg .nm b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.flo-sg .nm span{display:block;font-size:11.5px;color:var(--g500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.flo-tagp{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 7px;flex:0 0 auto}
+.flo-drop{outline:2px dashed var(--accent);outline-offset:-8px;background:var(--accent-l)}
+.flo-carnet{font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:var(--r);background:var(--g100);color:var(--g500);border:none;cursor:pointer}
+.flo-carnet:hover{background:var(--accent-l);color:var(--accent-d)}
 .flo-modal input.t,.flo-modal textarea.t{width:100%;border:1px solid var(--g200);background:var(--g50);border-radius:10px;padding:10px 13px;font-size:14px;outline:none;margin-bottom:11px;color:inherit;font-family:inherit}
 .flo-modal textarea.t{min-height:120px;resize:vertical}
 .flo-mem{display:flex;align-items:center;gap:11px;padding:8px 2px}
@@ -5403,7 +5423,7 @@ body.dark .flo-pc.person{background:#0e3b32;color:#5fe0c0}
   </div>
   <div class="flo-app">
     <div class="flo-list">
-      <div class="flo-lhead"><button class="flo-new" onclick="FILO.newMessage()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Nouveau</button></div>
+      <div class="flo-lhead"><button class="flo-carnet" onclick="FILO.contacts()">Carnet</button><button class="flo-new" onclick="FILO.newMessage()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>Nouveau</button></div>
       <div class="flo-filters" id="floFilters"></div>
       <div class="flo-search"><input id="floSearch" placeholder="Rechercher (is:unread, from:…)" autocomplete="off"></div>
       <div class="flo-threads" id="floThreads"></div>
@@ -5440,7 +5460,9 @@ function decUtf8(bytes){try{return new TextDecoder('utf-8').decode(bytes);}catch
 function b64urlEnc(str){const b=new TextEncoder().encode(str);let bin='';b.forEach(x=>bin+=String.fromCharCode(x));return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
 function rfc2047(s){return/[^\x00-\x7F]/.test(s)?('=?UTF-8?B?'+btoa(unescape(encodeURIComponent(s)))+'?='):s;}
 function parseAddr(v){const m=(v||'').match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/);if(m)return{name:(m[1]||'').trim()||m[2].trim(),email:m[2].trim().toLowerCase()};return{name:(v||'').trim(),email:(v||'').trim().toLowerCase()};}
-function parseList(v){if(!v)return[];return v.split(',').map(parseAddr).filter(a=>a.email);}
+function splitAddrs(v){if(!v)return[];const out=[];let cur='',q=false,ang=false;for(let i=0;i<v.length;i++){const c=v[i];if(c==='"'){q=!q;cur+=c;continue;}if(c==='<'){ang=true;cur+=c;continue;}if(c==='>'){ang=false;cur+=c;continue;}if(!q&&!ang&&(c===','||c===';'||c==='\n'||c==='\r'||c==='\t')){if(cur.trim())out.push(cur.trim());cur='';continue;}cur+=c;}if(cur.trim())out.push(cur.trim());const fin=[];out.forEach(p=>{if(!/[<"]/.test(p)&&(p.match(/@/g)||[]).length>1){p.split(/\s+/).forEach(x=>{if(x.trim())fin.push(x.trim());});}else fin.push(p);});return fin;}
+function validEmail(e){return /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(e||'');}
+function parseList(v){if(!v)return[];return splitAddrs(v).map(parseAddr).filter(a=>a.email);}
 function initials(n){const p=(n||'?').replace(/[<>"]/g,'').trim().split(/[\s@.]+/).filter(Boolean);return((p[0]?.[0]||'?')+(p[1]?.[0]||'')).toUpperCase();}
 function colorFor(s){let h=0;for(let i=0;i<(s||'').length;i++)h=s.charCodeAt(i)+((h<<5)-h);const hu=[221,262,340,12,158,199,32,286];return`hsl(${hu[Math.abs(h)%hu.length]},52%,52%)`;}
 function fileSize(n){if(!n)return'';if(n<1024)return n+' o';if(n<1048576)return(n/1024).toFixed(0)+' Ko';return(n/1048576).toFixed(1)+' Mo';}
@@ -5481,9 +5503,9 @@ async function listThreads(q){
     return Object.entries(byConv).map(([cid,m])=>grSummaryFromLatest(cid,m,d.value.filter(x=>(x.conversationId||x.id)===cid)));
   }
 }
-function gSummary(thread){const msgs=thread.messages||[];if(!msgs.length)return null;const last=msgs[msgs.length-1],h=last.payload.headers;const gh=n=>{const x=(h||[]).find(a=>a.name.toLowerCase()===n.toLowerCase());return x?x.value:'';};const parts={};msgs.forEach(m=>{const hh=m.payload.headers;const get=n=>{const x=(hh||[]).find(a=>a.name.toLowerCase()===n.toLowerCase());return x?x.value:'';};[...parseList(get('From')),...parseList(get('To')),...parseList(get('Cc'))].forEach(a=>{if(a.email&&a.email!==myEmail())parts[a.email]=a.name||a.email;});});const names=Object.values(parts);const lf=parseAddr(gh('From')),fromMe=lf.email===myEmail();const unread=msgs.some(m=>(m.labelIds||[]).includes('UNREAD'))&&!readSet().has(thread.id);return{id:thread.id,subject:gh('Subject')||'(sans objet)',names,count:names.length,avName:names[0]||lf.name||lf.email,avSeed:Object.keys(parts)[0]||lf.email,snippet:(fromMe?'Vous : ':'')+(thread.snippet||''),ts:+last.internalDate,unread};}
+function gSummary(thread){const msgs=thread.messages||[];if(!msgs.length)return null;const last=msgs[msgs.length-1],h=last.payload.headers;const gh=n=>{const x=(h||[]).find(a=>a.name.toLowerCase()===n.toLowerCase());return x?x.value:'';};const parts={};msgs.forEach(m=>{const hh=m.payload.headers;const get=n=>{const x=(hh||[]).find(a=>a.name.toLowerCase()===n.toLowerCase());return x?x.value:'';};[...parseList(get('From')),...parseList(get('To')),...parseList(get('Cc'))].forEach(a=>{if(a.email&&a.email!==myEmail())parts[a.email]=a.name||a.email;});});learnContacts(Object.entries(parts).map(([email,name])=>({email,name})),+last.internalDate);const names=Object.values(parts);const lf=parseAddr(gh('From')),fromMe=lf.email===myEmail();const unread=msgs.some(m=>(m.labelIds||[]).includes('UNREAD'))&&!readSet().has(thread.id);return{id:thread.id,subject:gh('Subject')||'(sans objet)',names,count:names.length,avName:names[0]||lf.name||lf.email,avSeed:Object.keys(parts)[0]||lf.email,snippet:(fromMe?'Vous : ':'')+(thread.snippet||''),ts:+last.internalDate,unread};}
 function grAddr(o){return o&&o.emailAddress?{name:o.emailAddress.name||o.emailAddress.address,email:(o.emailAddress.address||'').toLowerCase()}:null;}
-function grSummaryFromLatest(cid,m,allInConv){const parts={};(allInConv||[m]).forEach(x=>{[grAddr(x.from),...(x.toRecipients||[]).map(grAddr),...(x.ccRecipients||[]).map(grAddr)].filter(Boolean).forEach(a=>{if(a.email&&a.email!==myEmail())parts[a.email]=a.name||a.email;});});const names=Object.values(parts);const lf=grAddr(m.from)||{name:'',email:''};const fromMe=lf.email===myEmail();const unread=(!m.isRead)&&!readSet().has(cid);return{id:cid,subject:m.subject||'(sans objet)',names,count:names.length,avName:names[0]||lf.name||lf.email,avSeed:Object.keys(parts)[0]||lf.email,snippet:(fromMe?'Vous : ':'')+(m.bodyPreview||''),ts:+new Date(m.receivedDateTime),unread,_latestId:m.id};}
+function grSummaryFromLatest(cid,m,allInConv){const parts={};(allInConv||[m]).forEach(x=>{[grAddr(x.from),...(x.toRecipients||[]).map(grAddr),...(x.ccRecipients||[]).map(grAddr)].filter(Boolean).forEach(a=>{if(a.email&&a.email!==myEmail())parts[a.email]=a.name||a.email;});});learnContacts(Object.entries(parts).map(([email,name])=>({email,name})),+new Date(m.receivedDateTime));const names=Object.values(parts);const lf=grAddr(m.from)||{name:'',email:''};const fromMe=lf.email===myEmail();const unread=(!m.isRead)&&!readSet().has(cid);return{id:cid,subject:m.subject||'(sans objet)',names,count:names.length,avName:names[0]||lf.name||lf.email,avSeed:Object.keys(parts)[0]||lf.email,snippet:(fromMe?'Vous : ':'')+(m.bodyPreview||''),ts:+new Date(m.receivedDateTime),unread,_latestId:m.id};}
 
 /* ═══ Provider: GET THREAD → normalized messages ═══ */
 async function getThread(id){
@@ -5523,6 +5545,25 @@ function attUrl(a){if(a._url)return a._url;if(a.contentBytes)return'data:'+(a.mi
 async function loadImageInto(img,a){try{let u=attUrl(a);if(u){if(img)img.src=u;return u;}if(isG()&&a.attId&&a.msgId){const r=await api(G+'/messages/'+a.msgId+'/attachments/'+a.attId);const d=await r.json();const bytes=b64urlDec(d.data);a._bytes=bytes;const blob=new Blob([bytes],{type:a.mime||'image/png'});a._url=URL.createObjectURL(blob);if(img)img.src=a._url;return a._url;}}catch(e){if(img){const c=el('div','flo-ch');c.innerHTML=CLIP_SVG+'<span class="n">'+esc(a.name||'image')+'</span>';c.onclick=()=>downloadAtt(a);img.replaceWith(c);}}return null;}
 function renderAtts(b,atts){if(!atts||!atts.length)return;const imgs=atts.filter(a=>/^image\//i.test(a.mime||''));const files=atts.filter(a=>!/^image\//i.test(a.mime||''));if(imgs.length){const ig=el('div','flo-imgs');imgs.forEach(a=>{const im=el('img','flo-img');im.alt=a.name||'image';im.onclick=()=>lightbox(a);ig.append(im);loadImageInto(im,a);});b.append(ig);}if(files.length){const ab=el('div','flo-att');files.forEach(a=>{const c=el('div','flo-ch');c.innerHTML=CLIP_SVG+'<span class="n">'+esc(a.name)+'</span><span class="s">'+fileSize(a.size)+'</span>';c.onclick=()=>downloadAtt(a);ab.append(c);});b.append(ab);}}
 async function lightbox(a){let u=attUrl(a);if(!u)u=await loadImageInto(null,a);const box=document.getElementById('floLight');if(!box)return;document.getElementById('floLbImg').src=u||'';document.getElementById('floLbName').textContent=a.name||'image';const dl=document.getElementById('floLbDl');if(dl)dl.onclick=()=>downloadAtt(a);box.classList.add('show');}
+const LSCONT='filo_contacts';
+function loadContacts(){try{return JSON.parse(localStorage.getItem(LSCONT)||'{}');}catch(e){return{};}}
+function saveContacts(c){try{localStorage.setItem(LSCONT,JSON.stringify(c));}catch(e){}}
+function learnContacts(list,ts){if(!list||!list.length)return;const c=loadContacts();let ch=false;list.forEach(a=>{if(!a||!a.email)return;const e=(a.email||'').toLowerCase();if(!e||e===myEmail()||!validEmail(e))return;const p=c[e]||{n:'',c:0,t:0,g:''};const nm=(a.name||'').trim();if(nm&&nm.toLowerCase()!==e&&nm.length>(p.n||'').length)p.n=nm;p.c=(p.c||0)+1;if(ts&&ts>(p.t||0))p.t=ts;c[e]=p;ch=true;});if(!ch)return;const ent=Object.entries(c);if(ent.length>500){ent.sort((a,b)=>(b[1].t||0)-(a[1].t||0));const k={};ent.slice(0,500).forEach(([a,b])=>k[a]=b);saveContacts(k);}else saveContacts(c);}
+function searchContacts(q,limit){const c=loadContacts();const s2=(q||'').trim().toLowerCase();let arr=Object.entries(c).map(([email,v])=>({email,name:v.n||email,count:v.c||0,ts:v.t||0,tag:v.g||''}));if(s2)arr=arr.filter(x=>x.email.includes(s2)||x.name.toLowerCase().includes(s2)||(x.tag||'').toLowerCase().includes(s2));arr.sort((a,b)=>(b.ts-a.ts)||(b.count-a.count));return arr.slice(0,limit||6);}
+function setContactTag(email,tag){const c=loadContacts();if(!c[email])c[email]={n:'',c:1,t:Date.now(),g:''};c[email].g=tag||'';saveContacts(c);}
+function tagColor(t){let h=0;for(let i=0;i<(t||'').length;i++)h=t.charCodeAt(i)+((h<<5)-h);const p=['#6366f1','#b3001b','#0a7d4b','#c26a00','#0369a1','#7c2d8b'];return p[Math.abs(h)%p.length];}
+function sugRow(c){return'<div class="flo-av" style="width:30px;height:30px;flex:0 0 30px;font-size:11px;background:'+colorFor(c.email)+'">'+initials(c.name)+'</div><div class="nm"><b>'+esc(c.name)+'</b><span>'+esc(c.email)+'</span></div>'+(c.tag?'<span class="flo-tagp" style="background:'+tagColor(c.tag)+'22;color:'+tagColor(c.tag)+'">'+esc(c.tag)+'</span>':'');}
+function simpleSuggest(inp,container,onPick,exclude){const sug=el('div','flo-sug');container.style.position='relative';container.append(sug);let items=[],sel=-1;
+const close=()=>{sug.classList.remove('show');items=[];sel=-1;};
+const show=()=>{const q=inp.value.trim();let arr=searchContacts(q,7);if(exclude)arr=arr.filter(c=>!exclude(c));items=arr;if(!items.length){close();return;}sug.innerHTML='';items.forEach(c=>{const d=el('div','flo-sg');d.innerHTML=sugRow(c);d.onmousedown=ev=>{ev.preventDefault();onPick(c);inp.value='';close();};sug.append(d);});sug.classList.add('show');};
+inp.addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){if(!items.length)return;e.preventDefault();e.stopImmediatePropagation();sel+=(e.key==='ArrowDown'?1:-1);if(sel<0)sel=items.length-1;if(sel>=items.length)sel=0;[...sug.children].forEach((x,i)=>x.classList.toggle('sel',i===sel));return;}if(e.key==='Enter'&&sel>=0&&items[sel]){e.preventDefault();e.stopImmediatePropagation();onPick(items[sel]);inp.value='';close();return;}if(e.key==='Escape'){close();}});
+inp.addEventListener('input',show);inp.addEventListener('focus',show);inp.addEventListener('blur',()=>setTimeout(close,160));
+return{close,show};}
+function fileToRec(f){return new Promise(res=>{const r=new FileReader();r.onload=()=>res({name:f.name||('image-'+Date.now()+'.png'),mime:f.type||'application/octet-stream',size:f.size,b64:(r.result||'').split(',')[1]});r.readAsDataURL(f);});}
+async function addFiles(files,target){const arr=[...files];if(!arr.length)return;for(const f of arr){if(f.size>30*1024*1024){toast(f.name+' dépasse 30 Mo');continue;}const rec=await fileToRec(f);if(target==='new'){window._floNewAtt=window._floNewAtt||[];window._floNewAtt.push(rec);renderNewPend();}else{composer.attachments.push(rec);renderPend();const sb=$('#fSend');if(sb)sb.disabled=false;}}toast(arr.length>1?arr.length+' fichiers ajoutés':'Fichier ajouté');}
+function wireDrop(node,target){if(!node||node._dnd)return;node._dnd=1;node.addEventListener('dragover',e=>{const t=e.dataTransfer&&e.dataTransfer.types;if(t&&[...t].indexOf('Files')>=0){e.preventDefault();node.classList.add('flo-drop');}});node.addEventListener('dragleave',e=>{if(e.target===node)node.classList.remove('flo-drop');});node.addEventListener('drop',e=>{if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length){e.preventDefault();node.classList.remove('flo-drop');addFiles(e.dataTransfer.files,target);}});}
+function pasteFiles(e,target){const cd=e.clipboardData||window.clipboardData;if(!cd)return;const fs=[];for(const it of(cd.items||[])){if(it.kind==='file'){const f=it.getAsFile();if(f)fs.push(f);}}if(fs.length){e.preventDefault();addFiles(fs,target);}}
+function contactsModal(){const html='<h3>Carnet</h3><p class="h">Appris automatiquement depuis tes conversations. Ajoute une étiquette pour retrouver un client vite.</p><input class="t" id="fcQ" placeholder="Nom, adresse ou étiquette" autocomplete="off"><div id="fcL"></div><div class="flo-acts"><button class="flo-btn g" onclick="FILO._closeModal()">Fermer</button></div>';openModal(html);const draw=()=>{const arr=searchContacts($('#fcQ').value,80);const L=$('#fcL');L.innerHTML='';if(!arr.length){L.innerHTML='<p class="h">Rien pour l\'instant. Ouvre quelques conversations, Filo apprend les adresses tout seul.</p>';return;}arr.forEach(c=>{const r=el('div','flo-mem');r.innerHTML='<div class="flo-av" style="width:36px;height:36px;flex:0 0 36px;font-size:12px;background:'+colorFor(c.email)+'">'+initials(c.name)+'</div><div class="nm"><b>'+esc(c.name)+'</b><span>'+esc(c.email)+'</span></div>'+(c.tag?'<span class="flo-tagp" style="background:'+tagColor(c.tag)+'22;color:'+tagColor(c.tag)+'">'+esc(c.tag)+'</span>':'')+'<button class="flo-tg" style="margin-left:6px">Étiquette</button>';r.querySelector('button').onclick=()=>{const t=prompt('Étiquette pour '+c.email+' (vide pour retirer)',c.tag||'');if(t!==null){setContactTag(c.email,t.trim());draw();}};L.append(r);});};$('#fcQ').oninput=draw;draw();}
 function closeLight(){const b=document.getElementById('floLight');if(b){b.classList.remove('show');const im=document.getElementById('floLbImg');if(im)im.src='';}}
 
 /* ═══ Provider: SEND ═══ */
@@ -5579,7 +5620,7 @@ async function loadList(silent){const box=$('#floThreads');if(!silent||!box.quer
 function renderList(){const box=$('#floThreads');box.innerHTML='';if(!threads.length){box.innerHTML='<div class="flo-center"><div><h2>Rien ici</h2></div></div>';return;}threads.sort((a,b)=>b.ts-a.ts).forEach(t=>{const row=el('div','flo-th'+(t.unread?' unread':'')+(t.id===curId?' active':''));row.onclick=()=>openThread(t.id);const av=el('div','flo-av');av.style.background=colorFor(t.avSeed);av.textContent=initials(t.avName);if(t.count>1){const g=el('div','g');g.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>';av.append(g);}const proj=projectsFor(t.id);const main=el('div','flo-tm');main.innerHTML='<div class="flo-tt"><span class="flo-ttl">'+esc(t.subject)+'</span><span class="flo-time">'+relTime(t.ts)+'</span></div><div class="flo-tp">'+esc(t.names.slice(0,3).join(', ')||myEmail())+(t.count>3?' +'+(t.count-3):'')+proj.map(p=>'<span class="flo-pin" style="background:'+p.color+'22;color:'+p.color+'">'+esc(p.name)+'</span>').join('')+'</div><div class="flo-sn">'+(getDraft(t.id)?'<span class="flo-draft">brouillon</span>':'')+esc(t.snippet).slice(0,110)+'</div>';row.append(av,main);box.append(row);});}
 
 /* ═══ Rendering: conversation ═══ */
-async function openThread(id){curId=id;mode='single';related=[];renderList();const conv=$('#floConv');conv.innerHTML='<div class="flo-center"><div><div class="flo-spin"></div>Ouverture…</div></div>';try{curMsgs=await getThread(id);markLocalRead(id);const t=threads.find(x=>x.id===id);if(t){t.unread=false;renderList();}composer={to:null,replyAll:false,cc:'',bcc:'',addTo:[],attachments:[]};renderConv(curMsgs,id,'single');findRelated(id,curMsgs).then(f=>{if(f.length&&curId===id){related=f;showLinked();}});}catch(e){if(e.message!=='401')conv.innerHTML='<div class="flo-center"><div><h2>Erreur</h2><p>Ouverture impossible.</p></div></div>';}}
+async function openThread(id){curId=id;mode='single';related=[];renderList();const conv=$('#floConv');conv.innerHTML='<div class="flo-center"><div><div class="flo-spin"></div>Ouverture…</div></div>';try{curMsgs=await getThread(id);try{curMsgs.forEach(m=>learnContacts([m.from,...m.to,...m.cc],m.date));}catch(e){}markLocalRead(id);const t=threads.find(x=>x.id===id);if(t){t.unread=false;renderList();}composer={to:null,replyAll:false,cc:'',bcc:'',addTo:[],attachments:[]};renderConv(curMsgs,id,'single');findRelated(id,curMsgs).then(f=>{if(f.length&&curId===id){related=f;showLinked();}});}catch(e){if(e.message!=='401')conv.innerHTML='<div class="flo-center"><div><h2>Erreur</h2><p>Ouverture impossible.</p></div></div>';}}
 function partsOf(msgs){const map={};msgs.forEach(m=>[m.from,...m.to,...m.cc].forEach(a=>{if(a&&a.email)map[a.email]=a.name||a.email;}));return map;}
 function otherParty(msgs){const last=msgs[msgs.length-1];if(last.from.email!==myEmail())return last.from;for(let i=msgs.length-1;i>=0;i--)if(msgs[i].from.email!==myEmail())return msgs[i].from;return(last.to.find(a=>a.email!==myEmail()))||last.from;}
 function renderConv(msgs,replyThreadId,vmode,tids){const conv=$('#floConv');conv.innerHTML='';const subject=baseSubject(msgs[0].subject)||'(sans objet)';const parts=partsOf(msgs);const others=Object.entries(parts).filter(([e])=>e!==myEmail());const grp=others.length>1;replyCtx={last:msgs[msgs.length-1],threadId:replyThreadId,newMode:false};composer.to=otherParty(msgs);
@@ -5598,14 +5639,15 @@ function buildComposer(){const wrap=el('div','flo-comp');const o=composer.to;wra
   wrap.querySelector('#ftBcc').onclick=e=>{wrap.querySelector('#ffBcc').classList.toggle('show');e.target.classList.toggle('on');};
   wrap.querySelector('#fiCc').oninput=e=>composer.cc=e.target.value;
   wrap.querySelector('#fiBcc').oninput=e=>composer.bcc=e.target.value;
-  const ap=wrap.querySelector('#fiAdd');ap.onkeydown=e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();const a=parseAddr(ap.value.trim().replace(/,$/,''));if(a.email&&a.email.includes('@')&&!composer.addTo.some(x=>x.email===a.email)){composer.addTo.push(a);ap.value='';renderPend(wrap.querySelector('#fPend'),sb);refr();}}};
+  const ap=wrap.querySelector('#fiAdd');simpleSuggest(ap,wrap.querySelector('#ffAdd'),c=>{if(!composer.addTo.some(x=>x.email===c.email)){composer.addTo.push({email:c.email,name:c.name});renderPend(wrap.querySelector('#fPend'),sb);refr();}},c=>composer.addTo.some(x=>x.email===c.email));ap.onkeydown=e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();const a=parseAddr(ap.value.trim().replace(/,$/,''));if(a.email&&a.email.includes('@')&&!composer.addTo.some(x=>x.email===a.email)){composer.addTo.push(a);ap.value='';renderPend(wrap.querySelector('#fPend'),sb);refr();}}};
   wrap.querySelector('#fClip').onclick=()=>{pendingFileTarget='reply';$('#floFile').click();};
+  ta.onpaste=e=>pasteFiles(e,'reply');
   ta.oninput=()=>{ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,150)+'px';saveDraft(curId,ta.value);refr();};
   ta.onkeydown=e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();doSend(ta.value.trim());}};
   sb.onclick=()=>doSend(ta.value.trim());
   renderPend(wrap.querySelector('#fPend'),sb);refr();return wrap;}
 function renderPend(box,sb){if(!box)box=$('#fPend');if(!box)return;box.innerHTML='';composer.addTo.forEach((a,i)=>{const c=el('div','flo-pc person');c.innerHTML='<span>+ '+esc(a.name||a.email)+'</span><span class="x">✕</span>';c.querySelector('.x').onclick=()=>{composer.addTo.splice(i,1);renderPend(box,sb);};box.append(c);});composer.attachments.forEach((a,i)=>{const c=el('div','flo-pc');c.innerHTML='<span>'+esc(a.name)+' ('+fileSize(a.size)+')</span><span class="x">✕</span>';c.querySelector('.x').onclick=()=>{composer.attachments.splice(i,1);renderPend(box,sb);if(sb){const ta=$('#fReply');sb.disabled=!(ta&&ta.value.trim())&&!composer.attachments.length;}};box.append(c);});}
-$('#floFile').onchange=e=>{const files=[...e.target.files];e.target.value='';files.forEach(f=>{const r=new FileReader();r.onload=()=>{const b64=r.result.split(',')[1];const rec={name:f.name,mime:f.type||'application/octet-stream',size:f.size,b64};if(pendingFileTarget==='new'&&window._floNewAtt){window._floNewAtt.push(rec);renderNewPend();}else{composer.attachments.push(rec);renderPend();const sb=$('#fSend');if(sb)sb.disabled=false;}};r.readAsDataURL(f);});};
+$('#floFile').onchange=e=>{const files=[...e.target.files];e.target.value='';addFiles(files,pendingFileTarget);};
 
 async function doSend(text){
   if(!text&&!composer.attachments.length)return;
@@ -5630,9 +5672,42 @@ async function doSend(text){
 }
 
 /* ═══ New message ═══ */
-function newMessage(){window._floNewAtt=[];const html='<h3>Nouveau message</h3><p class="h">Démarre une conversation depuis '+esc(myEmail())+'.</p><input class="t" id="fnTo" placeholder="À : email(s)"><input class="t" id="fnCc" placeholder="Cc (optionnel)"><input class="t" id="fnBcc" placeholder="Cci (optionnel)"><input class="t" id="fnSubj" placeholder="Objet"><textarea class="t" id="fnBody" placeholder="Ton message…"></textarea><div class="flo-pend" id="fnPend"></div><div class="flo-acts"><button class="flo-btn g" id="fnClip">Pièce jointe</button><button class="flo-btn g" onclick="FILO._closeModal()">Annuler</button><button class="flo-btn" id="fnSend">Envoyer</button></div>';openModal(html);$('#fnClip').onclick=()=>{pendingFileTarget='new';$('#floFile').click();};$('#fnSend').onclick=sendNew;}
+function rfMarkup(k,label,ph){return'<div class="flo-rf" id="rf-'+k+'"><span class="flo-rf-lb">'+label+'</span><span class="flo-rf-box" id="rfbox-'+k+'"></span><input class="flo-rf-in" id="rfin-'+k+'" placeholder="'+ph+'" autocomplete="off"></div>';}
+function addRecip(k,email,name){if(!email)return;email=(email+'').trim().toLowerCase();if(!email)return;const arr=window._floNew[k];if(arr.some(x=>x.email===email))return;arr.push({email,name:name||''});renderRecip(k);}
+function commitRecip(k,v){if(!v||!v.trim())return;parseList(v).forEach(a=>addRecip(k,a.email,a.name));}
+function renderRecip(k){const box=document.getElementById('rfbox-'+k);if(!box)return;box.innerHTML='';window._floNew[k].forEach((a,i)=>{const ok=validEmail(a.email);const c=el('span','flo-rc'+(ok?'':' bad'));c.title=a.email+(ok?'':' · adresse invalide');c.innerHTML='<span>'+esc(a.name||a.email)+'</span><span class="x">\u2715</span>';c.querySelector('.x').onclick=()=>{window._floNew[k].splice(i,1);renderRecip(k);};box.append(c);});}
+function wireRecip(k){const inp=document.getElementById('rfin-'+k),fld=document.getElementById('rf-'+k);if(!inp)return;
+  simpleSuggest(inp,fld,c=>addRecip(k,c.email,c.name),c=>window._floNew[k].some(x=>x.email===c.email));
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===','||e.key===';'||e.key==='Tab'){if(!inp.value.trim())return;e.preventDefault();commitRecip(k,inp.value);inp.value='';return;}
+    if(e.key==='Backspace'&&!inp.value){const arr=window._floNew[k];if(arr.length){arr.pop();renderRecip(k);}}
+  });
+  inp.addEventListener('paste',e=>{const cd=e.clipboardData||window.clipboardData;if(!cd)return;const t=cd.getData('text');if(t&&/[,;\s]/.test(t)&&t.indexOf('@')>=0){e.preventDefault();commitRecip(k,t);inp.value='';}});
+  inp.addEventListener('blur',()=>setTimeout(()=>{if(inp.value.trim()){commitRecip(k,inp.value);inp.value='';}},180));
+  renderRecip(k);}
+function newMessage(){window._floNewAtt=[];window._floNew={to:[],cc:[],bcc:[]};
+  const html='<h3>Nouveau message</h3><p class="h">Depuis '+esc(myEmail())+'. Tape un nom ou une adresse, Filo pioche dans ton carnet. Plusieurs destinataires : virgule, point-virgule ou Entrée.</p>'
+    +rfMarkup('to','À','nom ou email')+rfMarkup('cc','Cc','optionnel')+rfMarkup('bcc','Cci','optionnel')
+    +'<input class="t" id="fnSubj" placeholder="Objet"><textarea class="t" id="fnBody" placeholder="Ton message\u2026 (tu peux glisser des fichiers ici)"></textarea><div class="flo-pend" id="fnPend"></div><div class="flo-acts"><button class="flo-btn g" id="fnClip">Fichier</button><button class="flo-btn g" onclick="FILO._closeModal()">Annuler</button><button class="flo-btn" id="fnSend">Envoyer</button></div>';
+  openModal(html);
+  ['to','cc','bcc'].forEach(wireRecip);
+  document.getElementById('fnClip').onclick=()=>{pendingFileTarget='new';$('#floFile').click();};
+  document.getElementById('fnSend').onclick=sendNew;
+  const bd=document.getElementById('fnBody');if(bd)bd.onpaste=e=>pasteFiles(e,'new');
+  wireDrop(document.getElementById('floModal'),'new');
+  setTimeout(()=>{const i=document.getElementById('rfin-to');if(i)i.focus();},80);}
 function renderNewPend(){const box=$('#fnPend');if(!box)return;box.innerHTML='';(window._floNewAtt||[]).forEach((a,i)=>{const c=el('div','flo-pc');c.innerHTML='<span>'+esc(a.name)+' ('+fileSize(a.size)+')</span><span class="x">✕</span>';c.querySelector('.x').onclick=()=>{window._floNewAtt.splice(i,1);renderNewPend();};box.append(c);});}
-async function sendNew(){const to=parseList($('#fnTo').value);if(!to.length){toast('Ajoute au moins un destinataire');return;}const cc=parseList($('#fnCc').value),bcc=parseList($('#fnBcc').value);const subject=$('#fnSubj').value.trim()||'(sans objet)';const text=$('#fnBody').value;const btn=$('#fnSend');btn.disabled=true;btn.textContent='Envoi…';try{const ok=await sendMsg({to,cc,bcc,subject,text,attachments:window._floNewAtt||[],isNew:true});if(ok){toast('Message envoyé');try{ajouterJournal('Filo · nouveau message à '+to.map(a=>a.email).join(', '),'ok');}catch(e){}closeModal();}else{toast('Échec');btn.disabled=false;btn.textContent='Envoyer';}}catch(e){if(e.message!=='401'){toast('Échec');btn.disabled=false;btn.textContent='Envoyer';}}}
+async function sendNew(){const N=window._floNew||{to:[],cc:[],bcc:[]};
+  ['to','cc','bcc'].forEach(k=>{const i=document.getElementById('rfin-'+k);if(i&&i.value.trim()){commitRecip(k,i.value);i.value='';}});
+  const all=[...N.to,...N.cc,...N.bcc];const bad=all.filter(a=>!validEmail(a.email));
+  if(bad.length){toast('Adresse invalide : '+bad[0].email);return;}
+  if(!N.to.length){toast('Ajoute au moins un destinataire');return;}
+  const subject=($('#fnSubj').value||'').trim()||'(sans objet)';const text=$('#fnBody').value;
+  const btn=$('#fnSend');btn.disabled=true;btn.textContent='Envoi\u2026';
+  try{const ok=await sendMsg({to:N.to,cc:N.cc,bcc:N.bcc,subject,text,attachments:window._floNewAtt||[],isNew:true});
+    if(ok){learnContacts(all,Date.now());toast(N.to.length>1?'Message envoyé à '+N.to.length+' destinataires':'Message envoyé');try{ajouterJournal('Filo · nouveau message à '+N.to.map(a=>a.email).join(', '),'ok');}catch(e){}closeModal();setTimeout(()=>{if(filter.type!=='project')loadList(true);},1800);}
+    else{toast('Échec de l\'envoi');btn.disabled=false;btn.textContent='Envoyer';}}
+  catch(e){if(e.message!=='401'){toast('Échec de l\'envoi');btn.disabled=false;btn.textContent='Envoyer';}}}
 
 /* ═══ Members / Projects modals ═══ */
 function openModal(html){const o=$('#floOvl'),m=$('#floModal');m.innerHTML=html;o.classList.add('show');o.onclick=e=>{if(e.target===o)closeModal();};}
@@ -5660,10 +5735,10 @@ function startPoll(){if(floPoll)return;pollUnread();floPoll=setInterval(()=>{pol
 /* bulle sortante optimiste */
 function appendOptimistic(text,atts){const box=document.querySelector('#floConv .flo-msgs');if(!box)return null;const row=el('div','flo-row me');const b=el('div','flo-bub');b.innerHTML=linkify(text||'(pièce jointe)');renderAtts(b,atts);row.append(b);const meta=el('div','flo-meta');meta.innerHTML='<span class="flo-st">envoi…</span>';row.append(meta);box.append(row);requestAnimationFrame(()=>{box.scrollTop=box.scrollHeight;});return meta.querySelector('.flo-st');}
 
-function open(){if(!S.accessToken){toast('Connecte d\'abord un compte');try{ouvrirConnexion();}catch(e){}return;}$('#filo-mode').classList.add('open');$('#floWho').textContent=(S.provider==='google'?'gmail · ':'outlook · ')+myEmail();bindSearch();renderFilters();startPoll();if(!bootDone||!threads.length){loadList();bootDone=true;}}
+function open(){if(!S.accessToken){toast('Connecte d\'abord un compte');try{ouvrirConnexion();}catch(e){}return;}$('#filo-mode').classList.add('open');$('#floWho').textContent=(S.provider==='google'?'gmail · ':'outlook · ')+myEmail();bindSearch();renderFilters();startPoll();wireDrop(document.getElementById('floConv'),'reply');if(!bootDone||!threads.length){loadList();bootDone=true;}}
 function close(){$('#filo-mode').classList.remove('open');}
 function refresh(){loadList();}
-startPoll();return{open,close,refresh,newMessage,_back:()=>$('#floConv').classList.remove('open'),_proj:()=>projectModal(curId),_merge:()=>openMerged(),_closeModal:closeModal,_closeLight:closeLight,_lbBg:e=>{if(e&&e.target&&e.target.id==='floLight')closeLight();}};
+startPoll();return{open,close,refresh,newMessage,contacts:contactsModal,_back:()=>$('#floConv').classList.remove('open'),_proj:()=>projectModal(curId),_merge:()=>openMerged(),_closeModal:closeModal,_closeLight:closeLight,_lbBg:e=>{if(e&&e.target&&e.target.id==='floLight')closeLight();}};
 })();
 </script>
 <!-- ═══════════════════ /FILO ═══════════════════ -->
